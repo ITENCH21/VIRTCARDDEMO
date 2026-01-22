@@ -3,9 +3,9 @@
 ## Компоненты
 - `admin/` — Django админка для управления данными.
 - `backend/` — асинхронный backend (asyncio + tortoise-orm).
-- `services/` — каркасы будущих микросервисов.
-- `infra/` — инфраструктурные скрипты и шаблоны.
-- `shared/` — общие библиотеки и контракты.
+- `bot/` — Telegram бот.
+- `nginx/` — Nginx для reverse proxy.
+- `common/` — общие модели и функции.
 
 ## Запуск через docker-compose
 ```bash

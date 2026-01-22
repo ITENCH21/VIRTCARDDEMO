@@ -16,7 +16,6 @@ x-base-django: &base-django
   working_dir: /usr/src/app
   volumes:
     - ./admin:/usr/src/app
-    - ./_logs:/var/_logs
 
 x-django: &django
   <<: *base-django
