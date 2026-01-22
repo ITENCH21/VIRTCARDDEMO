@@ -1,0 +1,87 @@
+version: "3"
+
+x-service: &base-service
+  restart: always
+  env_file:
+    - default.env
+    - ${ENVIRONMENT_FILE:-.env}
+  networks:
+    - vc-network
+
+x-base-django: &base-django
+  <<: *base-service
+  build:
+    context: .
+    dockerfile: Dockerfile
+  working_dir: /usr/src/app
+  volumes:
+    - ./:/usr/src/app
+    - ./_logs:/var/_logs
+
+x-django: &django
+  <<: *base-django
+  depends_on:
+    - db-migrate
+    - collectstatic
+
+services:
+  nginx:
+    <<: *base-service
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    volumes:
+      - ./admin/static:/static
+      - ./admin/media:/media
+
+  db-migrate:
+    <<: *base-django
+    restart: "no"
+    command: python ./manage.py migrate
+
+  collectstatic:
+    <<: *base-django
+    restart: "no"
+    command: python manage.py collectstatic --no-input
+    volumes:
+      - ./dist:/usr/src/dist
+
+  admin:
+    <<: *django
+    container_name: admin-vc
+    ports:
+      - "7002:8000"
+    command: python ./manage.py runserver 0.0.0.0:8000
+
+  db:
+    <<: *base-service
+    image: postgres:14.2
+    ports:
+      - "7432:5432"
+
+    volumes:
+      - ./.postgres-data:/var/lib/postgresql/data
+  redis:
+    <<: *base-service
+    image: redis:7.0.5-alpine3.16
+    command: ["sh", "-c", 'exec redis-server --requirepass "$REDIS_PASSWORD"']
+
+  bot:
+    <<: *base-service
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+  nats:
+    <<: *base-service
+    image: nats:2.10.24
+    command: ["-js"]
+    ports:
+      - "4222:4222"
+
+networks:
+  vc-network:
+    driver: bridge

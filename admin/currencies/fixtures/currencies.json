@@ -1,0 +1,223 @@
+[
+    {
+        "model": "currencies.currency",
+        "pk": 643,
+        "fields": {
+            "created_at": "2022-04-26T12:22:43Z",
+            "updated_at": "2022-04-26T12:23:57.372Z",
+            "kind": "F",
+            "base": "RUB",
+            "code": "RUB",
+            "name": "Russian Ruble",
+            "symbol": "₽",
+            "suffix": "руб.",
+            "is_active": true,
+            "denominator": 2,
+            "human_denominator": 2
+        }
+    },
+    {
+        "model": "currencies.currency",
+        "pk": 840,
+        "fields": {
+            "created_at": "2022-04-26T12:23:59Z",
+            "updated_at": "2022-04-26T12:24:46.332Z",
+            "kind": "F",
+            "base": "USD",
+            "code": "USD",
+            "name": "United States Dollar",
+            "symbol": "$",
+            "suffix": "USD",
+            "is_active": true,
+            "denominator": 2,
+            "human_denominator": 2
+        }
+    },
+    {
+        "model": "currencies.currency",
+        "pk": 841,
+        "fields": {
+            "created_at": "2022-04-26T12:23:59Z",
+            "updated_at": "2022-04-26T12:24:46.332Z",
+            "kind": "C",
+            "base": "USDT",
+            "code": "USDT-TRC20",
+            "name": "USDT TRC20",
+            "symbol": "USDT TRC20",
+            "suffix": "USDT TRC20",
+            "is_active": true,
+            "denominator": 6,
+            "human_denominator": 2
+        }
+    },
+    {
+        "model": "currencies.currency",
+        "pk": 842,
+        "fields": {
+            "created_at": "2022-07-11T12:23:59Z",
+            "updated_at": "2022-07-11T12:24:46.332Z",
+            "kind": "C",
+            "base": "BTC",
+            "code": "BTC",
+            "name": "BTC",
+            "symbol": "BTC",
+            "suffix": "BTC",
+            "is_active": true,
+            "denominator": 8,
+            "human_denominator": 8
+        }
+    },
+    {
+        "model": "currencies.currency",
+        "pk": 843,
+        "fields": {
+            "created_at": "2022-04-26T12:23:59Z",
+            "updated_at": "2022-04-26T12:24:46.332Z",
+            "kind": "C",
+            "base": "USDT",
+            "code": "USDT-ERC20",
+            "name": "USDT ERC20",
+            "symbol": "USDT ERC20",
+            "suffix": "USDT ERC20",
+            "is_active": true,
+            "denominator": 6,
+            "human_denominator": 2
+        }
+    },
+    {
+        "model": "currencies.currency",
+        "pk": 844,
+        "fields": {
+            "created_at": "2022-04-26T12:23:59Z",
+            "updated_at": "2022-04-26T12:24:46.332Z",
+            "kind": "C",
+            "base": "USDC",
+            "code": "USDC-ERC20",
+            "name": "USDC ERC20",
+            "symbol": "USDC ERC20",
+            "suffix": "USDC ERC20",
+            "is_active": true,
+            "denominator": 6,
+            "human_denominator": 2
+        }
+    },
+    {
+        "model": "currencies.currency",
+        "pk": 978,
+        "fields": {
+            "created_at": "2022-07-11T12:23:59Z",
+            "updated_at": "2022-07-11T12:24:46.332Z",
+            "kind": "F",
+            "base": "EUR",
+            "code": "EUR",
+            "name": "Euro",
+            "symbol": "€",
+            "suffix": "EUR",
+            "is_active": true,
+            "denominator": 2,
+            "human_denominator": 2
+        }
+    },
+    {
+        "model": "currencies.currency",
+        "pk": 398,
+        "fields": {
+            "created_at": "2022-10-25T14:12:03.045Z",
+            "updated_at": "2022-10-25T14:32:54.455Z",
+            "kind": "F",
+            "base": "KZT",
+            "code": "KZT",
+            "name": "KZT",
+            "symbol": "₸",
+            "suffix": "KZT",
+            "is_active": true,
+            "denominator": 2,
+            "human_denominator": 2
+        }
+    },
+    {
+        "model": "currencies.currency",
+        "pk": 860,
+        "fields": {
+            "created_at": "2022-10-25T14:12:03.045Z",
+            "updated_at": "2022-10-25T14:32:54.455Z",
+            "kind": "F",
+            "base": "UZS",
+            "code": "UZS",
+            "name": "UZS",
+            "symbol": "UZS",
+            "suffix": "UZS",
+            "is_active": true,
+            "denominator": 2,
+            "human_denominator": 2
+        }
+    },
+    {
+        "model": "currencies.currency",
+        "pk": 1001,
+        "fields": {
+            "created_at": "2022-11-11T14:12:03.045Z",
+            "updated_at": "2022-11-11T14:32:54.455Z",
+            "kind": "C",
+            "base": "TRX",
+            "code": "TRX",
+            "name": "TRX",
+            "symbol": "T",
+            "suffix": "TRX",
+            "is_active": true,
+            "denominator": 6,
+            "human_denominator": 2
+        }
+    },
+    {
+        "model": "currencies.currency",
+        "pk": 1002,
+        "fields": {
+            "created_at": "2022-12-12T14:12:03.045Z",
+            "updated_at": "2022-12-12T14:32:54.455Z",
+            "kind": "C",
+            "base": "ETH",
+            "code": "ETH",
+            "name": "ETH",
+            "symbol": "Ξ",
+            "suffix": "ETH",
+            "is_active": true,
+            "denominator": 6,
+            "human_denominator": 2
+        }
+    },
+    {
+        "model": "currencies.currency",
+        "pk": 827,
+        "fields": {
+            "created_at": "2024-02-01T12:23:59Z",
+            "updated_at": "2024-02-01T12:24:46.332Z",
+            "kind": "C",
+            "base": "TON",
+            "code": "TON",
+            "name": "TON",
+            "symbol": "TON",
+            "suffix": "TON",
+            "is_active": true,
+            "denominator": 9,
+            "human_denominator": 2
+        }
+    },
+    {
+        "model": "currencies.currency",
+        "pk": 933,
+        "fields": {
+            "created_at": "2022-10-25T14:12:03.045Z",
+            "updated_at": "2022-10-25T14:32:54.455Z",
+            "kind": "F",
+            "base": "BYN",
+            "code": "BYN",
+            "name": "BYN",
+            "symbol": "Br",
+            "suffix": "BYN",
+            "is_active": true,
+            "denominator": 2,
+            "human_denominator": 2
+        }
+    }
+]
