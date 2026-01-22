@@ -1,27 +1,38 @@
 import typing
+from typing import ClassVar
 import orjson
-from django.db import models
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import (
+    Model,
+    Manager,
+    CharField,
+    DateTimeField,
+    BooleanField,
+    TextField,
+    TextChoices,
+)
 
 T = typing.TypeVar("T")
 
 
-class BaseModel(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
+class BaseModel(Model):
+    objects: ClassVar[Manager] = Manager()
+    created_at = DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    updated_at = DateTimeField(auto_now=True, verbose_name="Дата обновления")
 
     class Meta:
         abstract = True
 
 
 class Setting(BaseModel):
-    key = models.CharField(max_length=64, db_index=True)
-    value = models.TextField(null=True, blank=True)
-    description = models.TextField(default="", blank=True)
-    is_private = models.BooleanField(default=True)
-    enabled = models.BooleanField(default=True)
+    key = CharField(max_length=64, db_index=True)
+    value = TextField(null=True, blank=True)
+    description = TextField(default="", blank=True)
+    is_private = BooleanField(default=True)  # type: ignore[arg-type]
+    enabled = BooleanField(default=True)  # type: ignore[arg-type]
 
     def save(self, *args, **kwargs):
-        self.key = self.key.upper()
+        self.key = self.key.upper()  # type: ignore[attr-defined]
         return super().save(*args, **kwargs)
 
     def __str__(self):
@@ -35,21 +46,21 @@ class Setting(BaseModel):
     def get_or_default(cls, key, default=None):
         try:
             return cls.get(key)
-        except cls.DoesNotExist:
+        except ObjectDoesNotExist:
             return default
 
     @classmethod
     def loads(cls, key, default=None):
         try:
-            return orjson.loads(cls.get(key=key))
-        except cls.DoesNotExist:
+            return orjson.loads(cls.get(key=key))  # pylint: disable=no-member
+        except ObjectDoesNotExist:
             return default
 
     @classmethod
     def int(cls, key: str, default: int | None = None) -> int:
         try:
             val = cls.get(key=key)
-        except cls.DoesNotExist:
+        except ObjectDoesNotExist:
             val = None
         if val is None:
             if default is None:
@@ -74,7 +85,7 @@ class Setting(BaseModel):
     ) -> bool:
         try:
             val = cls.get(key=key)
-        except cls.DoesNotExist:
+        except ObjectDoesNotExist:
             val = None
         if val is None:
             if default is None:
@@ -83,7 +94,7 @@ class Setting(BaseModel):
         return val.lower().strip() in truthy_values
 
 
-class OperationKind(models.TextChoices):
+class OperationKind(TextChoices):
     # Управление карточным счётом. Выделяем, так как процессинг и тарифы
     #  отличаются от регулярного счёта
     CARD_OPEN = "CO", "CARD OPEN"

@@ -140,9 +140,6 @@ class DepositTarifLine(TarifLine):
     currency = ForeignKey(
         "currencies.Currency", on_delete=PROTECT, null=True, blank=True
     )
-    # method = models.ForeignKey(
-    #     "operations.PaymentMethod", on_delete=models.PROTECT, null=True, blank=True
-    # )
     method = CharField(
         max_length=3,
         choices=Operation.Method.choices,
@@ -157,9 +154,6 @@ class WithdrawTarifLine(TarifLine):
     currency = ForeignKey(
         "currencies.Currency", on_delete=PROTECT, null=True, blank=True
     )
-    # method = models.ForeignKey(
-    #     "operations.PaymentMethod", on_delete=models.PROTECT, null=True, blank=True
-    # )
     method = CharField(
         max_length=3,
         choices=Operation.Method.choices,
@@ -174,9 +168,6 @@ class CardOpenTarifLine(TarifLine):
     currency = ForeignKey(
         "currencies.Currency", on_delete=PROTECT, null=True, blank=True
     )
-    # method = models.ForeignKey(
-    #     "operations.PaymentMethod", on_delete=models.PROTECT, null=True, blank=True
-    # )
     method = CharField(
         max_length=3,
         choices=Operation.Method.choices,
@@ -191,9 +182,6 @@ class CardTopUpTarifLine(TarifLine):
     currency = ForeignKey(
         "currencies.Currency", on_delete=PROTECT, null=True, blank=True
     )
-    # method = models.ForeignKey(
-    #     "operations.PaymentMethod", on_delete=models.PROTECT, null=True, blank=True
-    # )
     method = CharField(
         max_length=3,
         choices=Operation.Method.choices,
@@ -225,3 +213,34 @@ class ExchangeTarifLine(TarifLine):
     additional_human_rate_percent = DecimalField(
         "Additional human rate, %", max_digits=6, decimal_places=3, default=1.0
     )
+
+    def with_additional_rate(self, rate: Decimal):
+        rate = Decimal(rate)
+        if rate < 1:
+            reverse_rate = rate ** (-1)
+            rate = (
+                reverse_rate + (reverse_rate * abs(self.additional_rate_percent) / 100)
+            ) ** (-1)
+        else:
+            rate = rate + ((rate / 100) * self.additional_rate_percent)
+        return rate
+
+    def with_additional_human_rate(self, rate: Decimal):
+        rate = Decimal(rate)
+        return rate + ((rate / 100) * self.additional_human_rate_percent)
+
+    @property
+    def rate(self):
+        return self.rate
+
+    @property
+    def human_rate(self):
+        return self.human_rate
+
+    @property
+    def rate_with_additional_rate(self):
+        return self.with_additional_rate(self.rate)
+
+    @property
+    def human_rate_with_additional_human_rate(self):
+        return self.with_additional_human_rate(self.human_rate)

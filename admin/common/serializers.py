@@ -5,7 +5,6 @@ import datetime
 
 from collections import OrderedDict
 from collections.abc import Iterable
-from rest_framework import serializers
 
 
 def json_encode(obj):

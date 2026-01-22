@@ -1,45 +1,49 @@
-from django.db import models
+from django.db.models import (
+    Model,
+    CharField,
+    DateTimeField,
+    BooleanField,
+    IntegerField,
+    ForeignKey,
+    DecimalField,
+    TextChoices,
+    PROTECT,
+)
 from decimal import Decimal
 
 
-class Currency(models.Model):
-    class Kind(models.TextChoices):
+class Currency(Model):
+    class Kind(TextChoices):
         FIAT = "F", "Fiat"
         CRYPT = "C", "Crypto"
 
-    kind = models.CharField(
+    kind = CharField(
         max_length=1,
         choices=Kind.choices,
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    code = models.CharField(max_length=10, db_index=True)
-    base = models.CharField(max_length=6, db_index=True)
-    name = models.CharField(max_length=64)
-    symbol = models.CharField(max_length=10, null=True, blank=True)
-    suffix = models.CharField(max_length=10, default="", blank=True)
-    is_active = models.BooleanField(default=True)
-    denominator = models.IntegerField(default=2)
-    human_denominator = models.IntegerField(default=2)
+    created_at = DateTimeField(auto_now_add=True)
+    updated_at = DateTimeField(auto_now=True)
+    code = CharField(max_length=10, db_index=True)
+    base = CharField(max_length=6, db_index=True)
+    name = CharField(max_length=64)
+    symbol = CharField(max_length=10, null=True, blank=True)
+    suffix = CharField(max_length=10, default="", blank=True)
+    is_active = BooleanField(default=True)  # type: ignore[arg-type]
+    denominator = IntegerField(default=2)  # type: ignore[arg-type]
+    human_denominator = IntegerField(default=2)  # type: ignore[arg-type]
 
     def __str__(self):
-        return self.code
+        return str(self.code)
 
 
-class CurrencyRate(models.Model):
-    currency_from = models.ForeignKey(
-        Currency, related_name="rates_from", on_delete=models.PROTECT
-    )
-    currency_to = models.ForeignKey(
-        Currency, related_name="rates_to", on_delete=models.PROTECT
-    )
-    rate = models.DecimalField(max_digits=18, decimal_places=10, default=Decimal("0.0"))
-    human_rate = models.DecimalField(
-        max_digits=18, decimal_places=10, default=Decimal("0.0")
-    )
-    is_manual = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+class CurrencyRate(Model):
+    currency_from = ForeignKey(Currency, related_name="rates_from", on_delete=PROTECT)
+    currency_to = ForeignKey(Currency, related_name="rates_to", on_delete=PROTECT)
+    rate = DecimalField(max_digits=18, decimal_places=10, default=Decimal("0.0"))
+    human_rate = DecimalField(max_digits=18, decimal_places=10, default=Decimal("0.0"))
+    is_manual = BooleanField(default=False)  # type: ignore[arg-type]
+    created_at = DateTimeField(auto_now_add=True)
+    updated_at = DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ("currency_from", "currency_to")

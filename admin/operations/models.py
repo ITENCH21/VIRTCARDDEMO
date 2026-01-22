@@ -1,7 +1,21 @@
 from decimal import Decimal, ROUND_HALF_UP
 from json import JSONEncoder
 import uuid
-from django.db import models
+from django.db.models import (
+    Model,
+    TextChoices,
+    DateTimeField,
+    UUIDField,
+    ForeignKey,
+    JSONField,
+    BigIntegerField,
+    PositiveIntegerField,
+    BooleanField,
+    CharField,
+    SET_NULL,
+    PROTECT,
+    TextField,
+)
 from django.utils import timezone
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -22,58 +36,54 @@ def amount_human_to_db(amount, currency):
     )
 
 
-class Operation(models.Model):
-    class Method(models.TextChoices):
+class Operation(Model):
+    class Method(TextChoices):
         CRYPTO = "CPT", "Crypto"
         MANUAL = "MNL", "Manual"
         EXCHANGE = "EXC", "Exchange"
         VIRTUAL_CARD = "VC", "VirtualCard"
 
-    class Status(models.TextChoices):
+    class Status(TextChoices):
         PENDING = "P", "PENDING"
         OPERATING = "O", "OPERATING"
         COMPLETE = "C", "COMPLETE"
         FAILED = "F", "FAILED"
         UNKNOWN = "U", "UNKNOWN"
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    done_at = models.DateTimeField(auto_now=True, db_index=True)
-    note = models.TextField(
+    id = UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_at = DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = DateTimeField(auto_now=True)
+    done_at = DateTimeField(auto_now=True, db_index=True)
+    note = TextField(
         default="",
         blank=True,
         help_text="Вы можете добавить заметку, она не будет видна клиентам",
     )
-    client = models.ForeignKey(
-        "clients.Client", related_name="operations", on_delete=models.PROTECT
+    client = ForeignKey("clients.Client", related_name="operations", on_delete=PROTECT)
+    account = ForeignKey(
+        "clients.Account", on_delete=PROTECT, related_name="operations"
     )
-    account = models.ForeignKey(
-        "clients.Account", on_delete=models.PROTECT, related_name="operations"
-    )
-    kind = models.CharField(max_length=2, choices=OperationKind.choices, db_index=True)
-    status = models.CharField(
+    kind = CharField(max_length=2, choices=OperationKind.choices, db_index=True)
+    status = CharField(
         max_length=1,
         choices=Status.choices,
         default=Status.PENDING,
         db_index=True,
     )
-    is_final = models.BooleanField(default=False, blank=True)  # type: ignore[arg-type]
-    parent = models.ForeignKey(
+    is_final = BooleanField(default=False, blank=True)  # type: ignore[arg-type]
+    parent = ForeignKey(
         "self",
-        on_delete=models.PROTECT,
+        on_delete=PROTECT,
         null=True,
         blank=True,
         related_name="suboperations",
     )
-    method = models.CharField(
-        max_length=3, choices=Method.choices, default="", db_index=True
-    )
+    method = CharField(max_length=3, choices=Method.choices, default="", db_index=True)
 
-    pending_at = models.DateTimeField(null=True, blank=True, default=timezone.now)
-    operating_at = models.DateTimeField(null=True, blank=True)
-    external_id = models.CharField(max_length=64, db_index=True, null=True, blank=True)
-    account_data = models.CharField(
+    pending_at = DateTimeField(null=True, blank=True, default=timezone.now)
+    operating_at = DateTimeField(null=True, blank=True)
+    external_id = CharField(max_length=64, db_index=True, null=True, blank=True)
+    account_data = CharField(
         max_length=64,
         db_index=True,
         null=True,
@@ -81,18 +91,18 @@ class Operation(models.Model):
         help_text="PAN, Phone, SWIFT, etc.",
     )
 
-    currency = models.ForeignKey(
-        "currencies.Currency", on_delete=models.PROTECT, null=True, blank=True
+    currency = ForeignKey(
+        "currencies.Currency", on_delete=PROTECT, null=True, blank=True
     )
-    amount_db = models.BigIntegerField(null=True, blank=True)
-    fee_db = models.BigIntegerField(null=True, blank=True)
-    amount_done_db = models.BigIntegerField(null=True, blank=True)
-    amount_rest_db = models.BigIntegerField(null=True, blank=True)
-    content_type = models.ForeignKey(ContentType, on_delete=models.SET_NULL, null=True)
+    amount_db = BigIntegerField(null=True, blank=True)
+    fee_db = BigIntegerField(null=True, blank=True)
+    amount_done_db = BigIntegerField(null=True, blank=True)
+    amount_rest_db = BigIntegerField(null=True, blank=True)
+    content_type = ForeignKey(ContentType, on_delete=SET_NULL, null=True)
 
-    data = models.JSONField(encoder=JSONEncoder)
+    data = JSONField(encoder=JSONEncoder)
 
-    tarif_id = models.PositiveIntegerField(null=True)
+    tarif_id = PositiveIntegerField(null=True)
     tarif = GenericForeignKey("content_type", "tarif_id")
 
     def __str__(self):
