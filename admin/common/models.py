@@ -18,6 +18,7 @@ class Setting(BaseModel):
     value = models.TextField(null=True, blank=True)
     description = models.TextField(default="", blank=True)
     is_private = models.BooleanField(default=True)
+    enabled = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):
         self.key = self.key.upper()

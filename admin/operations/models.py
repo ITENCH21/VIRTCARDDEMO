@@ -4,6 +4,7 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from common.models import OperationKind
 
 
@@ -48,7 +49,7 @@ class Operation(models.Model):
         "clients.Client", related_name="operations", on_delete=models.PROTECT
     )
     account = models.ForeignKey(
-        "finance.Account", on_delete=models.PROTECT, related_name="operations"
+        "clients.Account", on_delete=models.PROTECT, related_name="operations"
     )
     kind = models.CharField(max_length=2, choices=OperationKind.choices, db_index=True)
     status = models.CharField(
@@ -69,9 +70,6 @@ class Operation(models.Model):
         max_length=3, choices=Method.choices, default="", db_index=True
     )
 
-    gate = models.ForeignKey("Gate", null=True, blank=True, on_delete=models.SET_NULL)
-    route = models.ForeignKey("Route", null=True, blank=True, on_delete=models.SET_NULL)
-
     pending_at = models.DateTimeField(null=True, blank=True, default=timezone.now)
     operating_at = models.DateTimeField(null=True, blank=True)
     external_id = models.CharField(max_length=64, db_index=True, null=True, blank=True)
@@ -90,12 +88,10 @@ class Operation(models.Model):
     fee_db = models.BigIntegerField(null=True, blank=True)
     amount_done_db = models.BigIntegerField(null=True, blank=True)
     amount_rest_db = models.BigIntegerField(null=True, blank=True)
+    content_type = models.ForeignKey(ContentType, on_delete=models.SET_NULL, null=True)
 
     data = models.JSONField(encoder=JSONEncoder)
 
-    issuer = models.ForeignKey(
-        "operations.Issuer", null=True, blank=True, on_delete=models.SET_NULL
-    )
     tarif_id = models.PositiveIntegerField(null=True)
     tarif = GenericForeignKey("content_type", "tarif_id")
 
