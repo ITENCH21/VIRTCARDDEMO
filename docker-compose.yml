@@ -23,6 +23,14 @@ x-django: &django
     - db-migrate
     - collectstatic
 
+x-backend: &backend
+  <<: *base-service
+  build:
+    context: backend
+    dockerfile: Dockerfile
+  volumes:
+    - ./backend:/usr/src/app
+
 services:
   nginx:
     <<: *base-service
@@ -68,12 +76,9 @@ services:
     command: ["sh", "-c", 'exec redis-server --requirepass "$REDIS_PASSWORD"']
 
   bot:
-    <<: *base-service
-    build:
-      context: ./bot
-      dockerfile: Dockerfile
-    depends_on:
-      - redis
+    <<: *backend
+    command: python -m bot.bot
+
   nats:
     <<: *base-service
     image: nats:2.10.24

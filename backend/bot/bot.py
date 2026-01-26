@@ -1,7 +1,10 @@
+import asyncio
 import logging
 import os
 
+from models import start_orm
 from telegram import Update
+from tortoise import timezone
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -9,6 +12,8 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+from models.models import Client
+from .register import get_or_create_client
 
 
 logging.basicConfig(
@@ -18,27 +23,25 @@ logging.basicConfig(
 logger = logging.getLogger("vc-bot")
 
 
-def _get_token() -> str:
-    token = os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("BOT_TOKEN")
-    if not token:
-        raise RuntimeError(
-            "Missing TELEGRAM_BOT_TOKEN (or BOT_TOKEN) environment variable."
-        )
-    return token
+token = os.environ["TELEGRAM_BOT_TOKEN"]
 
 
-async def start(update: Update) -> None:
-    if update.effective_chat:
-        await update.effective_chat.send_message(
-            "Привет! Я бот сервиса. Напишите сообщение, и я его повторю."
-        )
-
-
-async def help_command(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
-    if update.effective_chat:
-        await update.effective_chat.send_message(
-            "Доступные команды: /start, /help. Сообщения будут эхо."
-        )
+async def start(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
+    client: Client = await get_or_create_client(
+        telegram_id=update.effective_user.id,
+        first_name=update.effective_user.first_name,
+        last_name=update.effective_user.last_name,
+        # email=update.effective_chat.email,
+        # phone=update.effective_user.phone,
+        username=update.effective_user.username,
+        telegram_language_code=update.effective_user.language_code,
+        # telegram_photo_url=update.effective_user.photo_url,
+        telegram_auth_date=timezone.now(),
+    )
+    logger.info("Client: %s", client)
+    await update.effective_chat.send_message(
+        f"Привет, {client.name}! Добро пожаловать в сервис."
+    )
 
 
 async def echo(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -47,11 +50,9 @@ async def echo(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 def main() -> None:
-    token = _get_token()
     app = Application.builder().token(token).build()
-
+    asyncio.run(start_orm())
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help", help_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
     logger.info("Bot started")

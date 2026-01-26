@@ -22,6 +22,8 @@ from tortoise.fields import (
     SET_NULL,
 )
 
+from tortoise.transactions import atomic as db_transaction
+
 from .djangoise import (
     Model,
     ForeignKey,
@@ -32,6 +34,11 @@ from .djangoise import (
     BigAutoField,
     BigIntegerField,
     UUIDField,
+    EmailField,
+    URLField,
+    IntField,
+    OneToOneField,
+    PositiveIntegerField,
 )
 
 
@@ -56,4 +63,10 @@ __all__ = [
     "DecimalField",
     "BigIntegerField",
     "BigAutoField",
+    "EmailField",
+    "URLField",
+    "IntField",
+    "OneToOneField",
+    "PositiveIntegerField",
+    "db_transaction",
 ]

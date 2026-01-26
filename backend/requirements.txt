@@ -6,5 +6,5 @@ aiohttp==3.8.5
 pydantic==1.10.7
 sentry-sdk[asyncio,httpx]>=1.40.0
 redis==5.0.0
-python-telegram-bot==20.7
+python-telegram-bot==22.6
 psycopg2-binary==2.9.9

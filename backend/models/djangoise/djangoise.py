@@ -53,6 +53,8 @@ from tortoise.fields import (  # noqa: E402
     Field as _Field,
     BigIntField as _BigIntField,
     UUIDField as _UUIDField,
+    IntField as _IntField,
+    OneToOneField as _OneToOneField,
 )
 from asyncpg.types import Range as _Range  # noqa: E402
 
@@ -118,11 +120,16 @@ def CharField(
     null: bool = False,
     db_index: bool = False,
     unique: bool = False,
+    help_text: str | None = None,
     max_length: int,
 ):
     if choices is None:
         return _CharField(
-            blank=blank, null=null, max_length=max_length, default=default
+            blank=blank,
+            null=null,
+            max_length=max_length,
+            default=default,
+            description=help_text,
         )
     else:
         return _CharEnumField(
@@ -131,7 +138,32 @@ def CharField(
             null=null,
             max_length=max_length,
             default=default,
+            description=help_text,
         )
+
+
+def EmailField(
+    *,
+    default: typing.Any | None = None,
+    blank: bool = False,
+    null: bool = False,
+    db_index: bool = False,
+    unique: bool = False,
+    max_length: int = 254,
+):
+    return _CharField(blank=blank, null=null, max_length=max_length, default=default)
+
+
+def URLField(
+    *,
+    default: typing.Any | None = None,
+    blank: bool = False,
+    null: bool = False,
+    db_index: bool = False,
+    unique: bool = False,
+    max_length: int = 2048,
+):
+    return _CharField(blank=blank, null=null, max_length=max_length, default=default)
 
 
 def ForeignKey(
@@ -180,6 +212,18 @@ def ManyToManyField(
     )
 
 
+def IntField(
+    *,
+    pk: bool = False,
+    unique: bool = False,
+    blank: bool = False,
+    null: bool = False,
+    db_index: bool = False,
+    default: int | None = None,
+):
+    return _IntField(pk=pk, default=default, null=null, blank=blank, unique=unique)
+
+
 def BigIntegerField(
     *,
     primary_key: bool = False,
@@ -217,3 +261,31 @@ def UUIDField(
 
 def BigAutoField(primary_key: bool | None):
     return _BigIntField(pk=primary_key, generated=True)
+
+
+def OneToOneField(
+    to: M,
+    on_delete: typing.Literal["RESTRICT", "SET NULL", "SET_DEFAULT", "CASCADE"],
+    *,
+    related_name: str | None = None,
+    related_query_name: str | None = None,  # skip
+    blank: bool = False,
+    null: bool = False,
+):
+    return _OneToOneField(
+        _modelname(to),
+        related_name=related_name,
+        on_delete=on_delete,
+        blank=blank,
+        null=null,
+    )
+
+
+def PositiveIntegerField(
+    *,
+    default: int | None = None,
+    null: bool = False,
+    blank: bool = False,
+    db_index: bool = False,
+):
+    return _IntField(default=default, null=null, blank=blank, db_index=db_index)
