@@ -14,8 +14,11 @@ x-base-django: &base-django
     context: admin
     dockerfile: Dockerfile
   working_dir: /usr/src/app
+  environment:
+    - PYTHONPATH=/usr/src/app:/workspace
   volumes:
     - ./admin:/usr/src/app
+    - ./common:/workspace/common
 
 x-django: &django
   <<: *base-django
@@ -28,8 +31,11 @@ x-backend: &backend
   build:
     context: backend
     dockerfile: Dockerfile
+  environment:
+    - PYTHONPATH=/usr/src/app:/workspace
   volumes:
     - ./backend:/usr/src/app
+    - ./common:/workspace/common
 
 services:
   nginx:
@@ -61,7 +67,6 @@ services:
     ports:
       - "7002:8000"
     command: python ./manage.py runserver 0.0.0.0:8000
-
 
   bot:
     <<: *backend

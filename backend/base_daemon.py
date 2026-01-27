@@ -3,7 +3,7 @@ import logging
 import time
 
 from models import start_orm, stop_orm
-from nats_async import NatsProducer, NatsConsumer
+from common.nats_utils import AsyncNatsProducer, AsyncNatsConsumer
 
 logging.basicConfig(
     format="[%(asctime)s] %(levelname)s  <%(module)s> %(message)s",
@@ -45,10 +45,10 @@ class BaseHandler:
 
     async def start_nats(self):
         assert self.subjects is not None, "subjects must be set"
-        self.nats_producer = NatsProducer(
+        self.nats_producer = AsyncNatsProducer(
             subjects=self.subjects, stream_name=self.nats_stream_name
         )
-        self.nats_consumer = NatsConsumer(
+        self.nats_consumer = AsyncNatsConsumer(
             subjects=self.subjects,
             stream_name=self.nats_stream_name,
             message_processing=self.message_processing,

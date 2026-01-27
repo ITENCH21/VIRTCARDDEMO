@@ -2,25 +2,52 @@ import asyncio
 import json
 import logging
 import os
+import threading
 from typing import Any, Awaitable, Callable, Optional
 
 import nats
 from nats.js.api import AckPolicy, ConsumerConfig, DeliverPolicy, StreamConfig
 from nats.errors import NoServersError
 
-
 logger = logging.getLogger(__name__)
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
+
+
+class AsyncRunner:
+    """Запускает asyncio loop в отдельном потоке и позволяет вызывать coro синхронно."""
+
+    def __init__(self):
+        self._loop = asyncio.new_event_loop()
+        self._ready = threading.Event()
+        self._thread = threading.Thread(target=self._run_loop, daemon=True)
+        self._thread.start()
+        self._ready.wait()
+
+    def _run_loop(self):
+        asyncio.set_event_loop(self._loop)
+        self._ready.set()
+        self._loop.run_forever()
+
+    def run(self, coro, timeout: Optional[float] = None):
+        future = asyncio.run_coroutine_threadsafe(coro, self._loop)
+        return future.result(timeout=timeout)
+
+    def stop(self):
+        if self._loop.is_running():
+            self._loop.call_soon_threadsafe(self._loop.stop)
+        if self._thread.is_alive():
+            self._thread.join()
+        if not self._loop.is_closed():
+            self._loop.close()
 
 
 class NatsConfig:
     def __init__(self):
         """Читает настройки NATS из переменных окружения."""
         raw_servers = os.getenv("NATS_SERVERS", "127.0.0.1:4222")
-        # nats.py ожидает схему; добавляем по умолчанию и если ее нет
         self._servers = self._normalize_servers(raw_servers)
         self._connect_timeout = float(os.getenv("NATS_CONNECT_TIMEOUT", "2.0"))
         self._op_timeout = float(os.getenv("NATS_OP_TIMEOUT", "5.0"))
@@ -42,7 +69,7 @@ class NatsConfig:
         return normalized
 
 
-class NatsProducer(NatsConfig):
+class BaseNatsProducer(NatsConfig):
     def __init__(
         self,
         subjects: list[str],
@@ -58,7 +85,7 @@ class NatsProducer(NatsConfig):
         self._stream_ready = False
         super().__init__()
 
-    async def connect(self):
+    async def _connect(self):
         """Устанавливает соединение с NATS и JetStream (один раз)."""
         if self._nc is None or self._nc.is_closed:
             self._nc = await nats.connect(
@@ -71,7 +98,7 @@ class NatsProducer(NatsConfig):
         """Гарантирует наличие JetStream-стрима."""
         if self._stream_ready:
             return
-        await self.connect()
+        await self._connect()
         assert self._js is not None
         try:
             info = await self._js.stream_info(self._stream_name)
@@ -88,7 +115,7 @@ class NatsProducer(NatsConfig):
             )
         self._stream_ready = True
 
-    async def publish(self, subject: str, payload: Any):
+    async def _publish(self, subject: str, payload: Any):
         """Публикует сообщение в JetStream."""
         logger.debug("Publish %r %r", subject, payload)
         await self._ensure_stream()
@@ -101,7 +128,7 @@ class NatsProducer(NatsConfig):
         assert self._nc is not None
         await asyncio.wait_for(self._nc.flush(), timeout=self._op_timeout)
 
-    async def close(self):
+    async def _close(self):
         """Закрывает соединение с NATS."""
         if self._nc is not None and not self._nc.is_closed:
             await self._nc.close()
@@ -115,7 +142,39 @@ class NatsProducer(NatsConfig):
         return json.dumps(payload, ensure_ascii=False).encode()
 
 
-class NatsConsumer(NatsConfig):
+class NatsProducer(BaseNatsProducer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._runner = AsyncRunner()
+
+    def connect(self):
+        self._runner.run(super()._connect(), timeout=self._connect_timeout)
+
+    def publish(self, subject: str, payload: Any):
+        self._runner.run(super()._publish(subject, payload), timeout=self._op_timeout)
+
+    def close(self):
+        self._runner.run(super()._close(), timeout=self._op_timeout)
+
+    def stop(self):
+        self._runner.stop()
+
+
+class AsyncNatsProducer(BaseNatsProducer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    async def connect(self):
+        return await self._connect()
+
+    async def publish(self, subject: str, payload: Any):
+        return await self._publish(subject, payload)
+
+    async def close(self):
+        return await self._close()
+
+
+class BaseNatsConsumer(NatsConfig):
     def __init__(
         self,
         subjects: list[str],
@@ -136,7 +195,7 @@ class NatsConsumer(NatsConfig):
         self._stream_ready = False
         super().__init__()
 
-    async def connect(self):
+    async def _connect(self):
         """Устанавливает соединение с NATS и JetStream (один раз)."""
         if self._nc is None or self._nc.is_closed:
             self._nc = await nats.connect(
@@ -146,7 +205,7 @@ class NatsConsumer(NatsConfig):
             self._js = self._nc.jetstream()
 
     async def message_process(self, msg):
-        data = self.decode_message_data(msg.data)
+        data = self._decode_message_data(msg.data)
         logger.debug("Message process %r %r", data, msg.subject)
         await self._message_processing(data, msg.subject)
 
@@ -157,7 +216,7 @@ class NatsConsumer(NatsConfig):
             logger.debug("Stream already exists")
             return
         logger.debug("Connecting to NATS")
-        await self.connect()
+        await self._connect()
         assert self._js is not None
         try:
             info = await self._js.stream_info(self._stream_name)
@@ -215,7 +274,7 @@ class NatsConsumer(NatsConfig):
             except Exception:
                 await msg.nak()
 
-    async def consume_forever(
+    async def _consume_forever(
         self,
         batch: int = 10,
         timeout: float = 1.0,
@@ -247,13 +306,12 @@ class NatsConsumer(NatsConfig):
             await subscription.unsubscribe()
         self._subscriptions = []
 
-    async def close(self):
+    async def _close(self):
         """Закрывает соединение с NATS."""
         if self._nc is not None and not self._nc.is_closed:
             await self._nc.close()
 
-    @staticmethod
-    def decode_message_data(data: bytes) -> Any:
+    def _decode_message_data(self, data: bytes) -> Any:
         text = data.decode()
         try:
             return json.loads(text)
@@ -276,19 +334,53 @@ class NatsConsumer(NatsConfig):
         logger.info("Test process %r", data)
 
 
-async def main():
+class NatsConsumer(BaseNatsConsumer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._runner = AsyncRunner()
+
+    def connect(self):
+        self._runner.run(self._connect(), timeout=self._connect_timeout)
+
+    def consume_forever(self, *args, **kwargs):
+        self._runner.run(super()._consume_forever(*args, **kwargs))
+
+    def close(self):
+        self._runner.run(self._close(), timeout=self._op_timeout)
+
+    def stop(self):
+        self._runner.stop()
+
+
+class AsyncNatsConsumer(BaseNatsConsumer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    async def connect(self):
+        return await self._connect()
+
+    async def consume_forever(self, *args, **kwargs):
+        return await self._consume_forever(*args, **kwargs)
+
+    async def close(self):
+        return await self._close()
+
+
+async def async_test():
     """Пример запуска producer/consumer и бесконечного потребления."""
-    # consumer = NatsConsumer(subjects=["fiscal_process"], stream_name="fiscal_stream")
-    producer = NatsProducer(subjects=["fiscal"], stream_name="fiscal_stream")
+
+    topic = "test"
+    consumer = AsyncNatsConsumer(subjects=[topic])
+    producer = AsyncNatsProducer(subjects=[topic])
 
     try:
-        message_data = {"dict": "data"}
-        await producer.publish("fiscal", message_data)
+        message_data = {"async": "test"}
+        await producer.publish(topic, message_data)
 
-        # await consumer.consume_forever(
-        #     batch=10,
-        #     timeout=1.0,
-        # )
+        await consumer.consume_forever(
+            batch=10,
+            timeout=1.0,
+        )
     except NoServersError as e:
         logger.error("Could not connect to NATS server: %s", e)
     except asyncio.CancelledError:
@@ -301,6 +393,34 @@ async def main():
         logger.info("Connection closed")
 
 
+def main():
+    """Пример запуска producer/consumer и бесконечного потребления."""
+    topic = "test"
+    consumer = NatsConsumer(subjects=[topic])
+    producer = NatsProducer(subjects=[topic])
+
+    try:
+        message_data = {"sync": "test"}
+        producer.publish(topic, message_data)
+        consumer.consume_forever(
+            batch=10,
+            timeout=1.0,
+        )
+    except NoServersError as e:
+        logger.error("Could not connect to NATS server: %s", e)
+    except KeyboardInterrupt:
+        logger.info("Shutdown requested")
+    except Exception as e:
+        logger.exception(e)
+    finally:
+        consumer.close()
+        producer.close()
+        consumer.stop()
+        producer.stop()
+        logger.info("Connection closed")
+
+
 if __name__ == "__main__":
     # Run the main asynchronous function
-    asyncio.run(main())
+    # asyncio.run(async_test())
+    main()
