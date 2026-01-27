@@ -8,3 +8,4 @@ sentry-sdk[asyncio,httpx]>=1.40.0
 redis==5.0.0
 python-telegram-bot==22.6
 psycopg2-binary==2.9.9
+nats-py==2.12.0

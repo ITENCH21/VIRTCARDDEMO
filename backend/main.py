@@ -16,5 +16,24 @@ def bot():
     main()
 
 
+@app.command()
+def fiscal():
+    from microservices.fiscal import (
+        FiscalMicroservice,
+    )  # pylint: disable=import-outside-toplevel
+
+    daemon = FiscalMicroservice()
+    asyncio.run(daemon.run())
+
+
+@app.command()
+def rates(period: int = 300):
+    """Запуск daemon'а для парсинга курсов валют"""
+    from daemons.rates import RatesDaemon  # pylint: disable=import-outside-toplevel
+
+    daemon = RatesDaemon(period=period)  # 5 минут
+    asyncio.run(daemon.run())
+
+
 if __name__ == "__main__":
     app()

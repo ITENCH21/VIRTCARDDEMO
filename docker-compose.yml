@@ -62,6 +62,20 @@ services:
       - "7002:8000"
     command: python ./manage.py runserver 0.0.0.0:8000
 
+
+  bot:
+    <<: *backend
+    command: python -m bot.bot
+
+  rates:
+    <<: *backend
+    command: python -m main rates
+
+  fiscal:
+    <<: *backend
+    command: python -m main fiscal
+
+  #### INFRASTRUCTURE SERVICES ####
   db:
     <<: *base-service
     image: postgres:14.2
@@ -74,10 +88,6 @@ services:
     <<: *base-service
     image: redis:7.0.5-alpine3.16
     command: ["sh", "-c", 'exec redis-server --requirepass "$REDIS_PASSWORD"']
-
-  bot:
-    <<: *backend
-    command: python -m bot.bot
 
   nats:
     <<: *base-service

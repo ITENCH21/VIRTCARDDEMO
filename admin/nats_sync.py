@@ -70,14 +70,14 @@ class NatsConfig:
 class NatsProducer(NatsConfig):
     def __init__(
         self,
+        subjects: list[str],
         stream_name: str = "updates_stream",
-        subjects: Optional[list[str]] = None,
     ):
         """Инициализирует producer и его подключения (синхронный API)."""
         self._nc: Optional[Any] = None
         self._js: Optional[Any] = None
         self._stream_name = stream_name
-        self._subjects = subjects if subjects is not None else [">"]
+        self._subjects = subjects
         if not self._subjects:
             raise ValueError("subjects must not be empty")
         self._stream_ready = False
@@ -157,6 +157,7 @@ class NatsProducer(NatsConfig):
 class NatsConsumer(NatsConfig):
     def __init__(
         self,
+        subjects: list[str],
         stream_name: str = "updates_stream",
         durable: str = "updates_consumer",
     ):
@@ -165,7 +166,7 @@ class NatsConsumer(NatsConfig):
         self._js: Optional[Any] = None
         self._subscriptions: list[Any] = []
         self._stream_name = stream_name
-        self._subjects = self.discover_subjects()
+        self._subjects = subjects
         if not self._subjects:
             raise ValueError("No subjects discovered; define *_process methods.")
         self._durable = durable
@@ -308,20 +309,6 @@ class NatsConsumer(NatsConfig):
         except json.JSONDecodeError:
             return text
 
-    def discover_subjects(self) -> list[str]:
-        subjects = []
-        for name in dir(self):
-            if not name.endswith("_process"):
-                continue
-            if name in {"message_process", "processing", "_fetch_and_process_async"}:
-                continue
-            method = getattr(self, name, None)
-            if method is None or not callable(method):
-                continue
-            subjects.append(name[: -len("_process")])
-        logger.debug("Discovered subjects: %s", subjects)
-        return subjects
-
     async def processing(self, data, topic):
         try:
             handler = getattr(self, f"{topic.lower()}_process")
@@ -344,10 +331,8 @@ class NatsConsumer(NatsConfig):
 
 def main():
     """Пример запуска producer/consumer и бесконечного потребления."""
-    consumer = NatsConsumer(stream_name="updates_stream")
-    producer = NatsProducer(
-        stream_name="updates_stream", subjects=consumer.discover_subjects()
-    )
+    consumer = NatsConsumer(subjects=["test"], stream_name="updates_stream")
+    producer = NatsProducer(subjects=["test"], stream_name="updates_stream")
 
     try:
         message_data = {"dict": "data"}

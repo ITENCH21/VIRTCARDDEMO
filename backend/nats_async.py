@@ -1,9 +1,8 @@
 import asyncio
-import inspect
 import json
 import logging
 import os
-from typing import Any, Optional
+from typing import Any, Awaitable, Callable, Optional
 
 import nats
 from nats.js.api import AckPolicy, ConsumerConfig, DeliverPolicy, StreamConfig
@@ -11,6 +10,10 @@ from nats.errors import NoServersError
 
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 
 
 class NatsConfig:
@@ -42,14 +45,14 @@ class NatsConfig:
 class NatsProducer(NatsConfig):
     def __init__(
         self,
+        subjects: list[str],
         stream_name: str = "updates_stream",
-        subjects: Optional[list[str]] = None,
     ):
         """Инициализирует producer и его подключения."""
         self._nc: Optional[Any] = None
         self._js: Optional[Any] = None
         self._stream_name = stream_name
-        self._subjects = subjects if subjects is not None else [">"]
+        self._subjects = subjects
         if not self._subjects:
             raise ValueError("subjects must not be empty")
         self._stream_ready = False
@@ -115,15 +118,18 @@ class NatsProducer(NatsConfig):
 class NatsConsumer(NatsConfig):
     def __init__(
         self,
+        subjects: list[str],
         stream_name: str = "updates_stream",
         durable: str = "updates_consumer",
+        message_processing: Callable[[Any, str], Awaitable[None]] | None = None,
     ):
         """Инициализирует consumer и его подключения."""
         self._nc: Optional[Any] = None
         self._js: Optional[Any] = None
         self._subscriptions: list[Any] = []
         self._stream_name = stream_name
-        self._subjects = self.discover_subjects()
+        self._subjects = subjects
+        self._message_processing = message_processing or self.test_message_processing
         if not self._subjects:
             raise ValueError("No subjects discovered; define *_process methods.")
         self._durable = durable
@@ -139,22 +145,33 @@ class NatsConsumer(NatsConfig):
             )
             self._js = self._nc.jetstream()
 
+    async def message_process(self, msg):
+        data = self.decode_message_data(msg.data)
+        logger.debug("Message process %r %r", data, msg.subject)
+        await self._message_processing(data, msg.subject)
+
     async def _ensure_stream(self):
         """Гарантирует наличие JetStream-стрима."""
+        logger.debug("Ensure stream %r", self._stream_name)
         if self._stream_ready:
+            logger.debug("Stream already exists")
             return
+        logger.debug("Connecting to NATS")
         await self.connect()
         assert self._js is not None
         try:
             info = await self._js.stream_info(self._stream_name)
+            logger.debug("Stream info: %r", info)
             existing_subjects = set(info.config.subjects or [])
             desired_subjects = set(self._subjects)
             if not desired_subjects.issubset(existing_subjects):
                 merged_subjects = sorted(existing_subjects | desired_subjects)
+                logger.debug("Updating stream with subjects: %r", merged_subjects)
                 await self._js.update_stream(
                     StreamConfig(name=self._stream_name, subjects=merged_subjects)
                 )
         except Exception:
+            logger.debug("Adding stream with subjects: %r", self._subjects)
             await self._js.add_stream(
                 StreamConfig(name=self._stream_name, subjects=self._subjects)
             )
@@ -173,6 +190,7 @@ class NatsConsumer(NatsConfig):
             max_deliver=self._max_deliver,
         )
         for subject in self._subjects:
+            logger.debug("Ensuring subscription for %r", subject)
             subscription = await asyncio.wait_for(
                 self._js.pull_subscribe(
                     subject,
@@ -201,6 +219,7 @@ class NatsConsumer(NatsConfig):
         self,
         batch: int = 10,
         timeout: float = 1.0,
+        with_exponential_backoff: bool = False,
         retry_backoff: Optional[float] = None,
         max_backoff: Optional[float] = None,
     ):
@@ -217,8 +236,10 @@ class NatsConsumer(NatsConfig):
                     )
                 backoff = base_backoff
             except (asyncio.TimeoutError, Exception):
+                logger.info("Sleeping for %r", backoff)
                 await asyncio.sleep(backoff)
-                backoff = min(backoff * 2, backoff_cap)
+                if with_exponential_backoff:
+                    backoff = min(backoff * 2, backoff_cap)
 
     async def unsubscribe(self):
         """Отписывается от pull-подписки, если она есть."""
@@ -239,23 +260,9 @@ class NatsConsumer(NatsConfig):
         except json.JSONDecodeError:
             return text
 
-    def discover_subjects(self) -> list[str]:
-        subjects = []
-        for name in dir(self):
-            if not name.endswith("_process"):
-                continue
-            if name in {"message_process", "processing", "_fetch_and_process"}:
-                continue
-            method = getattr(self, name, None)
-            if method is None:
-                continue
-            if not inspect.iscoroutinefunction(method):
-                continue
-            subjects.append(name[: -len("_process")])
-        logger.debug("Discovered subjects: %s", subjects)
-        return subjects
-
-    async def processing(self, data, topic):
+    async def test_message_processing(self, data, topic):
+        """Example message processing."""
+        logger.info("processing %r %r", data, topic)
         try:
             await getattr(self, f"{topic.lower()}_process")(data)
         except Exception as e:
@@ -264,29 +271,24 @@ class NatsConsumer(NatsConfig):
             if uid:  # message from tron havent uid
                 logger.error("%s ERROR Manager.%s", uid, topic)
 
-    async def message_process(self, msg):
-        data = self.decode_message_data(msg.data)
-        await self.processing(data, msg.subject)
-
     async def test_process(self, data):
+        """Example process."""
         logger.info("Test process %r", data)
 
 
 async def main():
     """Пример запуска producer/consumer и бесконечного потребления."""
-    consumer = NatsConsumer(stream_name="updates_stream")
-    producer = NatsProducer(
-        stream_name="updates_stream", subjects=consumer.discover_subjects()
-    )
+    # consumer = NatsConsumer(subjects=["fiscal_process"], stream_name="fiscal_stream")
+    producer = NatsProducer(subjects=["fiscal"], stream_name="fiscal_stream")
 
     try:
         message_data = {"dict": "data"}
-        await producer.publish("test", message_data)
+        await producer.publish("fiscal", message_data)
 
-        await consumer.consume_forever(
-            batch=10,
-            timeout=1.0,
-        )
+        # await consumer.consume_forever(
+        #     batch=10,
+        #     timeout=1.0,
+        # )
     except NoServersError as e:
         logger.error("Could not connect to NATS server: %s", e)
     except asyncio.CancelledError:
@@ -294,15 +296,11 @@ async def main():
     except Exception as e:
         logger.exception(e)
     finally:
-        await consumer.close()
+        # await consumer.close()
         await producer.close()
         logger.info("Connection closed")
 
 
 if __name__ == "__main__":
     # Run the main asynchronous function
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
     asyncio.run(main())

@@ -3,8 +3,7 @@ import logging
 import time
 
 from models import start_orm, stop_orm
-from common.nats_async import NatsProducer, NatsConsumer
-
+from nats_async import NatsProducer, NatsConsumer
 
 logging.basicConfig(
     format="[%(asctime)s] %(levelname)s  <%(module)s> %(message)s",
@@ -29,23 +28,37 @@ class BaseHandler:
         self.nats_consumer = None
 
     async def inner_run(self):
-        raise NotImplementedError("one_iter")
+        raise NotImplementedError("inner_run")
 
     async def on_start(self):
         raise NotImplementedError("on_start")
 
+    async def message_processing(self, data, topic):
+        self.logger.info("processing %r %r", data, topic)
+        try:
+            await getattr(self, f"{topic.lower()}_process")(data)
+        except Exception as e:
+            uid = data.get("operation_guid")
+            self.logger.exception(e)
+            if uid:  # message from tron havent uid
+                self.logger.error("%s ERROR Manager.%s", uid, topic)
+
     async def start_nats(self):
         assert self.subjects is not None, "subjects must be set"
         self.nats_producer = NatsProducer(
-            stream_name=self.nats_stream_name, subjects=self.subjects
+            subjects=self.subjects, stream_name=self.nats_stream_name
         )
-        self.nats_consumer = NatsConsumer(stream_name=self.nats_stream_name)
-        await self.nats_producer.connect()
-        await self.nats_consumer.connect()
+        self.nats_consumer = NatsConsumer(
+            subjects=self.subjects,
+            stream_name=self.nats_stream_name,
+            message_processing=self.message_processing,
+        )
 
     async def run(self):
         if self.with_orm:
-            await start_orm()
+            await start_orm()  # noqa
+        if self.with_nats:
+            await self.start_nats()
         await self.on_start()
         self.runned = True
         self.logger.info("Daemon running...")
