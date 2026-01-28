@@ -1,4 +1,5 @@
 from tortoise import Tortoise
+from tortoise.contrib.fastapi import register_tortoise
 
 from .config import (
     POSTGRES_DB,
@@ -16,13 +17,25 @@ def postgres_dsn() -> str:
     )
 
 
+TORTOISE_ORM = {
+    "connections": {
+        "default": {
+            "engine": "tortoise.backends.asyncpg",
+            "credentials": postgres_dsn(),
+        },
+    },
+    "apps": {"models": {"models": ["app.models"]}},
+}
+
+
 async def init_db() -> None:
-    await Tortoise.init(
-        db_url=postgres_dsn(),
-        modules={"models": ["app.models"]},
-    )
+    await Tortoise.init(config=TORTOISE_ORM)
     await Tortoise.generate_schemas()
 
 
 async def close_db() -> None:
     await Tortoise.close_connections()
+
+
+def register_db(app):
+    register_tortoise(app, config=TORTOISE_ORM, generate_schemas=False)

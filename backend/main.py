@@ -35,5 +35,16 @@ def rates(period: int = 300):
     asyncio.run(daemon.run())
 
 
+@app.command()
+def callbacks():
+    """Запуск сервиса обработки коллбэков"""
+    from microservices.callbacks import (
+        CallbackMicroservice,
+    )  # pylint: disable=import-outside-toplevel
+
+    daemon = CallbackMicroservice()
+    asyncio.run(daemon.run())
+
+
 if __name__ == "__main__":
     app()
