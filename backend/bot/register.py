@@ -3,7 +3,7 @@ import random
 import string
 import logging
 
-from models.models import Client, User, DoesNotExist
+from models.models import Account, Client, Currency, User, DoesNotExist
 
 logger = logging.getLogger("register")
 
@@ -54,5 +54,14 @@ async def get_or_create_client(
             telegram_auth_date=kwargs.get("date"),
             telegram_language_code=kwargs.get("language_code"),
         )
+        await create_default_accounts(client)
 
     return client
+
+
+async def create_default_accounts(client: Client) -> None:
+    currencies = await Currency.filter(is_active=True)
+    for currency in currencies:
+        exists = await Account.filter(client=client, currency=currency).exists()
+        if not exists:
+            await Account.create(client=client, currency=currency)

@@ -40,8 +40,6 @@ class TarifAdmin(admin.ModelAdmin):
         "is_default",
         "description",
         "active_lines_count",
-        "clients_count",
-        "groups_count",
         "created_at",
         "updated_at",
     ]
@@ -51,16 +49,14 @@ class TarifAdmin(admin.ModelAdmin):
         "is_default",
         "name",
         "description",
-        "clients_list",
     )
-    readonly_fields = ["created_at", "clients_list"]
+    readonly_fields = ["created_at"]
     actions = ["make_default", "clone_tarif"]
 
     def get_queryset(self, request: HttpRequest) -> QuerySet:
         return (
             super()
             .get_queryset(request)
-            .prefetch_related("client_set", "clientgroup_set")
             .annotate(
                 active_lines_count=Count("lines", filter=Q(lines__is_active=True)),
             )

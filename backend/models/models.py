@@ -69,6 +69,12 @@ class Client(BaseModel):
     user = OneToOneField(User, on_delete=PROTECT)
     name = CharField(max_length=255)
     email = EmailField(unique=True, max_length=254)
+    status = CharField(
+        max_length=1,
+        choices=Status.choices,
+        default=Status.ACTIVE,
+        db_index=True,
+    )
 
     description = TextField(default="", blank=True)
     phone = CharField(max_length=32, null=True, blank=True, unique=True)
