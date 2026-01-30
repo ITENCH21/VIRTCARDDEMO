@@ -215,27 +215,43 @@ class ExchangeTarifLine(TarifLine):
     )
 
     def with_additional_rate(self, rate: Decimal):
-        rate = Decimal(rate)
+        rate = Decimal(str(rate))
+        if rate == 0:
+            return rate
+        additional = Decimal(str(self.additional_rate_percent))
         if rate < 1:
             reverse_rate = rate ** (-1)
-            rate = (
-                reverse_rate + (reverse_rate * abs(self.additional_rate_percent) / 100)
-            ) ** (-1)
+            rate = (reverse_rate + (reverse_rate * abs(additional) / 100)) ** (-1)
         else:
-            rate = rate + ((rate / 100) * self.additional_rate_percent)
+            rate = rate + ((rate / 100) * additional)
         return rate
 
     def with_additional_human_rate(self, rate: Decimal):
-        rate = Decimal(rate)
-        return rate + ((rate / 100) * self.additional_human_rate_percent)
+        rate = Decimal(str(rate))
+        if rate == 0:
+            return rate
+        additional = Decimal(str(self.additional_human_rate_percent))
+        return rate + ((rate / 100) * additional)
+
+    def _get_currency_rate(self):
+        if not hasattr(self, "_currency_rate"):
+            from currencies.models import CurrencyRate
+
+            self._currency_rate = CurrencyRate.objects.filter(
+                currency_from=self.currency_from,
+                currency_to=self.currency_to,
+            ).first()
+        return self._currency_rate
 
     @property
     def rate(self):
-        return self.rate
+        cr = self._get_currency_rate()
+        return cr.rate if cr else Decimal("0")
 
     @property
     def human_rate(self):
-        return self.human_rate
+        cr = self._get_currency_rate()
+        return cr.human_rate if cr else Decimal("0")
 
     @property
     def rate_with_additional_rate(self):
