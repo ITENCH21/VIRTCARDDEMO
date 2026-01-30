@@ -299,6 +299,9 @@ class Operation(Model):
     def __str__(self):
         return f"<Operation [{self.account} {self.kind} @ {self.created_at}]>"
 
+    class Meta:
+        table = "operations_operation"
+
     @property
     def fee(self):
         """Фактическая комиссия"""
@@ -425,23 +428,28 @@ class Tarif(BaseModel):
 
 
 class DepositTarif(Tarif):
-    pass
+    class Meta:
+        table = "tarifs_deposittarif"
 
 
 class WithdrawTarif(Tarif):
-    pass
+    class Meta:
+        table = "tarifs_withdrawtarif"
 
 
 class CardOpenTarif(Tarif):
-    pass
+    class Meta:
+        table = "tarifs_cardopentarif"
 
 
 class CardTopUpTarif(Tarif):
-    pass
+    class Meta:
+        table = "tarifs_cardtopuptarif"
 
 
 class ExchangeTarif(Tarif):
-    pass
+    class Meta:
+        table = "tarifs_exchangetarif"
 
 
 class TarifLine(Model):
@@ -503,6 +511,9 @@ class DepositTarifLine(TarifLine):
         blank=True,
     )
 
+    class Meta:
+        table = "tarifs_deposittarifline"
+
 
 class WithdrawTarifLine(TarifLine):
     tarif = ForeignKey(WithdrawTarif, on_delete=CASCADE, related_name="lines")
@@ -514,6 +525,9 @@ class WithdrawTarifLine(TarifLine):
         default="",
         blank=True,
     )
+
+    class Meta:
+        table = "tarifs_withdrawtarifline"
 
 
 class CardOpenTarifLine(TarifLine):
@@ -527,6 +541,9 @@ class CardOpenTarifLine(TarifLine):
         blank=True,
     )
 
+    class Meta:
+        table = "tarifs_cardopentarifline"
+
 
 class CardTopUpTarifLine(TarifLine):
     tarif = ForeignKey(CardTopUpTarif, on_delete=CASCADE, related_name="lines")
@@ -538,6 +555,9 @@ class CardTopUpTarifLine(TarifLine):
         default="",
         blank=True,
     )
+
+    class Meta:
+        table = "tarifs_cardtopuptarifline"
 
 
 class ExchangeTarifLine(TarifLine):
