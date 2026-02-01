@@ -12,6 +12,7 @@ from django.db.models import (
     PositiveIntegerField,
     BooleanField,
     CharField,
+    IntegerField,
     SET_NULL,
     PROTECT,
     TextField,
@@ -20,6 +21,42 @@ from django.utils import timezone
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from common.models import OperationKind
+
+
+class BaseModel(Model):
+    created_at = DateTimeField(auto_now_add=True)
+    updated_at = DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+class Gate(BaseModel):
+    class Kind(TextChoices):
+        INTERNAL = "I", "Internal"
+        DEPOSIT = "D", "Deposit"
+        WITHDRAW = "W", "Withdraw"
+        EXCHANGE = "E", "Exchange"
+        CARD_PROVIDER = "C", "CardProvider"
+        TRANSFER = "T", "Transfer"
+
+    class Status(TextChoices):
+        DRAFT = "D", "Draft"
+        ACTIVE = "A", "Active"
+        PURGED = "P", "Purged"
+
+    code = CharField(max_length=32)
+    name = CharField(max_length=64)
+    kind = CharField(max_length=1, choices=Kind.choices, db_index=True)
+    status = CharField(max_length=1, choices=Status.choices, db_index=True)
+    data = JSONField(default=dict, blank=True, encoder=JSONEncoder)
+    credentials = JSONField(null=True, blank=True, encoder=JSONEncoder)
+
+    class Meta:
+        db_table = "operations_gate"
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
 
 
 def amount_db_to_human(amount: int, currency) -> Decimal:
@@ -104,6 +141,7 @@ class Operation(Model):
 
     tarif_id = PositiveIntegerField(null=True)
     tarif = GenericForeignKey("content_type", "tarif_id")
+    gate = ForeignKey(Gate, null=True, blank=True, on_delete=SET_NULL)
 
     def __str__(self):
         return f"<Operation [{self.account} {self.kind} @ {self.created_at}]>"

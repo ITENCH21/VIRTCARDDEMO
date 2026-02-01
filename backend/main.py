@@ -38,11 +38,22 @@ def rates(period: int = 300):
 @app.command()
 def callbacks():
     """Запуск сервиса обработки коллбэков"""
-    from microservices.callbacks import (
+    from microservices.callbacks import (  # pylint: disable=import-outside-toplevel
         CallbackMicroservice,
-    )  # pylint: disable=import-outside-toplevel
+    )
 
     daemon = CallbackMicroservice()
+    asyncio.run(daemon.run())
+
+
+@app.command()
+def yeezypay_gate():
+    """Запуск гейта YeezyPay для обработки карточных операций"""
+    from gates.impls.yeezypay import (  # pylint: disable=import-outside-toplevel
+        YeezyPayMicroservice,
+    )
+
+    daemon = YeezyPayMicroservice()
     asyncio.run(daemon.run())
 
 

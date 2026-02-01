@@ -2,6 +2,7 @@ from base_daemon import BaseHandler
 from models.models import (
     Operation,
     Account,
+    Gate,
     Transaction,
     AccountMove,
     TransactionKind,
@@ -475,6 +476,18 @@ class FiscalMicroservice(BaseHandler):
         gate = payload.get("gate") or {}
         gate_code = gate.get("code", "")
         gate_account = None
+
+        # Try to resolve via gate FK first
+        await instance.refresh_from_db()
+        if instance.gate_id:
+            try:
+                await instance.fetch_related("gate")
+                gate_obj = instance.gate
+                if gate_obj:
+                    gate_code = gate_obj.code
+            except Exception:
+                self.logger.warning("Failed to fetch gate FK for op %s", instance.pk)
+
         try:
             # Ищем клиента гейта через code операции
             from models.models import Client

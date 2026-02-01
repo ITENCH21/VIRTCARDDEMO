@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import Account, Client
+from .models import Account, Client, ClientGroup
 
 
 class AccountInline(admin.TabularInline):
@@ -69,6 +69,14 @@ from operations.models import Operation  # noqa
 OperationInline.model = Operation
 
 
+@admin.register(ClientGroup)
+class ClientGroupAdmin(admin.ModelAdmin):
+    list_display = ("name", "referral_code", "created_at", "updated_at")
+    search_fields = ("name", "referral_code")
+    readonly_fields = ("created_at", "updated_at")
+    ordering = ("-created_at",)
+
+
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
     list_display = (
@@ -77,6 +85,7 @@ class ClientAdmin(admin.ModelAdmin):
         "email",
         "phone",
         "status",
+        "group",
         "telegram_username",
         "created_at",
         "updated_at",
@@ -89,13 +98,13 @@ class ClientAdmin(admin.ModelAdmin):
         "telegram_id",
         "telegram_username",
     )
-    list_filter = ("status", "created_at", "updated_at")
+    list_filter = ("status", "group", "created_at", "updated_at")
     readonly_fields = ("created_at", "updated_at")
     ordering = ("-created_at",)
     inlines = (AccountInline, OperationInline)
 
     fieldsets = (
-        (None, {"fields": ("user", "name", "email", "status")}),
+        (None, {"fields": ("user", "name", "email", "status", "group")}),
         (
             "Контакты",
             {

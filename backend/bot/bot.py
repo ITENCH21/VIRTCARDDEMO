@@ -26,7 +26,8 @@ logger = logging.getLogger("vc-bot")
 token = os.environ["TELEGRAM_BOT_TOKEN"]
 
 
-async def start(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    referral_code = context.args[0] if context.args else ""
     client: Client = await get_or_create_client(
         telegram_id=update.effective_user.id,
         first_name=update.effective_user.first_name,
@@ -34,6 +35,7 @@ async def start(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
         # email=update.effective_chat.email,
         # phone=update.effective_user.phone,
         username=update.effective_user.username,
+        referral_code=referral_code,
         telegram_language_code=update.effective_user.language_code,
         # telegram_photo_url=update.effective_user.photo_url,
         telegram_auth_date=timezone.now(),

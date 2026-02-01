@@ -1,6 +1,37 @@
 from django.contrib import admin
 
-from .models import Operation
+from .models import Gate, Operation
+
+
+@admin.register(Gate)
+class GateAdmin(admin.ModelAdmin):
+    list_display = ("id", "code", "name", "kind", "status", "created_at", "updated_at")
+    search_fields = ("code", "name")
+    list_filter = ("kind", "status")
+    readonly_fields = ("created_at", "updated_at")
+    ordering = ("-created_at",)
+
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": ("code", "name", "kind", "status"),
+            },
+        ),
+        (
+            "Данные",
+            {
+                "fields": ("data", "credentials"),
+            },
+        ),
+        (
+            "Временные метки",
+            {
+                "fields": ("created_at", "updated_at"),
+                "classes": ("collapse",),
+            },
+        ),
+    )
 
 
 @admin.register(Operation)
@@ -26,10 +57,18 @@ class OperationAdmin(admin.ModelAdmin):
         "client__name",
         "account__name",
     )
-    list_filter = ("kind", "status", "method", "currency", "is_final", "created_at")
+    list_filter = (
+        "kind",
+        "status",
+        "method",
+        "currency",
+        "gate",
+        "is_final",
+        "created_at",
+    )
     readonly_fields = ("created_at", "updated_at", "done_at")
     ordering = ("-created_at",)
-    raw_id_fields = ("client", "account", "parent", "currency", "content_type")
+    raw_id_fields = ("client", "account", "parent", "currency", "content_type", "gate")
 
     fieldsets = (
         (
@@ -65,6 +104,7 @@ class OperationAdmin(admin.ModelAdmin):
                     "account_data",
                     "data",
                     "parent",
+                    "gate",
                     "content_type",
                     "tarif_id",
                 ),

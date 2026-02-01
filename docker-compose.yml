@@ -80,6 +80,10 @@ services:
     <<: *backend
     command: python -m main fiscal
 
+  yeezypay_gate:
+    <<: *backend
+    command: python -m main yeezypay
+
   #### INFRASTRUCTURE SERVICES ####
   db:
     <<: *base-service

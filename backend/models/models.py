@@ -58,6 +58,19 @@ class User(Model):
         return str(self.username)
 
 
+class ClientGroup(BaseModel):
+    id = UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = CharField(max_length=255, unique=True)
+    description = TextField(default="", blank=True)
+    referral_code = CharField(max_length=64, unique=True, null=True, blank=True)
+
+    def __str__(self) -> str:
+        return str(self.name)
+
+    class Meta:
+        table = "clients_clientgroup"
+
+
 class Client(BaseModel):
     class Status(TextChoices):
         DRAFT = "D", "Draft"
@@ -85,6 +98,14 @@ class Client(BaseModel):
     telegram_auth_date = DateTimeField(null=True, blank=True)
     # language_code: 'zh-hans',
     telegram_language_code = CharField(max_length=10, null=True, blank=True)
+
+    group = ForeignKey(
+        ClientGroup,
+        related_name="clients",
+        on_delete=PROTECT,
+        null=True,
+        blank=True,
+    )
 
     def __str__(self) -> str:
         return str(self.name)
@@ -239,6 +260,35 @@ def amount_human_to_db(amount, currency):
     )
 
 
+class Gate(BaseModel):
+    class Kind(TextChoices):
+        INTERNAL = "I", "Internal"
+        DEPOSIT = "D", "Deposit"
+        WITHDRAW = "W", "Withdraw"
+        EXCHANGE = "E", "Exchange"
+        CARD_PROVIDER = "C", "CardProvider"
+        TRANSFER = "T", "Transfer"
+
+    class Status(TextChoices):
+        DRAFT = "D", "Draft"
+        ACTIVE = "A", "Active"
+        PURGED = "P", "Purged"
+
+    id = IntField(pk=True)
+    code = CharField(max_length=32)
+    name = CharField(max_length=64)
+    kind = CharField(max_length=1, choices=Kind.choices, db_index=True)
+    status = CharField(max_length=1, choices=Status.choices, db_index=True)
+    data = JSONField(default=dict, blank=True)
+    credentials = JSONField(default=dict, blank=True)
+
+    class Meta:
+        table = "operations_gate"
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+
 class Operation(Model):
     class Method(TextChoices):
         CRYPTO = "CPT", "Crypto"
@@ -301,6 +351,7 @@ class Operation(Model):
     data = JSONField()
 
     tarif_id = PositiveIntegerField(null=True)
+    gate = ForeignKey("models.Gate", null=True, blank=True, on_delete=SET_NULL)
 
     def __str__(self):
         return f"<Operation [{self.account} {self.kind} @ {self.created_at}]>"

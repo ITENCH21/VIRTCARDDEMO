@@ -3,7 +3,7 @@ import random
 import string
 import logging
 
-from models.models import Account, Client, Currency, User, DoesNotExist
+from models.models import Account, Client, ClientGroup, Currency, User, DoesNotExist
 
 logger = logging.getLogger("register")
 
@@ -23,6 +23,7 @@ async def get_or_create_client(
     email: str = "",
     phone: str = "",
     username: str = "",
+    referral_code: str = "",
     **kwargs: Any,
 ) -> Client:
 
@@ -36,6 +37,15 @@ async def get_or_create_client(
             username = f"{first_name}_{telegram_id}"
         if await User.filter(username=username).exists():
             username = f"{username}_{gen_username(8)}"
+
+        group = None
+        if referral_code:
+            try:
+                group = await ClientGroup.get(referral_code=referral_code)
+                logger.info("Referral group found: %s", group.name)
+            except DoesNotExist:
+                logger.warning("Referral code not found: %s", referral_code)
+
         user = await User.create(
             username=username,
             first_name=first_name,
@@ -53,6 +63,7 @@ async def get_or_create_client(
             telegram_photo_url=kwargs.get("photo_url"),
             telegram_auth_date=kwargs.get("date"),
             telegram_language_code=kwargs.get("language_code"),
+            group=group,
         )
         await create_default_accounts(client)
 

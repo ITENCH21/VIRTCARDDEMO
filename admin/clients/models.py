@@ -31,6 +31,16 @@ class BaseModel(Model):
         abstract = True
 
 
+class ClientGroup(BaseModel):
+    id = UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = CharField(max_length=255, unique=True)
+    description = TextField(default="", blank=True)
+    referral_code = CharField(max_length=64, unique=True, null=True, blank=True)
+
+    def __str__(self) -> str:
+        return str(self.name)
+
+
 class Client(BaseModel):
     class Status(TextChoices):
         DRAFT = "D", "Draft"
@@ -58,6 +68,14 @@ class Client(BaseModel):
     telegram_auth_date = DateTimeField(null=True, blank=True)
     # language_code: 'zh-hans',
     telegram_language_code = CharField(max_length=10, null=True, blank=True)
+
+    group = ForeignKey(
+        ClientGroup,
+        related_name="clients",
+        on_delete=PROTECT,
+        null=True,
+        blank=True,
+    )
 
     def __str__(self) -> str:
         return str(self.name)
