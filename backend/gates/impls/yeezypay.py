@@ -70,6 +70,20 @@ class YeezyPayGate(BaseGate):
         self.token_expires: float = 0
         self.session: Optional[aiohttp.ClientSession] = None
 
+        # Crypto wallet API credentials (optional, may differ from VC API)
+        self.crypto_api_url = self.credentials.get(
+            "crypto_api_url", self.base_url
+        ).rstrip("/")
+        self.crypto_account_id = self.credentials.get(
+            "crypto_account_id", self.external_id
+        )
+        self.crypto_secret = self.credentials.get("crypto_secret", self.secret)
+        self.crypto_token_timeout = int(
+            self.credentials.get("crypto_token_timeout") or DEFAULT_TOKEN_TIMEOUT
+        )
+        self.crypto_token: Optional[str] = None
+        self.crypto_token_expires: float = 0
+
     async def _ensure_session(self):
         if self.session is None or self.session.closed:
             self.session = aiohttp.ClientSession(
@@ -125,6 +139,160 @@ class YeezyPayGate(BaseGate):
 
             resp.raise_for_status()
             return await resp.json()
+
+    # ── Crypto Wallet API auth & request ────────────────
+
+    async def crypto_authenticate(self) -> None:
+        """Получение JWT-токена через /api/v1/crypto_wallet/auth."""
+        await self._ensure_session()
+        url = f"{self.crypto_api_url}/api/v1/crypto_wallet/auth"
+        payload = {
+            "account_id": self.crypto_account_id,
+            "secret": self.crypto_secret,
+            "timeout": self.crypto_token_timeout,
+        }
+        async with self.session.post(url, json=payload) as resp:
+            resp.raise_for_status()
+            data = await resp.json()
+            if not data.get("token"):
+                raise RuntimeError(f"Crypto wallet auth failed: {data}")
+            self.crypto_token = data["token"]
+            self.crypto_token_expires = time.time() + self.crypto_token_timeout - 60
+            self.logger.info("Crypto wallet API authenticated, token obtained")
+
+    async def _crypto_headers(self) -> dict:
+        if not self.crypto_token or time.time() >= self.crypto_token_expires:
+            await self.crypto_authenticate()
+        return {
+            "Authorization": f"Bearer {self.crypto_token}",
+            "Content-Type": "application/json",
+        }
+
+    async def _crypto_request(self, method: str, path: str, **kwargs) -> dict:
+        """HTTP-запрос к Crypto Wallet API с автоматической реаутентификацией."""
+        await self._ensure_session()
+        headers = await self._crypto_headers()
+        url = f"{self.crypto_api_url}{path}"
+
+        self.logger.info("CryptoWallet %s %s", method, url)
+
+        async with self.session.request(method, url, headers=headers, **kwargs) as resp:
+            if resp.status == 401:
+                self.logger.warning("CryptoWallet 401, re-authenticating...")
+                await self.crypto_authenticate()
+                headers = await self._crypto_headers()
+                async with self.session.request(
+                    method, url, headers=headers, **kwargs
+                ) as retry_resp:
+                    retry_resp.raise_for_status()
+                    return await retry_resp.json()
+
+            resp.raise_for_status()
+            return await resp.json()
+
+    # ── Crypto Wallet operations ──────────────────────────
+
+    async def crypto_wallet_list(
+        self,
+        page: int = 1,
+        page_size: int = 20,
+        status: str | None = None,
+    ) -> dict:
+        """GET /api/v1/crypto_wallet/list — список дочерних кошельков с балансами."""
+        params = {"page": page, "page_size": page_size}
+        if status:
+            params["status"] = status
+        return await self._crypto_request(
+            "GET",
+            "/api/v1/crypto_wallet/list",
+            params=params,
+        )
+
+    async def crypto_wallet_info(
+        self,
+        wallet_id: str | None = None,
+        address: str | None = None,
+    ) -> dict:
+        """POST /api/v1/crypto_wallet/info — информация о кошельке с балансом."""
+        body = {}
+        if wallet_id:
+            body["wallet_id"] = wallet_id
+        if address:
+            body["address"] = address
+        return await self._crypto_request(
+            "POST",
+            "/api/v1/crypto_wallet/info",
+            json=body,
+        )
+
+    async def crypto_wallet_create(
+        self,
+        currency_code: str,
+        wallet_name: str = "",
+    ) -> dict:
+        """POST /api/v1/crypto_wallet/create — создание дочернего кошелька."""
+        body = {"currency_code": currency_code, "wallet_name": wallet_name}
+        return await self._crypto_request(
+            "POST",
+            "/api/v1/crypto_wallet/create",
+            json=body,
+        )
+
+    async def crypto_wallet_close(
+        self,
+        wallet_id: str | None = None,
+        address: str | None = None,
+    ) -> dict:
+        """POST /api/v1/crypto_wallet/close — закрытие дочернего кошелька."""
+        body = {}
+        if wallet_id:
+            body["wallet_id"] = wallet_id
+        if address:
+            body["address"] = address
+        return await self._crypto_request(
+            "POST",
+            "/api/v1/crypto_wallet/close",
+            json=body,
+        )
+
+    async def crypto_balance_main(self) -> dict:
+        """GET /api/v1/crypto_wallet/balances/main — баланс основного кошелька."""
+        return await self._crypto_request(
+            "GET",
+            "/api/v1/crypto_wallet/balances/main",
+        )
+
+    async def crypto_operations_list(
+        self,
+        wallet_id: str | None = None,
+        address: str | None = None,
+        page: int = 1,
+        page_size: int = 20,
+        kind: str | None = None,
+        operation_status: str | None = None,
+    ) -> dict:
+        """POST /api/v1/crypto_wallet/operations/list — список операций."""
+        body: dict = {"page": page, "page_size": page_size}
+        if wallet_id:
+            body["wallet_id"] = wallet_id
+        if address:
+            body["address"] = address
+        if kind:
+            body["kind"] = kind
+        if operation_status:
+            body["operation_status"] = operation_status
+        return await self._crypto_request(
+            "POST",
+            "/api/v1/crypto_wallet/operations/list",
+            json=body,
+        )
+
+    async def crypto_operation_detail(self, operation_id: str) -> dict:
+        """GET /api/v1/crypto_wallet/operations/{operation_id} — детали операции."""
+        return await self._crypto_request(
+            "GET",
+            f"/api/v1/crypto_wallet/operations/{operation_id}",
+        )
 
     # ── Card operations ──────────────────────────────────
 
@@ -211,6 +379,17 @@ OPERATION_KIND_TO_HANDLER = {
     OperationKind.CARD_RESTORE: "process_card_restore",
 }
 
+# Маппинг action → метод гейта для крипто-вызовов через NATS
+CRYPTO_ACTION_TO_METHOD = {
+    "crypto_wallet_list": "crypto_wallet_list",
+    "crypto_wallet_info": "crypto_wallet_info",
+    "crypto_wallet_create": "crypto_wallet_create",
+    "crypto_wallet_close": "crypto_wallet_close",
+    "crypto_balance_main": "crypto_balance_main",
+    "crypto_operations_list": "crypto_operations_list",
+    "crypto_operation_detail": "crypto_operation_detail",
+}
+
 
 class YeezyPayMicroservice(BaseHandler):
     """
@@ -224,7 +403,7 @@ class YeezyPayMicroservice(BaseHandler):
     name = "YeezyPayGate"
     with_nats = True
     nats_stream_name = "gates_stream"
-    subjects = ["yeezypay_gate"]
+    subjects = ["yeezypay_gate", "yeezypay_crypto"]
 
     def __init__(self):
         super().__init__()
@@ -445,7 +624,111 @@ class YeezyPayMicroservice(BaseHandler):
         except Exception as e:
             await self._fail_operation(operation, str(e))
 
-    # ── NATS entry point ─────────────────────────────────
+    # ── NATS entry points ─────────────────────────────────
+
+    async def yeezypay_crypto_process(self, data: dict):
+        """Точка входа — обработка NATS-сообщений из топика yeezypay_crypto.
+
+        Request/reply паттерн для крипто API. Не привязан к Operation из БД.
+
+        Формат сообщения:
+        {
+            "action": "crypto_wallet_list",
+            "params": {
+                "page": 1,
+                "page_size": 20,
+                "status": "ACTIVE",
+                ...
+            }
+        }
+
+        Ответ публикуется в топик из поля reply_to (если задан),
+        иначе в yeezypay_crypto_reply.
+        """
+        self.logger.info("Received crypto task: %r", data)
+
+        action = data.get("action")
+        params = data.get("params") or {}
+        reply_to = data.get("reply_to", "yeezypay_crypto_reply")
+        request_id = data.get("request_id")
+
+        if not action:
+            self.logger.warning("Missing 'action' in crypto message: %r", data)
+            return
+
+        method_name = CRYPTO_ACTION_TO_METHOD.get(action)
+        if not method_name:
+            self.logger.warning(
+                "Unknown crypto action '%s', available: %s",
+                action,
+                list(CRYPTO_ACTION_TO_METHOD.keys()),
+            )
+            await self._publish_crypto_reply(
+                reply_to,
+                request_id,
+                action,
+                {
+                    "success": False,
+                    "error": f"Unknown action: {action}",
+                },
+            )
+            return
+
+        try:
+            gate_method = getattr(self.gate, method_name)
+            result = await gate_method(**params)
+            self.logger.info("Crypto %s result: %r", action, result)
+            await self._publish_crypto_reply(
+                reply_to,
+                request_id,
+                action,
+                result,
+            )
+        except Exception as e:
+            self.logger.exception("Crypto %s failed: %s", action, e)
+            await self._publish_crypto_reply(
+                reply_to,
+                request_id,
+                action,
+                {
+                    "success": False,
+                    "error": str(e),
+                },
+            )
+
+    async def _publish_crypto_reply(
+        self,
+        reply_to: str,
+        request_id: str | None,
+        action: str,
+        result: dict,
+    ):
+        """Публикует ответ крипто-запроса в указанный NATS-топик."""
+        if not self.nats_producer:
+            self.logger.error("NATS producer not available for crypto reply")
+            return
+
+        message = {
+            "action": action,
+            "result": result,
+        }
+        if request_id:
+            message["request_id"] = request_id
+
+        reply_producer = type(self.nats_producer)(
+            subjects=[reply_to],
+            stream_name="crypto_reply_stream",
+        )
+        try:
+            await reply_producer.connect()
+            await reply_producer.publish(reply_to, message)
+            self.logger.info(
+                "Published crypto reply for '%s' to %s",
+                action,
+                reply_to,
+            )
+        finally:
+            await reply_producer.close()
 
     async def yeezypay_gate_process(self, data: dict):
         """Точка входа — обработка NATS-сообщений из топика yeezypay_gate.
