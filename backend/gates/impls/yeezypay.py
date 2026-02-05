@@ -421,16 +421,11 @@ class YeezyPayMicroservice(BaseHandler):
         self.gate = YeezyPayGate(credentials=credentials)
 
     async def on_start(self):
-        """Load gate from DB and authenticate."""
+        """Load gate from DB. Authentication is lazy — happens on first request
+        via _get_headers() / _crypto_headers()."""
         await self._load_gate()
         assert self.gate is not None
-        try:
-            await self.gate.authenticate()
-            self.logger.info("YeezyPay gate authenticated on start")
-        except Exception:
-            self.logger.exception(
-                "Failed to authenticate on start, will retry on first request"
-            )
+        self.logger.info("YeezyPay gate loaded, auth will happen on first request")
 
     async def on_stop(self):
         if self.gate:
@@ -626,24 +621,138 @@ class YeezyPayMicroservice(BaseHandler):
 
     # ── NATS entry points ─────────────────────────────────
 
+    async def _save_wallet_to_account(self, account_id: str, result: dict) -> None:
+        """Сохраняет результат создания крипто-кошелька в Account."""
+        try:
+            account = await Account.get(pk=account_id)
+        except DoesNotExist:
+            self.logger.error("Account %s not found, cannot save wallet", account_id)
+            return
+
+        if account.address:
+            self.logger.warning(
+                "Account %s already has address=%s, skipping",
+                account_id,
+                account.address,
+            )
+            return
+
+        address = result.get("wallet_address") or result.get("address")
+        wallet_id = result.get("wallet_id") or result.get("id")
+        if not address:
+            self.logger.error(
+                "No address in wallet result for account %s: %r",
+                account_id,
+                result,
+            )
+            return
+
+        await Account.filter(pk=account_id).update(
+            address=address,
+            external_id=str(wallet_id) if wallet_id else None,
+            data={"wallet_info": result},
+        )
+        self.logger.info(
+            "Wallet saved to account %s: address=%s, external_id=%s",
+            account_id,
+            address,
+            wallet_id,
+        )
+
+    async def _update_wallet_balance(self, account_id: str, result: dict) -> None:
+        """Обновляет баланс крипто-кошелька в Account по данным из crypto_wallet_info.
+
+        Ответ API: {"success": true, "data": {"wallet_id": ..., "balance": "10.5", ...}}
+        """
+        try:
+            account = await Account.get(pk=account_id).prefetch_related("currency")
+        except DoesNotExist:
+            self.logger.error("Account %s not found, cannot update balance", account_id)
+            return
+
+        # balance лежит внутри вложенного "data"
+        wallet_data = result.get("data") or {}
+        balance_str = wallet_data.get("balance")
+        if balance_str is None:
+            self.logger.warning(
+                "No balance in wallet_info result for account %s: %r",
+                account_id,
+                result,
+            )
+            return
+
+        from decimal import Decimal, ROUND_HALF_UP
+
+        try:
+            balance_decimal = Decimal(str(balance_str))
+        except Exception:
+            self.logger.error(
+                "Invalid balance value '%s' for account %s", balance_str, account_id
+            )
+            return
+
+        denominator = account.currency.denominator if account.currency else 2
+        external_amount_db = int(
+            (balance_decimal * 10**denominator).to_integral_value(
+                rounding=ROUND_HALF_UP
+            )
+        )
+
+        await Account.filter(pk=account_id).update(
+            external_amount_db=external_amount_db,
+            data={"wallet_info": wallet_data},
+            external_updated_at=timezone.now(),
+        )
+        self.logger.info(
+            "Balance updated for account %s: %s → external_amount_db=%s",
+            account_id,
+            balance_str,
+            external_amount_db,
+        )
+
+    async def _close_wallet_account(self, account_id: str, result: dict) -> None:
+        """Закрывает Account после успешного закрытия крипто-кошелька в YeezyPay.
+
+        Ответ API: {"success": true, "wallet_id": "...", "wallet_address": "...", "status": "CLOSED"}
+        """
+        if not result.get("success"):
+            self.logger.warning(
+                "Wallet close was not successful for account %s: %r",
+                account_id,
+                result,
+            )
+            return
+
+        try:
+            await Account.get(pk=account_id)
+        except DoesNotExist:
+            self.logger.error("Account %s not found, cannot close", account_id)
+            return
+
+        await Account.filter(pk=account_id).update(
+            status="C",  # Closed — зеркалим статус из wallet API
+            data={"wallet_info": result},
+        )
+        self.logger.info(
+            "Account %s closed (wallet API status=%s)",
+            account_id,
+            result.get("status"),
+        )
+
     async def yeezypay_crypto_process(self, data: dict):
         """Точка входа — обработка NATS-сообщений из топика yeezypay_crypto.
 
-        Request/reply паттерн для крипто API. Не привязан к Operation из БД.
-
         Формат сообщения:
         {
-            "action": "crypto_wallet_list",
-            "params": {
-                "page": 1,
-                "page_size": 20,
-                "status": "ACTIVE",
-                ...
-            }
+            "action": "<action_name>",
+            "params": { ... },
+            "account_id": "uuid аккаунта (опционально)"
         }
 
-        Ответ публикуется в топик из поля reply_to (если задан),
-        иначе в yeezypay_crypto_reply.
+        Если передан account_id, результат автоматически сохраняется в Account:
+        - crypto_wallet_create → address, external_id, data
+        - crypto_wallet_info   → external_amount_db (баланс), data
+        - crypto_wallet_close  → status = Closed, data
         """
         self.logger.info("Received crypto task: %r", data)
 
@@ -651,6 +760,7 @@ class YeezyPayMicroservice(BaseHandler):
         params = data.get("params") or {}
         reply_to = data.get("reply_to", "yeezypay_crypto_reply")
         request_id = data.get("request_id")
+        account_id = data.get("account_id")
 
         if not action:
             self.logger.warning("Missing 'action' in crypto message: %r", data)
@@ -674,10 +784,45 @@ class YeezyPayMicroservice(BaseHandler):
             )
             return
 
+        # Для crypto_wallet_create — проверяем дубли
+        if action == "crypto_wallet_create" and account_id:
+            try:
+                account = await Account.get(pk=account_id)
+                if account.address:
+                    self.logger.info(
+                        "Account %s already has wallet address=%s, skipping",
+                        account_id,
+                        account.address,
+                    )
+                    await self._publish_crypto_reply(
+                        reply_to,
+                        request_id,
+                        action,
+                        {
+                            "success": True,
+                            "address": account.address,
+                            "wallet_id": account.external_id,
+                            "already_exists": True,
+                        },
+                    )
+                    return
+            except DoesNotExist:
+                self.logger.warning("Account %s not found", account_id)
+
         try:
             gate_method = getattr(self.gate, method_name)
             result = await gate_method(**params)
             self.logger.info("Crypto %s result: %r", action, result)
+
+            # Сохраняем результат в Account (если передан account_id)
+            if account_id:
+                if action == "crypto_wallet_create":
+                    await self._save_wallet_to_account(account_id, result)
+                elif action == "crypto_wallet_info":
+                    await self._update_wallet_balance(account_id, result)
+                elif action == "crypto_wallet_close":
+                    await self._close_wallet_account(account_id, result)
+
             await self._publish_crypto_reply(
                 reply_to,
                 request_id,

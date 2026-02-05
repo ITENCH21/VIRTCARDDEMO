@@ -82,7 +82,7 @@ services:
 
   yeezypay_gate:
     <<: *backend
-    command: python -m main yeezypay
+    command: python -m main yeezypay-gate
 
   #### INFRASTRUCTURE SERVICES ####
   db:

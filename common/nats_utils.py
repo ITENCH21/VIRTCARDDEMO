@@ -11,7 +11,7 @@ from nats.errors import NoServersError
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 
@@ -288,14 +288,19 @@ class BaseNatsConsumer(NatsConfig):
         backoff_cap = self._max_backoff if max_backoff is None else max_backoff
         backoff = base_backoff
         while True:
-            try:
-                for subscription in self._subscriptions:
+            had_messages = False
+            for subscription in self._subscriptions:
+                try:
                     await self._fetch_and_process(
                         subscription, self.message_process, batch=batch, timeout=timeout
                     )
+                    had_messages = True
+                except (asyncio.TimeoutError, Exception):
+                    pass  # Нет сообщений в этом subject — переходим к следующему
+            if had_messages:
                 backoff = base_backoff
-            except (asyncio.TimeoutError, Exception):
-                logger.info("Sleeping for %r", backoff)
+            else:
+                logger.debug("Sleeping for %r", backoff)
                 await asyncio.sleep(backoff)
                 if with_exponential_backoff:
                     backoff = min(backoff * 2, backoff_cap)
