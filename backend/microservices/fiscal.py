@@ -12,8 +12,9 @@ from models.models import (
     CardTopUpTarifLine,
     amount_db_to_human,
     amount_human_to_db,
+    operation_log,
 )
-from models.enums import OperationKind
+from models.enums import OperationKind, LogTag
 from models.djangoise import db_transaction
 from tortoise import timezone
 from tortoise.exceptions import DoesNotExist
@@ -71,10 +72,7 @@ class FiscalMicroservice(BaseHandler):
             self.logger.warning("Account is None for operation %s", instance.pk)
             return
         holded_amount = payload["holded_amount"]
-        current_holded = account.amount_holded_db or 0
-        await Account.filter(pk=account.pk).update(
-            amount_holded_db=max(0, current_holded - holded_amount)
-        )
+        await account.unhold_amount_db(holded_amount, operation=instance)
 
     # ── transaction engine ──────────────────────────────────
 
@@ -589,6 +587,11 @@ class FiscalMicroservice(BaseHandler):
                     op_data["fixed_amount_fetch"] = True
                     await Operation.filter(pk=instance.pk).update(data=op_data)
 
+        await operation_log(
+            instance.pk,
+            LogTag.DONE,
+            f"Approved: amount_db={amount_db}, fee_db={fee_db}",
+        )
         self.logger.info(
             "_atomic_operation_process: Operation #%s approved (amount_db=%s, fee_db=%s)",
             uid,
@@ -655,6 +658,11 @@ class FiscalMicroservice(BaseHandler):
             status=Operation.Status.COMPLETE,
             updated_at=timezone.now(),
             done_at=timezone.now(),
+        )
+        await operation_log(
+            instance.pk,
+            LogTag.DONE,
+            f"Adjustment complete, amount_db={instance.amount_db}",
         )
         self.logger.info(
             "operation_adjustment_process: Operation #%s COMPLETE (amount_db=%s)",
@@ -740,6 +748,7 @@ class FiscalMicroservice(BaseHandler):
             data=payload,
             tarif_id=tarif.pk if tarif else None,
         )
+        await operation_log(uid, LogTag.DONE, f"Card opened, account={new_account.pk}")
         self.logger.info("operation_card_open_process: Operation #%s COMPLETE", uid)
 
         # Move: parent -> card account
@@ -786,6 +795,7 @@ class FiscalMicroservice(BaseHandler):
             tarifline=tarifline,
         )
 
+        await operation_log(uid, LogTag.DONE, "Card topped up")
         self.logger.info("operation_card_topup_process: Operation #%s COMPLETE", uid)
         await self._post_done(instance)
 
@@ -834,6 +844,7 @@ class FiscalMicroservice(BaseHandler):
             status=Account.Status.CLOSED
         )
 
+        await operation_log(uid, LogTag.DONE, "Card closed")
         self.logger.info("operation_card_close_process: Operation #%s COMPLETE", uid)
         await self._post_done(instance)
 
@@ -859,6 +870,7 @@ class FiscalMicroservice(BaseHandler):
             status=Account.Status.BLOCKED
         )
 
+        await operation_log(uid, LogTag.DONE, "Card blocked")
         self.logger.info("operation_card_block_process: Operation #%s COMPLETE", uid)
 
     @db_transaction()
@@ -885,6 +897,7 @@ class FiscalMicroservice(BaseHandler):
             status=Account.Status.RESTORED
         )
 
+        await operation_log(uid, LogTag.DONE, "Card restored")
         self.logger.info("operation_card_restore_process: Operation #%s COMPLETE", uid)
 
     # ── entry point ─────────────────────────────────────────
@@ -917,6 +930,8 @@ class FiscalMicroservice(BaseHandler):
             )
             return
 
+        await operation_log(instance.pk, LogTag.FROM_GATE, "Fiscal processing started")
+
         # Динамический dispatch как в оригинале
         # TextChoices хранит (value, label), получаем label через name enum-а
         kind_enum = OperationKind(instance.kind)
@@ -935,7 +950,8 @@ class FiscalMicroservice(BaseHandler):
         try:
             method = getattr(self, method_name)
             await method(instance, data)
-        except Exception:
+        except Exception as exc:
+            await operation_log(uid, LogTag.ERROR, f"Fiscal error: {exc}")
             self.logger.exception(
                 "Problem with operation [%s] (item_process: %s)", uid, method_name
             )

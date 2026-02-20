@@ -5,6 +5,7 @@ YeezyPay Gate — микросервис для работы с YeezyPay Virtual
 выполняет HTTP-запросы к YeezyPay VC API и публикует результат обратно в fiscal_stream.
 """
 
+import datetime
 import time
 import logging
 import aiohttp
@@ -17,8 +18,9 @@ from models.models import (
     Gate,
     amount_human_to_db,
     amount_db_to_human,
+    operation_log,
 )
-from models.enums import OperationKind
+from models.enums import OperationKind, LogTag
 from tortoise.exceptions import DoesNotExist
 from tortoise import timezone
 
@@ -388,6 +390,7 @@ CRYPTO_ACTION_TO_METHOD = {
     "crypto_balance_main": "crypto_balance_main",
     "crypto_operations_list": "crypto_operations_list",
     "crypto_operation_detail": "crypto_operation_detail",
+    "fetch_operation_status": None,  # Обрабатывается особо в yeezypay_crypto_process
 }
 
 
@@ -403,7 +406,7 @@ class YeezyPayMicroservice(BaseHandler):
     name = "YeezyPayGate"
     with_nats = True
     nats_stream_name = "gates_stream"
-    subjects = ["yeezypay_gate", "yeezypay_crypto"]
+    subjects = ["yeezypay_gate", "yeezypay_crypto", "yeezypay_callback"]
 
     def __init__(self):
         super().__init__()
@@ -446,17 +449,54 @@ class YeezyPayMicroservice(BaseHandler):
             return None
 
     async def _fail_operation(self, operation: Operation, error: str):
-        """Помечает операцию как FAILED и публикует результат в fiscal."""
+        """Помечает операцию как FAILED, освобождает холд и публикует результат в fiscal."""
         self.logger.error("Operation #%s FAILED: %s", operation.pk, error)
+
+        # 1. Статус — критичнее всего
         await Operation.filter(pk=operation.pk).update(
             status=Operation.Status.FAILED,
             updated_at=timezone.now(),
             done_at=timezone.now(),
         )
-        await self._publish_to_fiscal(operation, {"error": error})
+
+        # 2. Освобождаем холд (атомарно через Account.unhold_amount_db)
+        try:
+            await operation.refresh_from_db()
+            op_data = operation.data or {}
+            holded_amount = (
+                op_data.get("holded_amount") if isinstance(op_data, dict) else None
+            )
+            if holded_amount:
+                await operation.fetch_related("account")
+                account = operation.account
+                await account.unhold_amount_db(holded_amount, operation=operation)
+                self.logger.info(
+                    "Released hold %s for operation %s", holded_amount, operation.pk
+                )
+        except Exception:
+            self.logger.exception(
+                "Failed to release hold for operation %s", operation.pk
+            )
+
+        # 3. Лог (не блокирует основную логику)
+        try:
+            await operation_log(operation.pk, LogTag.ERROR, error)
+        except Exception:
+            self.logger.exception("Failed to write operation log for %s", operation.pk)
+
+        # 4. Публикуем в fiscal (опционально)
+        try:
+            await self._publish_to_fiscal(operation, {"error": error})
+        except Exception:
+            self.logger.exception(
+                "Failed to publish fail to fiscal for %s", operation.pk
+            )
 
     async def _publish_to_fiscal(self, operation: Operation, gate_result: dict):
         """Публикует результат гейта в fiscal_stream для дальнейшей обработки."""
+        await operation_log(
+            operation.pk, LogTag.TO_FISCAL, "Published to fiscal_stream"
+        )
         if not self.nats_producer:
             self.logger.error("NATS producer not available")
             return
@@ -517,6 +557,9 @@ class YeezyPayMicroservice(BaseHandler):
                 currency_code=currency.code if currency else "USD",
                 card_name=card_name,
             )
+            await operation_log(
+                operation.pk, LogTag.FROM_GATE, "Card opened successfully"
+            )
             self.logger.info("Card opened: %r (op #%s)", result, operation.pk)
 
             # Обновляем статус операции на OPERATING (fiscal завершит)
@@ -548,6 +591,7 @@ class YeezyPayMicroservice(BaseHandler):
                 amount=amount,
                 currency_code=currency.code if currency else "USD",
             )
+            await operation_log(operation.pk, LogTag.FROM_GATE, "Card topped up")
             self.logger.info("Card topped up: %r (op #%s)", result, operation.pk)
 
             await Operation.filter(pk=operation.pk).update(
@@ -568,6 +612,7 @@ class YeezyPayMicroservice(BaseHandler):
 
         try:
             result = await self.gate.card_close(card_id=card_id)
+            await operation_log(operation.pk, LogTag.FROM_GATE, "Card closed")
             self.logger.info("Card closed: %r (op #%s)", result, operation.pk)
 
             await Operation.filter(pk=operation.pk).update(
@@ -588,6 +633,7 @@ class YeezyPayMicroservice(BaseHandler):
 
         try:
             result = await self.gate.card_block(card_id=card_id)
+            await operation_log(operation.pk, LogTag.FROM_GATE, "Card blocked")
             self.logger.info("Card blocked: %r (op #%s)", result, operation.pk)
 
             await Operation.filter(pk=operation.pk).update(
@@ -608,6 +654,7 @@ class YeezyPayMicroservice(BaseHandler):
 
         try:
             result = await self.gate.card_restore(card_id=card_id)
+            await operation_log(operation.pk, LogTag.FROM_GATE, "Card restored")
             self.logger.info("Card restored: %r (op #%s)", result, operation.pk)
 
             await Operation.filter(pk=operation.pk).update(
@@ -622,19 +669,15 @@ class YeezyPayMicroservice(BaseHandler):
     # ── NATS entry points ─────────────────────────────────
 
     async def _save_wallet_to_account(self, account_id: str, result: dict) -> None:
-        """Сохраняет результат создания крипто-кошелька в Account."""
+        """Сохраняет результат создания крипто-кошелька в Account.
+
+        Если адрес уже есть но отличается — обновляет (YeezyPay может
+        перегенерировать адрес, wallet_id при этом не меняется).
+        """
         try:
-            account = await Account.get(pk=account_id)
+            account = await Account.get(pk=account_id).prefetch_related("client")
         except DoesNotExist:
             self.logger.error("Account %s not found, cannot save wallet", account_id)
-            return
-
-        if account.address:
-            self.logger.warning(
-                "Account %s already has address=%s, skipping",
-                account_id,
-                account.address,
-            )
             return
 
         address = result.get("wallet_address") or result.get("address")
@@ -647,9 +690,19 @@ class YeezyPayMicroservice(BaseHandler):
             )
             return
 
+        old_address = account.address
+        address_changed = old_address and old_address != address
+
+        if old_address and not address_changed:
+            self.logger.info(
+                "Account %s already has same address=%s, updating wallet_info only",
+                account_id,
+                account.address,
+            )
+
         await Account.filter(pk=account_id).update(
             address=address,
-            external_id=str(wallet_id) if wallet_id else None,
+            external_id=str(wallet_id) if wallet_id else account.external_id,
             data={"wallet_info": result},
         )
         self.logger.info(
@@ -659,13 +712,27 @@ class YeezyPayMicroservice(BaseHandler):
             wallet_id,
         )
 
+        if address_changed:
+            self.logger.warning(
+                "Address changed during wallet create for account %s: %s → %s",
+                account_id,
+                old_address,
+                address,
+            )
+            await self._notify_address_changed(account, old_address, address)
+
     async def _update_wallet_balance(self, account_id: str, result: dict) -> None:
         """Обновляет баланс крипто-кошелька в Account по данным из crypto_wallet_info.
 
         Ответ API: {"success": true, "data": {"wallet_id": ..., "balance": "10.5", ...}}
+
+        Также проверяет, не изменился ли адрес кошелька на стороне YeezyPay
+        (перегенерация адресов). Если адрес изменился — обновляет и уведомляет.
         """
         try:
-            account = await Account.get(pk=account_id).prefetch_related("currency")
+            account = await Account.get(pk=account_id).prefetch_related(
+                "currency", "client"
+            )
         except DoesNotExist:
             self.logger.error("Account %s not found, cannot update balance", account_id)
             return
@@ -698,17 +765,66 @@ class YeezyPayMicroservice(BaseHandler):
             )
         )
 
-        await Account.filter(pk=account_id).update(
-            external_amount_db=external_amount_db,
-            data={"wallet_info": wallet_data},
-            external_updated_at=timezone.now(),
-        )
+        # Проверяем, не изменился ли адрес кошелька
+        new_address = wallet_data.get("wallet_address") or wallet_data.get("address")
+        update_fields = {
+            "external_amount_db": external_amount_db,
+            "data": {"wallet_info": wallet_data},
+            "external_updated_at": timezone.now(),
+        }
+
+        address_changed = False
+        old_address = account.address
+
+        if new_address and new_address != old_address:
+            address_changed = True
+            update_fields["address"] = new_address
+            self.logger.warning(
+                "Address changed for account %s: %s → %s",
+                account_id,
+                old_address,
+                new_address,
+            )
+
+        await Account.filter(pk=account_id).update(**update_fields)
         self.logger.info(
             "Balance updated for account %s: %s → external_amount_db=%s",
             account_id,
             balance_str,
             external_amount_db,
         )
+
+        # Уведомляем пользователя о смене адреса
+        if address_changed:
+            await self._notify_address_changed(account, old_address or "", new_address)
+
+    async def _notify_address_changed(
+        self, account: Account, old_address: str, new_address: str
+    ) -> None:
+        """Отправляет TG-уведомление о смене адреса кошелька."""
+        try:
+            from services.notification_service import (
+                format_address_changed_notification,
+                send_telegram_message,
+            )
+
+            client = account.client
+            if not client or not client.telegram_id:
+                return
+
+            text = format_address_changed_notification(old_address, new_address)
+            await send_telegram_message(client.telegram_id, text)
+            self.logger.info(
+                "Address change notification sent: account=%s, %s → %s",
+                account.pk,
+                old_address,
+                new_address,
+            )
+        except Exception:
+            self.logger.exception(
+                "Failed to send address change notification, account=%s",
+                account.pk,
+            )
 
     async def _close_wallet_account(self, account_id: str, result: dict) -> None:
         """Закрывает Account после успешного закрытия крипто-кошелька в YeezyPay.
@@ -764,6 +880,11 @@ class YeezyPayMicroservice(BaseHandler):
 
         if not action:
             self.logger.warning("Missing 'action' in crypto message: %r", data)
+            return
+
+        # Ранний перехват: fetch_operation_status обрабатывается отдельно
+        if action == "fetch_operation_status":
+            await self._handle_fetch_operation_status(params, reply_to, request_id)
             return
 
         method_name = CRYPTO_ACTION_TO_METHOD.get(action)
@@ -875,6 +996,96 @@ class YeezyPayMicroservice(BaseHandler):
         finally:
             await reply_producer.close()
 
+    async def _handle_fetch_operation_status(
+        self,
+        params: dict,
+        reply_to: str,
+        request_id: str | None,
+    ):
+        """Обрабатывает запрос fetch_operation_status от admin action.
+
+        Для DEPOSIT: запрашивает crypto_operation_detail по external_id.
+        Для CARD_*: запрашивает get_card_balance по card_id из Account.
+        Результат сохраняется в Operation.data['last_status_check'].
+        """
+        operation_id = params.get("operation_id")
+        kind = params.get("kind", "")
+        external_id = params.get("external_id", "")
+
+        if not operation_id:
+            self.logger.warning("fetch_operation_status: missing operation_id")
+            return
+
+        try:
+            operation = await Operation.get(pk=operation_id)
+        except DoesNotExist:
+            self.logger.error(
+                "fetch_operation_status: Operation %s not found", operation_id
+            )
+            return
+
+        result = {}
+        try:
+            if kind == OperationKind.DEPOSIT:
+                # Для депозитов — запрашиваем детали операции по external_id
+                if external_id:
+                    result = await self.gate.crypto_operation_detail(external_id)
+                else:
+                    result = {"error": "no external_id for deposit operation"}
+            elif kind in (
+                OperationKind.CARD_OPEN,
+                OperationKind.CARD_TOPUP,
+                OperationKind.CARD_CLOSE,
+                OperationKind.CARD_BLOCK,
+                OperationKind.CARD_RESTORE,
+            ):
+                # Для карточных операций — запрашиваем баланс карты
+                await operation.fetch_related("account")
+                card_id = None
+                account = operation.account
+                if account.external_id:
+                    card_id = account.external_id
+                elif isinstance(account.data, dict):
+                    card_id = account.data.get("gate_card_id")
+
+                if card_id:
+                    balance = await self.gate.get_card_balance(card_id)
+                    result = {"card_id": card_id, "balance": balance}
+                else:
+                    result = {"error": "no card_id found for account"}
+            else:
+                result = {"error": f"unsupported operation kind: {kind}"}
+
+        except Exception as e:
+            self.logger.exception(
+                "fetch_operation_status failed for operation %s", operation_id
+            )
+            result = {"error": str(e)}
+
+        # Сохраняем результат в Operation.data
+        await operation.refresh_from_db()
+        op_data = operation.data or {}
+        if not isinstance(op_data, dict):
+            op_data = {}
+        op_data["last_status_check"] = {
+            "result": result,
+            "checked_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }
+        await Operation.filter(pk=operation.pk).update(data=op_data)
+
+        status_msg = result.get("error") or "OK"
+        await operation_log(
+            operation.pk, LogTag.FETCH_STATUS, f"Status check: {status_msg}"
+        )
+
+        self.logger.info(
+            "fetch_operation_status for operation %s: %r", operation_id, result
+        )
+
+        await self._publish_crypto_reply(
+            reply_to, request_id, "fetch_operation_status", result
+        )
+
     async def yeezypay_gate_process(self, data: dict):
         """Точка входа — обработка NATS-сообщений из топика yeezypay_gate.
 
@@ -907,6 +1118,10 @@ class YeezyPayMicroservice(BaseHandler):
         if self.gate_model:
             await Operation.filter(pk=operation.pk).update(gate_id=self.gate_model.pk)
 
+        await operation_log(
+            operation.pk, LogTag.TO_GATE, "Dispatched to YeezyPay gate"
+        )
+
         kind = OperationKind(operation.kind)
         handler_name = OPERATION_KIND_TO_HANDLER.get(kind)
 
@@ -926,6 +1141,256 @@ class YeezyPayMicroservice(BaseHandler):
                 handler_name,
             )
             await self._fail_operation(operation, "Internal gate error")
+
+    # ── Crypto callback handler ────────────────────────────
+
+    MAX_PROCESSED_IDS = 200
+
+    async def _create_deposit_and_publish(
+        self,
+        account: Account,
+        amount_db: int,
+        external_id: str,
+        source_payload: dict,
+    ) -> Optional[Operation]:
+        """Создаёт Operation(DEPOSIT, CRYPTO) и публикует в fiscal_stream.
+
+        Дедупликация по Operation.external_id — если операция с таким ID
+        уже существует, возвращает None.
+
+        Args:
+            account: дочерний крипто-кошелёк (Account с address).
+            amount_db: сумма депозита в единицах БД (integer).
+            external_id: внешний ID операции (operation_id / tx_hash от YeezyPay).
+            source_payload: оригинальные данные от YeezyPay для сохранения в data.
+
+        Returns:
+            Созданный Operation или None если дубль.
+        """
+        if not external_id:
+            self.logger.warning(
+                "Cannot create deposit operation without external_id for account %s",
+                account.pk,
+            )
+            return None
+
+        # Дедупликация: проверяем, нет ли уже Operation с таким external_id
+        existing = await Operation.filter(
+            external_id=external_id,
+            kind=OperationKind.DEPOSIT,
+        ).first()
+
+        # Также ищем по tx_hash из source_payload (YeezyPay может использовать
+        # свой operation_id, отличный от blockchain tx_hash)
+        if not existing and source_payload.get("tx_hash"):
+            tx_hash = str(source_payload["tx_hash"])
+            if tx_hash != external_id:
+                existing = await Operation.filter(
+                    external_id=tx_hash,
+                    kind=OperationKind.DEPOSIT,
+                ).first()
+
+        if existing and existing.status == Operation.Status.PENDING:
+            # Промоутим PENDING операцию (от TronGrid) → OPERATING
+            self.logger.info(
+                "Promoting PENDING deposit: operation=%s, external_id=%s → OPERATING",
+                existing.pk,
+                external_id,
+            )
+            existing_data = existing.data or {}
+            if not isinstance(existing_data, dict):
+                existing_data = {}
+            existing_data["source"] = "crypto_callback"
+            existing_data["trongrid_promoted"] = True
+            existing_data["source_payload"] = source_payload
+
+            await Operation.filter(pk=existing.pk).update(
+                status=Operation.Status.OPERATING,
+                operating_at=timezone.now(),
+                amount_db=amount_db,
+                gate=self.gate_model,
+                data=existing_data,
+            )
+            await operation_log(
+                existing.pk,
+                LogTag.PROMOTED,
+                f"PENDING→OPERATING via crypto_callback, amount_db={amount_db}",
+            )
+            await existing.refresh_from_db()
+            await self._publish_to_fiscal(existing, gate_result={})
+            return existing
+
+        if existing:
+            self.logger.info(
+                "Deposit operation already exists: external_id=%s, operation=%s, status=%s",
+                external_id,
+                existing.pk,
+                existing.status,
+            )
+            return None
+
+        if amount_db <= 0:
+            self.logger.warning(
+                "Invalid deposit amount_db=%s for account %s, skipping",
+                amount_db,
+                account.pk,
+            )
+            return None
+
+        # Загружаем связанные объекты если не загружены
+        await account.fetch_related("client", "currency")
+
+        operation = await Operation.create(
+            client=account.client,
+            account=account,
+            currency=account.currency,
+            kind=OperationKind.DEPOSIT,
+            method=Operation.Method.CRYPTO,
+            status=Operation.Status.OPERATING,
+            amount_db=amount_db,
+            external_id=external_id,
+            gate=self.gate_model,
+            data={
+                "amount": amount_db,
+                "source": "crypto_callback",
+                "source_payload": source_payload,
+            },
+        )
+        await operation_log(
+            operation.pk,
+            LogTag.CREATE,
+            f"DEPOSIT created via callback, amount_db={amount_db}",
+        )
+
+        self.logger.info(
+            "Created DEPOSIT operation #%s: account=%s, amount_db=%s, external_id=%s",
+            operation.pk,
+            account.pk,
+            amount_db,
+            external_id,
+        )
+
+        # Публикуем в fiscal_stream — fiscal зачислит средства через Transaction
+        await self._publish_to_fiscal(operation, gate_result={})
+
+        return operation
+
+    def _parse_amount_db(self, amount_str: str, currency) -> int:
+        """Конвертирует строковую сумму в amount_db (integer)."""
+        from decimal import Decimal, ROUND_HALF_UP
+
+        amount_decimal = Decimal(str(amount_str))
+        denominator = currency.denominator if currency else 2
+        return int(
+            (amount_decimal * 10**denominator).to_integral_value(rounding=ROUND_HALF_UP)
+        )
+
+    async def yeezypay_callback_process(self, data: dict):
+        """Точка входа — обработка callback-сообщений из Gate Callbacks API.
+
+        Формат сообщения (от gate_callbacks API через NATS):
+        {
+            "gate_code": "yeezypay",
+            "payload": { ...raw webhook body from YeezyPay... },
+            "received_at": "ISO-8601"
+        }
+
+        Поток: callback → Operation(DEPOSIT, CRYPTO) → fiscal_stream.
+        Движение средств (зачисление, комиссия) — только через FiscalMicroservice.
+        """
+        self.logger.info("Received crypto callback: %r", data)
+
+        payload = data.get("payload") or {}
+        if not payload:
+            self.logger.warning("Empty payload in callback message: %r", data)
+            return
+
+        # 1. Определяем идентификатор кошелька
+        wallet_id = payload.get("wallet_id") or payload.get("external_id")
+        address = payload.get("address") or payload.get("wallet_address")
+
+        if not address and not wallet_id:
+            self.logger.warning("No wallet identifier in callback payload: %r", payload)
+            return
+
+        # 2. Ищем Account — приоритет по wallet_id (external_id), он стабилен.
+        #    address может меняться при перегенерации на стороне YeezyPay.
+        account = None
+        if wallet_id:
+            account = (
+                await Account.filter(external_id=str(wallet_id))
+                .prefetch_related("currency", "client")
+                .first()
+            )
+        if not account and address:
+            account = (
+                await Account.filter(address=address)
+                .prefetch_related("currency", "client")
+                .first()
+            )
+
+        if not account:
+            self.logger.warning(
+                "Account not found for callback: address=%s, wallet_id=%s",
+                address,
+                wallet_id,
+            )
+            return
+
+        # 3. Дедупликация (быстрая проверка по Account.data)
+        operation_id = str(payload.get("operation_id") or payload.get("tx_hash") or "")
+        account_data = dict(account.data) if account.data else {}
+        processed = account_data.get("processed_callbacks", [])
+
+        if operation_id and operation_id in processed:
+            self.logger.info(
+                "Callback already processed: operation_id=%s, account=%s",
+                operation_id,
+                account.pk,
+            )
+            return
+
+        # 4. Создаём Operation(DEPOSIT) и отправляем в fiscal
+        amount_str = payload.get("amount")
+        if not amount_str:
+            self.logger.warning(
+                "No amount in callback payload: account=%s, payload=%r",
+                account.pk,
+                payload,
+            )
+            return
+
+        try:
+            deposit_amount_db = self._parse_amount_db(amount_str, account.currency)
+            await self._create_deposit_and_publish(
+                account=account,
+                amount_db=deposit_amount_db,
+                external_id=operation_id,
+                source_payload=payload,
+            )
+        except Exception:
+            self.logger.exception(
+                "Failed to create deposit operation: account=%s, amount=%s",
+                account.pk,
+                amount_str,
+            )
+            return
+
+        # 5. Записываем operation_id в processed-список (быстрый кэш для дедупликации)
+        if operation_id and operation_id not in processed:
+            processed.append(operation_id)
+            if len(processed) > self.MAX_PROCESSED_IDS:
+                processed = processed[-self.MAX_PROCESSED_IDS:]
+
+            # Перечитываем (могло обновиться в _create_deposit_and_publish)
+            account = await Account.get(pk=account.pk)
+            account_data = dict(account.data) if account.data else {}
+            account_data["processed_callbacks"] = processed
+            account_data["last_callback"] = {
+                "operation_id": operation_id,
+                "received_at": data.get("received_at"),
+            }
+            await Account.filter(pk=account.pk).update(data=account_data)
 
     async def inner_run(self):
         self.logger.info("YeezyPayMicroservice inner run started")

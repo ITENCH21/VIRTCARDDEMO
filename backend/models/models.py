@@ -1,9 +1,11 @@
 from typing import TYPE_CHECKING
+import logging as _logging
 import uuid
 from decimal import Decimal, ROUND_HALF_UP
 
 from tortoise.exceptions import DoesNotExist
 from tortoise import timezone
+from tortoise.expressions import F
 from .djangoise import (
     Model,
     UUIDField,
@@ -27,7 +29,7 @@ from .djangoise import (
     CASCADE,
     db_transaction,
 )
-from .enums import OperationKind
+from .enums import OperationKind, LogTag
 
 
 class BaseModel(Model):
@@ -81,7 +83,7 @@ class Client(BaseModel):
     id = UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = OneToOneField(User, on_delete=PROTECT)
     name = CharField(max_length=255)
-    email = EmailField(unique=True, max_length=254)
+    email = EmailField(max_length=254, null=True, blank=True)
     status = CharField(
         max_length=1,
         choices=Status.choices,
@@ -90,7 +92,7 @@ class Client(BaseModel):
     )
 
     description = TextField(default="", blank=True)
-    phone = CharField(max_length=32, null=True, blank=True, unique=True)
+    phone = CharField(max_length=32, null=True, blank=True)
     phone_confirmed = BooleanField(default=False)  # type: ignore[arg-type]
     telegram_id = BigIntegerField(null=True, blank=True, unique=True)
     telegram_username = CharField(max_length=32, null=True, blank=True, unique=True)
@@ -163,6 +165,46 @@ class Account(BaseModel):
     class Meta:
         table = "clients_account"
         unique_together = (("address", "currency"),)
+
+    async def hold_amount_db(self, amount_db: int, operation=None):
+        """Атомарно холдит средства на аккаунте.
+
+        Для CARD_TOPUP холд берётся с parent аккаунта.
+        """
+        account_id = self.pk
+        if operation and operation.kind == OperationKind.CARD_TOPUP and self.parent_id:
+            account_id = self.parent_id
+
+        await Account.filter(pk=account_id).select_for_update().update(
+            amount_holded_db=F("amount_holded_db") + amount_db
+        )
+
+        if operation:
+            await operation_log(
+                operation.pk,
+                LogTag.HOLD_AMOUNT,
+                f"Hold {amount_db} on account {str(account_id)[:8]}",
+            )
+
+    async def unhold_amount_db(self, amount_db: int, operation=None):
+        """Атомарно снимает холд с аккаунта.
+
+        Для CARD_TOPUP холд лежит на parent аккаунте.
+        """
+        account_id = self.pk
+        if operation and operation.kind == OperationKind.CARD_TOPUP and self.parent_id:
+            account_id = self.parent_id
+
+        await Account.filter(pk=account_id).select_for_update().update(
+            amount_holded_db=F("amount_holded_db") - amount_db
+        )
+
+        if operation:
+            await operation_log(
+                operation.pk,
+                LogTag.UNHOLD_AMOUNT,
+                f"Unhold {amount_db} from account {str(account_id)[:8]}",
+            )
 
 
 class Setting(BaseModel):
@@ -249,6 +291,14 @@ class CurrencyRate(Model):
 def amount_db_to_human(amount: int, currency) -> Decimal:
     assert isinstance(amount, int), "Amount must be integer but %s" % type(amount)
     return Decimal(amount) / 10**currency.denominator
+
+
+def fmt_amount(amount: Decimal) -> str:
+    """Format Decimal stripping trailing zeros: 20.000000 -> '20', 10.50 -> '10.5'."""
+    s = f"{amount:f}"
+    if "." in s:
+        s = s.rstrip("0").rstrip(".")
+    return s
 
 
 def amount_human_to_db(amount, currency):
@@ -371,6 +421,36 @@ class Operation(Model):
         if self.amount_db:
             return amount_db_to_human(self.amount_db, self.currency)  # type: ignore[arg-type]
         return Decimal(0.0)
+
+
+class OperationLog(Model):
+    MESSAGE_LENGTH = 256
+
+    id = UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_at = DateTimeField(default=timezone.now, db_index=True)
+    operation = ForeignKey(Operation, on_delete=CASCADE, related_name="logs")
+    tag = CharField(max_length=24, choices=LogTag.choices)
+    message = CharField(max_length=MESSAGE_LENGTH, null=True, blank=True)
+
+    class Meta:
+        table = "operations_operationlog"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"[{self.tag}] {self.message or ''}"
+
+
+_oplog_logger = _logging.getLogger("operation_log")
+
+
+async def operation_log(uid, tag: str | LogTag, message: str | None = None):
+    """Создаёт запись лога операции."""
+    if isinstance(tag, str):
+        tag = tag.upper()
+    if message is not None:
+        message = str(message)[: OperationLog.MESSAGE_LENGTH]
+    _oplog_logger.info("%s [%s] (%s)", message, uid, tag)
+    await OperationLog.create(operation_id=uid, tag=tag, message=message)
 
 
 class TransactionKind(TextChoices):

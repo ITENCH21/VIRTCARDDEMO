@@ -15,12 +15,28 @@ from django.db.models import (
     IntegerField,
     SET_NULL,
     PROTECT,
+    CASCADE,
     TextField,
 )
 from django.utils import timezone
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from common.models import OperationKind
+
+
+class LogTag(TextChoices):
+    CREATE = "CREATE", "Create"
+    HOLD_AMOUNT = "HOLD_AMOUNT", "Hold amount"
+    UNHOLD_AMOUNT = "UNHOLD_AMOUNT", "UnHold amount"
+    TO_GATE = "TO_GATE", "To Gate"
+    FROM_GATE = "FROM_GATE", "From Gate"
+    TO_FISCAL = "TO_FISCAL", "To Fiscal"
+    FETCH_STATUS = "FETCH_STATUS", "Fetch status"
+    DONE = "DONE", "Done"
+    ERROR = "ERROR", "Error"
+    UNKNOWN = "UNKNOWN", "Unknown"
+    ADDRESS_CHANGED = "ADDRESS_CHANGED", "Address changed"
+    PROMOTED = "PROMOTED", "Promoted"
 
 
 class BaseModel(Model):
@@ -158,3 +174,20 @@ class Operation(Model):
         if self.amount_db:
             return amount_db_to_human(self.amount_db, self.currency)  # type: ignore[arg-type]
         return Decimal(0.0)
+
+
+class OperationLog(Model):
+    MESSAGE_LENGTH = 256
+
+    id = UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_at = DateTimeField(db_index=True, default=timezone.now)
+    operation = ForeignKey(Operation, on_delete=CASCADE, related_name="logs")
+    tag = CharField(max_length=24, choices=LogTag.choices)
+    message = CharField(max_length=MESSAGE_LENGTH, null=True, blank=True)
+
+    class Meta:
+        db_table = "operations_operationlog"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"[{self.tag}] {self.message or ''}"

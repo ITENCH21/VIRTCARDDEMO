@@ -36,10 +36,18 @@ x-backend: &backend
   volumes:
     - ./backend:/usr/src/app
     - ./common:/workspace/common
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    nats:
+      condition: service_started
 
 services:
   nginx:
     <<: *base-service
+    container_name: nginx
     build:
       context: ./nginx
       dockerfile: Dockerfile
@@ -48,14 +56,25 @@ services:
     volumes:
       - ./admin/static:/static
       - ./admin/media:/media
+      - ./webapp/dist:/webapp
+    depends_on:
+      - webapp_build
+      - webapp_api
+      - gate_callbacks
+      - admin
 
   db-migrate:
     <<: *base-django
+    container_name: db-migrate
     restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
     command: python ./manage.py migrate
 
   collectstatic:
     <<: *base-django
+    container_name: collectstatic
     restart: "no"
     command: python manage.py collectstatic --no-input
     volumes:
@@ -63,47 +82,111 @@ services:
 
   admin:
     <<: *django
-    container_name: admin-vc
+    container_name: admin
     ports:
       - "7002:8000"
     command: python ./manage.py runserver 0.0.0.0:8000
 
   bot:
     <<: *backend
+    container_name: bot
     command: python -m bot.bot
 
   rates:
     <<: *backend
+    container_name: rates
     command: python -m main rates
 
   fiscal:
     <<: *backend
+    container_name: fiscal
     command: python -m main fiscal
 
   yeezypay_gate:
     <<: *backend
+    container_name: yeezypay_gate
     command: python -m main yeezypay-gate
+
+  webapp_api:
+    <<: *backend
+    container_name: webapp_api
+    ports:
+      - "9502:8002"
+    command: python -m main webapp-api
+
+  gate_callbacks:
+    <<: *backend
+    container_name: gate_callbacks
+    environment:
+      - PYTHONPATH=/usr/src/app:/workspace
+      - CALL_GATES=yeezypay
+    ports:
+      - "8001:8001"
+    command: python -m main gate-callbacks
+
+  yeezypay_crypto_ops:
+    <<: *backend
+    container_name: yeezypay_crypto_ops
+    command: python -m main yeezypay-crypto-ops
+
+  trongrid_monitor:
+    <<: *backend
+    container_name: trongrid_monitor
+    command: python -m main trongrid-monitor
+
+  notifications:
+    <<: *backend
+    container_name: notifications
+    command: python -m main notifications
+
+  webapp_build:
+    <<: *base-service
+    container_name: webapp_build
+    build:
+      context: webapp
+      dockerfile: Dockerfile
+    restart: "no"
+    volumes:
+      - ./webapp/dist:/app/dist
 
   #### INFRASTRUCTURE SERVICES ####
   db:
     <<: *base-service
+    container_name: db
     image: postgres:14.2
     ports:
       - "7432:5432"
-
     volumes:
       - ./.postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   redis:
     <<: *base-service
+    container_name: redis
     image: redis:7.0.5-alpine3.16
     command: ["sh", "-c", 'exec redis-server --requirepass "$REDIS_PASSWORD"']
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD} ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   nats:
     <<: *base-service
+    container_name: nats
     image: nats:2.10.24
     command: ["-js"]
     ports:
       - "4222:4222"
+    healthcheck:
+      test: ["CMD-SHELL", "nats-server --help > /dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
 networks:
   vc-network:

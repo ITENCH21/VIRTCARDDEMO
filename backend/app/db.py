@@ -21,10 +21,16 @@ TORTOISE_ORM = {
     "connections": {
         "default": {
             "engine": "tortoise.backends.asyncpg",
-            "credentials": postgres_dsn(),
+            "credentials": {
+                "host": POSTGRES_HOST,
+                "port": POSTGRES_PORT,
+                "user": POSTGRES_USER,
+                "password": POSTGRES_PASSWORD,
+                "database": POSTGRES_DB,
+            },
         },
     },
-    "apps": {"models": {"models": ["app.models"]}},
+    "apps": {"models": {"models": ["app.models", "models.models"]}},
 }
 
 

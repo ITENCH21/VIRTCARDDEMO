@@ -7,7 +7,7 @@ RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # Создаем директории для статических файлов
-RUN mkdir -p /static /media
+RUN mkdir -p /static /media /webapp
 
 # Устанавливаем права
 RUN chown -R nginx:nginx /static /media

@@ -51,7 +51,7 @@ class Client(BaseModel):
     id = UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = OneToOneField(User, on_delete=PROTECT)
     name = CharField(max_length=255)
-    email = EmailField(unique=True)
+    email = EmailField(null=True, blank=True)
     status = CharField(
         max_length=1,
         choices=Status.choices,
@@ -60,7 +60,7 @@ class Client(BaseModel):
     )
 
     description = TextField(default="", blank=True)
-    phone = CharField(max_length=32, null=True, blank=True, unique=True)
+    phone = CharField(max_length=32, null=True, blank=True)
     phone_confirmed = BooleanField(default=False)  # type: ignore[arg-type]
     telegram_id = BigIntegerField(null=True, blank=True, unique=True)
     telegram_username = CharField(max_length=32, null=True, blank=True, unique=True)
