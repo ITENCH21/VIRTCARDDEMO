@@ -27,6 +27,7 @@ from services.card_service import (
     block_card,
     restore_card,
     close_card,
+    sync_operation_status,
     CardServiceError,
     InsufficientFundsError,
     CardNotFoundError,
@@ -150,7 +151,13 @@ async def issue_new_card(
         raise HTTPException(status_code=400, detail="Invalid amount")
 
     try:
-        operation = await issue_card(client, amount, card_name=body.card_name)
+        operation = await issue_card(
+            client,
+            amount,
+            card_name=body.card_name,
+            card_currency=body.card_currency,
+            card_type=body.card_type,
+        )
     except CardServiceError as e:
         _handle_card_error(e)
 
@@ -258,3 +265,21 @@ async def close_existing_card(
         operation_id=str(operation.pk),
         status=_enum_to_str(operation.status),
     )
+
+
+@router.post("/operations/{operation_id}/sync")
+async def sync_operation(
+    operation_id: str,
+    client: Client = Depends(get_current_client),
+):
+    """Manually sync operation status from VC API.
+
+    Useful when callbacks are not configured — fetches card info
+    from YeezyPay and triggers fiscal processing if card was created.
+    """
+    try:
+        result = await sync_operation_status(client, operation_id)
+    except CardServiceError as e:
+        _handle_card_error(e)
+
+    return result

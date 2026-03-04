@@ -48,10 +48,23 @@ export function estimateIssue(amount: string): Promise<EstimateResponse> {
   });
 }
 
-export function issueCard(amount: string, cardName: string = ''): Promise<OperationCreatedResponse> {
+export type CardCurrency = 'USD' | 'EUR';
+export type CardType = 'standard' | 'wallet';
+
+export function issueCard(
+  amount: string,
+  cardName: string = '',
+  cardCurrency: CardCurrency = 'USD',
+  cardType: CardType = 'standard',
+): Promise<OperationCreatedResponse> {
   return apiFetch('/cards/issue', {
     method: 'POST',
-    body: JSON.stringify({ amount, card_name: cardName }),
+    body: JSON.stringify({
+      amount,
+      card_name: cardName,
+      card_currency: cardCurrency,
+      card_type: cardType,
+    }),
   });
 }
 
@@ -79,4 +92,16 @@ export function restoreCard(cardId: string): Promise<OperationCreatedResponse> {
 
 export function closeCard(cardId: string): Promise<OperationCreatedResponse> {
   return apiFetch(`/cards/${cardId}/close`, { method: 'POST' });
+}
+
+export interface SyncResponse {
+  operation_id: string;
+  status: string;
+  synced: boolean;
+  card_id?: string;
+  message: string;
+}
+
+export function syncOperation(operationId: string): Promise<SyncResponse> {
+  return apiFetch(`/cards/operations/${operationId}/sync`, { method: 'POST' });
 }

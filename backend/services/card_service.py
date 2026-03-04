@@ -200,6 +200,8 @@ async def issue_card(
     client: Client,
     amount: Decimal,
     card_name: str = "",
+    card_currency: str = "USD",
+    card_type: str = "standard",
 ) -> Operation:
     """Выпускает виртуальную карту.
 
@@ -208,6 +210,10 @@ async def issue_card(
     3. Холдит средства
     4. Создаёт Operation(CARD_OPEN, PENDING)
     5. Публикует задачу в NATS → yeezypay_gate
+
+    Args:
+        card_currency: Валюта карты (USD или EUR). По умолчанию USD.
+        card_type: Тип карты (standard или wallet). По умолчанию standard.
 
     Returns:
         Созданная Operation.
@@ -229,6 +235,8 @@ async def issue_card(
         data={
             "amount": estimate["amount_db"],
             "card_name": card_name or None,
+            "card_currency": card_currency,
+            "card_type": card_type,
             "holded_amount": estimate["total_db"],
             "fee_estimate": {
                 "fee_db": estimate["fee_db"],
@@ -416,6 +424,148 @@ async def _publish_gate_task(operation: Operation) -> None:
         logger.info("Published gate task for operation #%s", operation.pk)
     except Exception:
         logger.exception("Failed to publish gate task for operation #%s", operation.pk)
+        raise
+    finally:
+        await producer.close()
+
+
+# ── Ручная синхронизация с VC API ─────────────────────────
+
+
+async def _get_gate_instance():
+    """Создаёт экземпляр YeezyPayGate из DB."""
+    from gates.impls.yeezypay import YeezyPayGate
+    from models.models import Gate
+
+    gate_model = await Gate.filter(code="yeezypay", status=Gate.Status.ACTIVE).first()
+    if not gate_model:
+        raise CardServiceError("Gate 'yeezypay' not found or inactive")
+    return YeezyPayGate(gate_model.credentials or {})
+
+
+async def sync_operation_status(client: Client, operation_id: str) -> dict:
+    """Запрашивает у VC API актуальный статус операции и обновляет локальную БД.
+
+    Работает для CARD_OPEN операций в статусе OPERATING/PENDING:
+    - Запрашивает список карт через VC API
+    - Ищет карту, созданную этой операцией
+    - Если карта найдена — публикует результат в fiscal_stream для создания Account
+
+    Returns:
+        dict с текущим статусом операции и информацией о карте (если найдена).
+    """
+    try:
+        operation = await Operation.get(pk=operation_id, client=client)
+    except DoesNotExist:
+        raise CardNotFoundError(f"Операция {operation_id} не найдена")
+
+    await operation.fetch_related("account", "account__currency")
+
+    # Если операция уже завершена — просто возвращаем статус
+    if operation.status in (Operation.Status.COMPLETE, Operation.Status.FAILED):
+        return {
+            "operation_id": str(operation.pk),
+            "status": str(operation.status),
+            "synced": False,
+            "message": "Operation already finalized",
+        }
+
+    gate = await _get_gate_instance()
+    try:
+        # Для CARD_OPEN: запрашиваем список карт и ищем новую
+        if operation.kind == OperationKind.CARD_OPEN:
+            cards = await gate.get_cards_list()
+
+            op_data = operation.data or {}
+            card_name = op_data.get("card_name") if isinstance(op_data, dict) else None
+
+            # Ищем карту по card_name или по времени создания (последнюю)
+            matched_card = None
+            for card in cards:
+                if isinstance(card, dict) and card.get("name") == card_name:
+                    matched_card = card
+                    break
+
+            if not matched_card and cards:
+                # Если по имени не нашли — берём последнюю (может не быть name)
+                matched_card = cards[-1] if isinstance(cards[-1], dict) else None
+
+            if matched_card:
+                card_id = str(matched_card.get("id", ""))
+                # Получаем полные данные с credentials
+                card_details = await gate.get_card_details(card_id)
+
+                if card_details:
+                    # Публикуем в fiscal как если бы gate вернул результат
+                    gate_result = {
+                        "card_id": card_details["card_id"],
+                        "sensitive": card_details.get("sensitive", {}),
+                        "status": card_details.get("status"),
+                    }
+
+                    # Обновляем статус на OPERATING если ещё PENDING
+                    if operation.status == Operation.Status.PENDING:
+                        await Operation.filter(pk=operation.pk).update(
+                            status=Operation.Status.OPERATING,
+                            updated_at=timezone.now(),
+                        )
+
+                    # Публикуем в fiscal_stream
+                    await _publish_fiscal_result(operation, gate_result)
+
+                    return {
+                        "operation_id": str(operation.pk),
+                        "status": "OPERATING",
+                        "synced": True,
+                        "card_id": card_id,
+                        "message": "Card found, published to fiscal for processing",
+                    }
+
+            return {
+                "operation_id": str(operation.pk),
+                "status": str(operation.status),
+                "synced": False,
+                "message": "Card not found on VC API side",
+            }
+
+        # Для других типов операций — пока просто возвращаем статус
+        return {
+            "operation_id": str(operation.pk),
+            "status": str(operation.status),
+            "synced": False,
+            "message": "Sync not implemented for this operation kind",
+        }
+    finally:
+        await gate.close()
+
+
+async def _publish_fiscal_result(operation: Operation, gate_result: dict) -> None:
+    """Публикует результат гейта в fiscal_stream."""
+    await operation.refresh_from_db()
+    op_data = operation.data or {}
+    payload = op_data if isinstance(op_data, dict) else {}
+    payload["gate"] = {
+        "code": "yeezypay",
+        "result": gate_result,
+    }
+
+    message = {
+        "operation_guid": str(operation.pk),
+        "payload": payload,
+    }
+
+    producer = AsyncNatsProducer(
+        subjects=["item"],
+        stream_name="fiscal_stream",
+    )
+    try:
+        await producer.connect()
+        await producer.publish("item", message)
+        logger.info("Published fiscal result for operation #%s", operation.pk)
+    except Exception:
+        logger.exception(
+            "Failed to publish fiscal result for operation #%s", operation.pk
+        )
         raise
     finally:
         await producer.close()

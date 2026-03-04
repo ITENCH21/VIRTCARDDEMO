@@ -5,7 +5,7 @@ All amounts are strings (converted via amount_db_to_human).
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel
 
@@ -83,6 +83,8 @@ class EstimateResponse(BaseModel):
 class IssueCardRequest(BaseModel):
     amount: str
     card_name: str = ""
+    card_currency: Literal["USD", "EUR"] = "USD"
+    card_type: Literal["standard", "wallet"] = "standard"
 
 
 class TopupCardRequest(BaseModel):

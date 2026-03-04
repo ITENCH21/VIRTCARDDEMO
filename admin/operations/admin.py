@@ -186,6 +186,66 @@ def _notify_withdraw(operation: Operation, success: bool) -> bool:
 # ── Gate Admin ──────────────────────────────────────────────
 
 
+def _sync_vc_callback_url(gate_obj) -> tuple[bool, str]:
+    """Отправляет callback_url в YeezyPay VC API (PATCH /vc-api/v1/service/callback_url).
+
+    Возвращает (success, message).
+    """
+    credentials = gate_obj.credentials or {}
+    data = gate_obj.data or {}
+
+    callback_url = data.get("vc_callback_url", "").strip()
+    if not callback_url:
+        return False, "vc_callback_url не задан в data"
+
+    api_url = credentials.get("yeezypay_api_url", "").rstrip("/")
+    external_id = credentials.get("yeezypay_external_id", "")
+    secret = credentials.get("yeezypay_secret", "")
+    token_timeout = int(credentials.get("yeezypay_token_timeout") or 3600)
+
+    if not all([api_url, external_id, secret]):
+        return False, "Не заполнены credentials (api_url / external_id / secret)"
+
+    try:
+        # 1. Authenticate
+        auth_resp = _requests.post(
+            f"{api_url}/vc-api/v1/auth",
+            json={
+                "external_id": external_id,
+                "secret": secret,
+                "timeout": token_timeout,
+            },
+            timeout=15,
+        )
+        auth_resp.raise_for_status()
+        auth_data = auth_resp.json()
+        if not auth_data.get("success"):
+            return False, f"Auth failed: {auth_data}"
+        token = auth_data["token"]
+
+        # 2. Set callback_url
+        resp = _requests.patch(
+            f"{api_url}/vc-api/v1/service/callback_url",
+            json={"callback_url": callback_url},
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        result = resp.json()
+        return (
+            True,
+            f"callback_url установлен: {result.get('callback_url', callback_url)}",
+        )
+
+    except _requests.RequestException as e:
+        return False, f"HTTP ошибка: {e}"
+    except Exception as e:
+        return False, f"Ошибка: {e}"
+
+
 @admin.register(Gate)
 class GateAdmin(admin.ModelAdmin):
     list_display = (
@@ -194,6 +254,7 @@ class GateAdmin(admin.ModelAdmin):
         "name",
         "kind_",
         "status_",
+        "callback_url_status",
         "created_at",
         "updated_at",
     )
@@ -217,6 +278,18 @@ class GateAdmin(admin.ModelAdmin):
             obj.get_status_display(),
         )
 
+    @admin.display(description="Callback URL")
+    def callback_url_status(self, obj):
+        if obj.code != "yeezypay":
+            return "—"
+        data = obj.data or {}
+        url = data.get("vc_callback_url", "")
+        if url:
+            return format_html(
+                '<span style="color:#28a745" title="{}">&#10003; задан</span>', url
+            )
+        return format_html('<span style="color:#dc3545">&#10007; не задан</span>')
+
     fieldsets = (
         (None, {"fields": ("code", "name", "kind", "status")}),
         ("Данные", {"fields": ("data", "credentials")}),
@@ -225,6 +298,23 @@ class GateAdmin(admin.ModelAdmin):
             {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
         ),
     )
+
+    def save_model(self, request, obj, form, change):
+        """При сохранении YeezyPay gate — синхронизирует callback_url с VC API."""
+        super().save_model(request, obj, form, change)
+
+        # Синхронизируем callback_url только для yeezypay gate
+        if obj.code == "yeezypay":
+            data = obj.data or {}
+            callback_url = data.get("vc_callback_url", "").strip()
+            if callback_url:
+                ok, msg = _sync_vc_callback_url(obj)
+                if ok:
+                    messages.success(request, f"VC API: {msg}")
+                else:
+                    messages.warning(
+                        request, f"VC API callback_url не установлен: {msg}"
+                    )
 
 
 # ── Operation Admin ─────────────────────────────────────────
@@ -240,19 +330,68 @@ class TransactionInline(admin.TabularInline):
     fields = [
         "created_at",
         "kind",
-        "amount_db",
+        "amount_human",
         "currency_from",
         "account_from",
         "account_to",
         "status",
+        "tarif_info",
     ]
     readonly_fields = fields
+
+    @admin.display(description="Amount")
+    def amount_human(self, obj):
+        if obj.amount_db and obj.currency_from:
+            return str(amount_db_to_human(obj.amount_db, obj.currency_from))
+        return "—"
+
+    @admin.display(description="Tarif Line")
+    def tarif_info(self, obj):
+        op = obj.operation
+        if not op:
+            return "—"
+
+        # 1) Пробуем из operation.data["fiscal"] (всегда заполняется fiscal-микросервисом)
+        fiscal = (op.data or {}).get("fiscal") if isinstance(op.data, dict) else None
+        if fiscal and isinstance(fiscal, dict):
+            parts = []
+            fee_pct = fiscal.get("fee_percent")
+            fee_fix = fiscal.get("fee_fixed")
+            fee_amt = fiscal.get("fee_amount")
+            if fee_pct is not None:
+                parts.append(f"{fee_pct}%")
+            if fee_fix:
+                parts.append(f"+ {fee_fix} fix")
+            if fee_amt is not None:
+                parts.append(f"= {fee_amt}")
+            return " ".join(parts) if parts else "—"
+
+        # 2) Fallback: GenericForeignKey (Django-синхронный worker)
+        if op.content_type_id and op.tarif_id:
+            try:
+                model_class = op.content_type.model_class()
+                tarif_line = model_class.objects.get(pk=op.tarif_id)
+                parts = [f"{tarif_line.fee_percent}%"]
+                if tarif_line.fee_fixed:
+                    parts.append(f"+ {tarif_line.fee_fixed}")
+                if tarif_line.fee_minimal:
+                    parts.append(f"(min {tarif_line.fee_minimal})")
+                return " ".join(parts)
+            except Exception:
+                pass
+
+        return "—"
 
     def get_queryset(self, request):
         return (
             super()
             .get_queryset(request)
-            .select_related("account_from", "account_to", "currency_from")
+            .select_related(
+                "account_from",
+                "account_to",
+                "currency_from",
+                "operation__content_type",
+            )
         )
 
 
@@ -431,7 +570,10 @@ class OperationAdmin(admin.ModelAdmin):
         """Запрашивает актуальный статус операций через YeezyPay API.
 
         Только для операций в статусе PENDING или OPERATING.
-        Результат будет сохранён в data['last_status_check'].
+        Работает для всех типов операций:
+        - Крипто (DEPOSIT и др.) — запрашивает crypto_operation_detail
+        - Карточные (CARD_OPEN и др.) — запрашивает данные карты / синхронизирует
+        Результат сохраняется в data['last_status_check'].
         """
         allowed_statuses = {
             Operation.Status.PENDING,

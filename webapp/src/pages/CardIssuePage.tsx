@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import AmountInput from '../components/AmountInput';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Spinner from '../components/Spinner';
-import { estimateIssue, issueCard, EstimateResponse } from '../api/cards';
+import { estimateIssue, issueCard, syncOperation, EstimateResponse, CardCurrency, CardType } from '../api/cards';
 import { usePolling } from '../hooks/usePolling';
 import { formatAmount } from '../lib/format';
 import { hapticFeedback } from '../lib/telegram';
@@ -12,6 +12,8 @@ export default function CardIssuePage() {
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
   const [cardName, setCardName] = useState('');
+  const [cardCurrency, setCardCurrency] = useState<CardCurrency>('USD');
+  const [cardType, setCardType] = useState<CardType>('standard');
   const [estimate, setEstimate] = useState<EstimateResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export default function CardIssuePage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await issueCard(amount, cardName);
+      const res = await issueCard(amount, cardName, cardCurrency, cardType);
       setOperationId(res.operation_id);
       setShowConfirm(false);
       hapticFeedback('success');
@@ -51,6 +53,27 @@ export default function CardIssuePage() {
     }
   };
 
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
+  const handleSync = async () => {
+    if (!operationId) return;
+    setSyncing(true);
+    setSyncMessage(null);
+    try {
+      const res = await syncOperation(operationId);
+      setSyncMessage(res.message);
+      if (res.synced) {
+        hapticFeedback('success');
+      }
+    } catch (e: unknown) {
+      setSyncMessage(e instanceof Error ? e.message : 'Sync failed');
+      hapticFeedback('error');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   if (operationId) {
     return (
       <div className="page text-center" style={{ paddingTop: '60px' }}>
@@ -59,6 +82,15 @@ export default function CardIssuePage() {
             <Spinner />
             <p className="mt-16">Processing your card...</p>
             <p className="text-hint">Status: {status}</p>
+            <button
+              className="btn mt-16"
+              style={{ background: 'var(--secondary-bg-color)', color: 'var(--text-color)' }}
+              onClick={handleSync}
+              disabled={syncing}
+            >
+              {syncing ? 'Syncing...' : 'Sync Status'}
+            </button>
+            {syncMessage && <p className="text-hint mt-8">{syncMessage}</p>}
           </>
         )}
         {isComplete && (
@@ -81,8 +113,16 @@ export default function CardIssuePage() {
         )}
         {!isPolling && !isComplete && !isFailed && (
           <>
-            <p className="text-hint">Polling timed out. Check History for status.</p>
-            <button className="btn btn-primary mt-16" onClick={() => navigate('/history')}>
+            <p className="text-hint">Polling timed out.</p>
+            <button
+              className="btn btn-primary mt-16"
+              onClick={handleSync}
+              disabled={syncing}
+            >
+              {syncing ? 'Syncing...' : 'Sync from VC API'}
+            </button>
+            {syncMessage && <p className="text-hint mt-8">{syncMessage}</p>}
+            <button className="btn mt-16" style={{ background: 'var(--secondary-bg-color)', color: 'var(--text-color)' }} onClick={() => navigate('/history')}>
               View History
             </button>
           </>
@@ -103,6 +143,46 @@ export default function CardIssuePage() {
           onChange={(e) => setCardName(e.target.value)}
           placeholder="My Card"
         />
+      </div>
+
+      <div className="input-group">
+        <label>Currency</label>
+        <select
+          value={cardCurrency}
+          onChange={(e) => setCardCurrency(e.target.value as CardCurrency)}
+          style={{
+            width: '100%',
+            padding: '12px',
+            border: '1px solid var(--border-color)',
+            borderRadius: '8px',
+            fontSize: '16px',
+            background: 'var(--bg-color)',
+            color: 'var(--text-color)',
+          }}
+        >
+          <option value="USD">USD</option>
+          <option value="EUR">EUR</option>
+        </select>
+      </div>
+
+      <div className="input-group">
+        <label>Card Type</label>
+        <select
+          value={cardType}
+          onChange={(e) => setCardType(e.target.value as CardType)}
+          style={{
+            width: '100%',
+            padding: '12px',
+            border: '1px solid var(--border-color)',
+            borderRadius: '8px',
+            fontSize: '16px',
+            background: 'var(--bg-color)',
+            color: 'var(--text-color)',
+          }}
+        >
+          <option value="standard">Standard</option>
+          <option value="wallet">Wallet</option>
+        </select>
       </div>
 
       <AmountInput value={amount} onChange={setAmount} label="Initial Amount" />

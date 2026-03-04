@@ -301,15 +301,33 @@ class YeezyPayGate(BaseGate):
     async def card_open(
         self, account_external_id: str, amount: int, currency_code: str, **kwargs
     ) -> dict:
-        """POST /vc-api/v1/cards/open"""
+        """POST /vc-api/v1/cards/open
+
+        Args:
+            account_external_id: External ID аккаунта-источника.
+            amount: Сумма в human-readable формате (Decimal-совместимое).
+            currency_code: Код валюты карты.
+            **kwargs: card_name, card_type.
+        """
         body = {"amount": amount}
+        if currency_code:
+            body["card_currency"] = currency_code
         if kwargs.get("card_name"):
             body["card_name"] = kwargs["card_name"]
+        if kwargs.get("card_type"):
+            body["card_type"] = kwargs["card_type"]
         result = await self._request("POST", "/vc-api/v1/cards/open", json=body)
         card = result.get("card", {})
+        card_id = str(card.get("id", ""))
+
+        # card_open может вернуть карту в статусе DRAFT без credentials —
+        # поллим GET /cards/{id} пока не получим sensitive-данные
         credentials = result.get("credentials") or {}
+        if not credentials.get("card_number"):
+            credentials = await self._poll_card_credentials(card_id)
+
         return {
-            "card_id": str(card.get("id", "")),
+            "card_id": card_id,
             "sensitive": {
                 "card_number": credentials.get("card_number"),
                 "cvv": credentials.get("cvv"),
@@ -318,6 +336,38 @@ class YeezyPayGate(BaseGate):
             },
             "status": card.get("status"),
         }
+
+    async def _poll_card_credentials(
+        self, card_id: str, max_attempts: int = 10, interval: float = 3.0
+    ) -> dict:
+        """Поллит GET /vc-api/v1/cards/{card_id} пока не появятся credentials."""
+        import asyncio
+
+        for attempt in range(1, max_attempts + 1):
+            await asyncio.sleep(interval)
+            details = await self.get_card_details(card_id)
+            if details:
+                sensitive = details.get("sensitive", {})
+                if sensitive.get("card_number"):
+                    self.logger.info(
+                        "Got credentials for card %s on attempt %d/%d",
+                        card_id,
+                        attempt,
+                        max_attempts,
+                    )
+                    return sensitive
+            self.logger.info(
+                "Credentials not ready for card %s (attempt %d/%d)",
+                card_id,
+                attempt,
+                max_attempts,
+            )
+        self.logger.warning(
+            "Failed to get credentials for card %s after %d attempts",
+            card_id,
+            max_attempts,
+        )
+        return {}
 
     async def card_topup(self, card_id: str, amount: int, currency_code: str) -> dict:
         """PATCH /vc-api/v1/cards/{card_id}/topup"""
@@ -356,6 +406,29 @@ class YeezyPayGate(BaseGate):
             "status": result.get("card", {}).get("status"),
         }
 
+    async def get_card_details(self, card_id: str) -> Optional[dict]:
+        """GET /vc-api/v1/cards/{card_id} — полная информация о карте."""
+        try:
+            result = await self._request("GET", f"/vc-api/v1/cards/{card_id}")
+            card = result.get("card", {})
+            credentials = result.get("credentials") or {}
+            return {
+                "card_id": str(card.get("id", "")),
+                "status": card.get("status"),
+                "balance": card.get("balance"),
+                "currency_code": card.get("currency_code"),
+                "name": card.get("name"),
+                "sensitive": {
+                    "card_number": credentials.get("card_number"),
+                    "cvv": credentials.get("cvv"),
+                    "expiry_month": credentials.get("expiry_month"),
+                    "expiry_year": credentials.get("expiry_year"),
+                },
+            }
+        except Exception:
+            self.logger.exception("Failed to get details for card %s", card_id)
+            return None
+
     async def get_card_balance(self, card_id: str) -> Optional[int]:
         """GET /vc-api/v1/cards/{card_id}"""
         try:
@@ -364,6 +437,15 @@ class YeezyPayGate(BaseGate):
         except Exception:
             self.logger.exception("Failed to get balance for card %s", card_id)
             return None
+
+    async def get_cards_list(self) -> list:
+        """GET /vc-api/v1/cards/list — список всех карт."""
+        try:
+            result = await self._request("GET", "/vc-api/v1/cards/list")
+            return result.get("cards", [])
+        except Exception:
+            self.logger.exception("Failed to get cards list")
+            return []
 
     async def close(self) -> None:
         if self.session and not self.session.closed:
@@ -547,15 +629,28 @@ class YeezyPayMicroservice(BaseHandler):
         currency = account.currency
 
         op_data = operation.data or {}
-        amount = op_data.get("amount", 0) if isinstance(op_data, dict) else 0
+        amount_db = op_data.get("amount", 0) if isinstance(op_data, dict) else 0
         card_name = op_data.get("card_name") if isinstance(op_data, dict) else None
+        # Целевая валюта карты (USD, EUR), отличается от валюты аккаунта (USDT)
+        card_currency = (
+            op_data.get("card_currency", "USD") if isinstance(op_data, dict) else "USD"
+        )
+        card_type = (
+            op_data.get("card_type", "standard")
+            if isinstance(op_data, dict)
+            else "standard"
+        )
+
+        # VC API ожидает human-readable Decimal, а не fixed-point int
+        amount_human = float(amount_db_to_human(amount_db, currency))
 
         try:
             result = await self.gate.card_open(
                 account_external_id=account.external_id or str(account.pk),
-                amount=amount,
-                currency_code=currency.code if currency else "USD",
+                amount=amount_human,
+                currency_code=card_currency,
                 card_name=card_name,
+                card_type=card_type,
             )
             await operation_log(
                 operation.pk, LogTag.FROM_GATE, "Card opened successfully"
@@ -583,12 +678,15 @@ class YeezyPayMicroservice(BaseHandler):
         currency = operation.account.currency
 
         op_data = operation.data or {}
-        amount = op_data.get("amount", 0) if isinstance(op_data, dict) else 0
+        amount_db = op_data.get("amount", 0) if isinstance(op_data, dict) else 0
+
+        # VC API ожидает human-readable Decimal, а не fixed-point int
+        amount_human = float(amount_db_to_human(amount_db, currency))
 
         try:
             result = await self.gate.card_topup(
                 card_id=card_id,
-                amount=amount,
+                amount=amount_human,
                 currency_code=currency.code if currency else "USD",
             )
             await operation_log(operation.pk, LogTag.FROM_GATE, "Card topped up")
@@ -1024,37 +1122,61 @@ class YeezyPayMicroservice(BaseHandler):
             )
             return
 
+        # Сравниваем через .value, т.к. кастомный TextChoices(Enum)
+        # не наследует str — прямое "CO" == OperationKind.CARD_OPEN даёт False
+        kind_value = kind.value if hasattr(kind, "value") else str(kind)
+
+        CARD_KINDS = {
+            OperationKind.CARD_OPEN.value,
+            OperationKind.CARD_TOPUP.value,
+            OperationKind.CARD_CLOSE.value,
+            OperationKind.CARD_BLOCK.value,
+            OperationKind.CARD_RESTORE.value,
+        }
+
         result = {}
         try:
-            if kind == OperationKind.DEPOSIT:
+            if kind_value == OperationKind.DEPOSIT.value:
                 # Для депозитов — запрашиваем детали операции по external_id
                 if external_id:
                     result = await self.gate.crypto_operation_detail(external_id)
                 else:
                     result = {"error": "no external_id for deposit operation"}
-            elif kind in (
-                OperationKind.CARD_OPEN,
-                OperationKind.CARD_TOPUP,
-                OperationKind.CARD_CLOSE,
-                OperationKind.CARD_BLOCK,
-                OperationKind.CARD_RESTORE,
-            ):
-                # Для карточных операций — запрашиваем баланс карты
-                await operation.fetch_related("account")
-                card_id = None
+            elif kind_value == OperationKind.CARD_OPEN.value:
+                # CARD_OPEN: operation.account — это source-аккаунт (USDT),
+                # НЕ карта. Карточный Account создаётся fiscal-ом после
+                # получения результата. Поэтому всегда ищем на VC API.
+                if operation.status in (
+                    Operation.Status.PENDING,
+                    Operation.Status.OPERATING,
+                ):
+                    result = await self._sync_card_open(operation)
+                else:
+                    result = {
+                        "error": "CARD_OPEN already finalized",
+                        "status": str(operation.status),
+                    }
+
+            elif kind_value in CARD_KINDS:
+                # CARD_TOPUP / CARD_BLOCK / CARD_CLOSE / CARD_RESTORE:
+                # operation.account — это карточный Account, external_id = VC API card UUID
+                await operation.fetch_related("account", "account__currency")
                 account = operation.account
-                if account.external_id:
-                    card_id = account.external_id
-                elif isinstance(account.data, dict):
+                card_id = account.external_id
+                if not card_id and isinstance(account.data, dict):
                     card_id = account.data.get("gate_card_id")
 
                 if card_id:
-                    balance = await self.gate.get_card_balance(card_id)
-                    result = {"card_id": card_id, "balance": balance}
+                    details = await self.gate.get_card_details(card_id)
+                    if details:
+                        result = details
+                    else:
+                        balance = await self.gate.get_card_balance(card_id)
+                        result = {"card_id": card_id, "balance": balance}
                 else:
                     result = {"error": "no card_id found for account"}
             else:
-                result = {"error": f"unsupported operation kind: {kind}"}
+                result = {"error": f"unsupported operation kind: {kind_value}"}
 
         except Exception as e:
             self.logger.exception(
@@ -1085,6 +1207,67 @@ class YeezyPayMicroservice(BaseHandler):
         await self._publish_crypto_reply(
             reply_to, request_id, "fetch_operation_status", result
         )
+
+    async def _sync_card_open(self, operation: Operation) -> dict:
+        """Ищет карту на VC API для операции CARD_OPEN и публикует в fiscal.
+
+        Используется когда карта была создана на VC API, но callback не пришёл
+        и локальный Account(VIRTUAL_CARD) ещё не создан.
+        """
+        op_data = operation.data or {}
+        card_name = op_data.get("card_name") if isinstance(op_data, dict) else None
+
+        cards = await self.gate.get_cards_list()
+        if not cards:
+            return {"error": "no cards found on VC API", "synced": False}
+
+        # Ищем по card_name, иначе берём последнюю
+        matched_card = None
+        for card in cards:
+            if isinstance(card, dict) and card.get("name") == card_name:
+                matched_card = card
+                break
+        if not matched_card:
+            matched_card = cards[-1] if isinstance(cards[-1], dict) else None
+
+        if not matched_card:
+            return {"error": "could not match card on VC API", "synced": False}
+
+        card_id = str(matched_card.get("id", ""))
+        card_details = await self.gate.get_card_details(card_id)
+        if not card_details:
+            return {
+                "error": f"failed to get details for card {card_id}",
+                "synced": False,
+            }
+
+        gate_result = {
+            "card_id": card_details["card_id"],
+            "sensitive": card_details.get("sensitive", {}),
+            "status": card_details.get("status"),
+        }
+
+        # Обновляем статус на OPERATING если PENDING
+        if operation.status == Operation.Status.PENDING:
+            await Operation.filter(pk=operation.pk).update(
+                status=Operation.Status.OPERATING,
+                updated_at=timezone.now(),
+            )
+
+        # Публикуем в fiscal_stream
+        await self._publish_to_fiscal(operation, gate_result)
+
+        self.logger.info(
+            "Card sync: found card %s for operation %s, published to fiscal",
+            card_id,
+            operation.pk,
+        )
+
+        return {
+            "synced": True,
+            "card_id": card_id,
+            "status": card_details.get("status"),
+        }
 
     async def yeezypay_gate_process(self, data: dict):
         """Точка входа — обработка NATS-сообщений из топика yeezypay_gate.
@@ -1118,9 +1301,7 @@ class YeezyPayMicroservice(BaseHandler):
         if self.gate_model:
             await Operation.filter(pk=operation.pk).update(gate_id=self.gate_model.pk)
 
-        await operation_log(
-            operation.pk, LogTag.TO_GATE, "Dispatched to YeezyPay gate"
-        )
+        await operation_log(operation.pk, LogTag.TO_GATE, "Dispatched to YeezyPay gate")
 
         kind = OperationKind(operation.kind)
         handler_name = OPERATION_KIND_TO_HANDLER.get(kind)
