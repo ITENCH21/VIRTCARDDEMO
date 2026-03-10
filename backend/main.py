@@ -36,47 +36,36 @@ def rates(period: int = 300):
 
 
 @app.command()
-def callbacks():
-    """Запуск сервиса обработки коллбэков"""
-    from microservices.callbacks import (  # pylint: disable=import-outside-toplevel
-        CallbackMicroservice,
+def out_callbacks():
+    """Запуск сервиса исходящих коллбэков (доставка вебхуков клиентам)"""
+    from microservices.out_callbacks import (  # pylint: disable=import-outside-toplevel
+        OutCallbackMicroservice,
     )
 
-    daemon = CallbackMicroservice()
+    daemon = OutCallbackMicroservice()
     asyncio.run(daemon.run())
 
 
 @app.command()
-def yeezypay_gate():
-    """Запуск гейта YeezyPay для обработки карточных операций"""
+def yeezypay_gate(crypto_poll_period: int = 60):
+    """Запуск гейта YeezyPay (карточные операции + опрос крипто-кошельков)"""
     from gates.impls.yeezypay import (  # pylint: disable=import-outside-toplevel
         YeezyPayMicroservice,
     )
 
-    daemon = YeezyPayMicroservice()
+    daemon = YeezyPayMicroservice(crypto_poll_period=crypto_poll_period)
     asyncio.run(daemon.run())
 
 
 @app.command()
-def gate_callbacks(host: str = "0.0.0.0", port: int = 8001):
-    """Запуск универсального callback API для приёма вебхуков от гейтов (CALL_GATES env)"""
+def in_callbacks(host: str = "0.0.0.0", port: int = 8001):
+    """Запуск API для приёма входящих вебхуков от гейтов (CALL_GATES env)"""
     import uvicorn  # pylint: disable=import-outside-toplevel
-    from api.gate_callbacks import (  # pylint: disable=import-outside-toplevel
+    from api.in_callbacks import (  # pylint: disable=import-outside-toplevel
         app as callback_app,
     )
 
     uvicorn.run(callback_app, host=host, port=port)
-
-
-@app.command()
-def yeezypay_crypto_ops(period: int = 60):
-    """Запуск daemon'а для опроса операций крипто-кошельков YeezyPay"""
-    from daemons.yeezypay_crypto_operations import (  # pylint: disable=import-outside-toplevel
-        CryptoOperationsDaemon,
-    )
-
-    daemon = CryptoOperationsDaemon(period=period)
-    asyncio.run(daemon.run())
 
 
 @app.command()

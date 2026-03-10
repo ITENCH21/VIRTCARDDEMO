@@ -25,7 +25,7 @@ export default function CardListItem({ card }: Props) {
             {formatAmount(card.balance, card.currency_symbol)}
           </div>
         </div>
-        <StatusBadge status={card.status} />
+        <StatusBadge status={card.status} label={card.status === 'P' ? 'Closing' : undefined} />
       </div>
     </div>
   );

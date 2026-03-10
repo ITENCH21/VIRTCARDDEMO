@@ -5,6 +5,7 @@ YeezyPay Gate — микросервис для работы с YeezyPay Virtual
 выполняет HTTP-запросы к YeezyPay VC API и публикует результат обратно в fiscal_stream.
 """
 
+import asyncio
 import datetime
 import time
 import logging
@@ -36,6 +37,9 @@ logging.basicConfig(
 # ── Config ──────────────────────────────────────────────
 
 DEFAULT_TOKEN_TIMEOUT = 3600
+
+# Типы операций YeezyPay, которые считаем депозитами
+DEPOSIT_OP_KINDS = {"deposit", "incoming", "topup", "receive", "credit"}
 
 
 # ── YeezyPay Gate (HTTP-клиент к VC API) ────────────────
@@ -490,10 +494,11 @@ class YeezyPayMicroservice(BaseHandler):
     nats_stream_name = "gates_stream"
     subjects = ["yeezypay_gate", "yeezypay_crypto", "yeezypay_callback"]
 
-    def __init__(self):
+    def __init__(self, crypto_poll_period: int = 60):
         super().__init__()
         self.gate: Optional[YeezyPayGate] = None
         self.gate_model: Optional[Gate] = None
+        self.crypto_poll_period = crypto_poll_period
 
     async def _load_gate(self):
         """Load Gate record from DB and initialize YeezyPayGate with credentials."""
@@ -1333,6 +1338,7 @@ class YeezyPayMicroservice(BaseHandler):
         amount_db: int,
         external_id: str,
         source_payload: dict,
+        source: str = "crypto_callback",
     ) -> Optional[Operation]:
         """Создаёт Operation(DEPOSIT, CRYPTO) и публикует в fiscal_stream.
 
@@ -1344,6 +1350,7 @@ class YeezyPayMicroservice(BaseHandler):
             amount_db: сумма депозита в единицах БД (integer).
             external_id: внешний ID операции (operation_id / tx_hash от YeezyPay).
             source_payload: оригинальные данные от YeezyPay для сохранения в data.
+            source: источник депозита ("crypto_callback" или "crypto_poll").
 
         Returns:
             Созданный Operation или None если дубль.
@@ -1381,7 +1388,7 @@ class YeezyPayMicroservice(BaseHandler):
             existing_data = existing.data or {}
             if not isinstance(existing_data, dict):
                 existing_data = {}
-            existing_data["source"] = "crypto_callback"
+            existing_data["source"] = source
             existing_data["trongrid_promoted"] = True
             existing_data["source_payload"] = source_payload
 
@@ -1395,7 +1402,7 @@ class YeezyPayMicroservice(BaseHandler):
             await operation_log(
                 existing.pk,
                 LogTag.PROMOTED,
-                f"PENDING→OPERATING via crypto_callback, amount_db={amount_db}",
+                f"PENDING→OPERATING via {source}, amount_db={amount_db}",
             )
             await existing.refresh_from_db()
             await self._publish_to_fiscal(existing, gate_result={})
@@ -1433,14 +1440,14 @@ class YeezyPayMicroservice(BaseHandler):
             gate=self.gate_model,
             data={
                 "amount": amount_db,
-                "source": "crypto_callback",
+                "source": source,
                 "source_payload": source_payload,
             },
         )
         await operation_log(
             operation.pk,
             LogTag.CREATE,
-            f"DEPOSIT created via callback, amount_db={amount_db}",
+            f"DEPOSIT created via {source}, amount_db={amount_db}",
         )
 
         self.logger.info(
@@ -1467,9 +1474,9 @@ class YeezyPayMicroservice(BaseHandler):
         )
 
     async def yeezypay_callback_process(self, data: dict):
-        """Точка входа — обработка callback-сообщений из Gate Callbacks API.
+        """Точка входа — обработка callback-сообщений из In-Callbacks API.
 
-        Формат сообщения (от gate_callbacks API через NATS):
+        Формат сообщения (от in_callbacks API через NATS):
         {
             "gate_code": "yeezypay",
             "payload": { ...raw webhook body from YeezyPay... },
@@ -1561,7 +1568,7 @@ class YeezyPayMicroservice(BaseHandler):
         if operation_id and operation_id not in processed:
             processed.append(operation_id)
             if len(processed) > self.MAX_PROCESSED_IDS:
-                processed = processed[-self.MAX_PROCESSED_IDS:]
+                processed = processed[-self.MAX_PROCESSED_IDS :]
 
             # Перечитываем (могло обновиться в _create_deposit_and_publish)
             account = await Account.get(pk=account.pk)
@@ -1576,8 +1583,243 @@ class YeezyPayMicroservice(BaseHandler):
     async def inner_run(self):
         self.logger.info("YeezyPayMicroservice inner run started")
         assert self.nats_consumer is not None
-        await self.nats_consumer.consume_forever(
-            batch=10,
-            timeout=0.5,
-            retry_backoff=0.5,
+        await asyncio.gather(
+            self.nats_consumer.consume_forever(
+                batch=10,
+                timeout=0.5,
+                retry_backoff=0.5,
+            ),
+            self._periodic_crypto_poll(),
         )
+
+    # ── Crypto polling (бывший CryptoOperationsDaemon) ────
+
+    async def _periodic_crypto_poll(self):
+        """Периодический опрос крипто-кошельков (каждые crypto_poll_period сек)."""
+        self.logger.info(
+            "Crypto polling started with period=%ss", self.crypto_poll_period
+        )
+        while self.runned:
+            try:
+                await self._crypto_poll_iteration()
+            except Exception:
+                self.logger.exception("Crypto poll iteration failed")
+            await asyncio.sleep(self.crypto_poll_period)
+
+    async def _crypto_poll_iteration(self):
+        """Одна итерация: опрос балансов и операций крипто-кошельков."""
+        if not self.gate:
+            self.logger.warning("Gate not loaded, skipping crypto poll")
+            return
+
+        try:
+            await self._sync_main_wallet_balance()
+        except Exception:
+            self.logger.exception("Failed to sync main wallet balance")
+
+        try:
+            await self._sync_child_wallets()
+        except Exception:
+            self.logger.exception("Failed to sync child wallets")
+
+    async def _sync_main_wallet_balance(self):
+        """Запрашивает баланс основного кошелька и логирует его."""
+        result = await self.gate.crypto_balance_main()
+        self.logger.info("Main wallet balance response: %r", result)
+
+        data = result.get("data") or result
+        balance_str = data.get("balance")
+
+        if balance_str is not None:
+            self.logger.info("Main wallet balance: %s", balance_str)
+        else:
+            self.logger.warning("No balance in main wallet response: %r", result)
+
+    async def _sync_child_wallets(self):
+        """Загружает все Account с external_id и обновляет их операции."""
+        accounts = await Account.filter(
+            external_id__isnull=False,
+            status__in=[
+                Account.Status.ACTIVE,
+                Account.Status.RESTORED,
+            ],
+        ).prefetch_related("currency")
+
+        if not accounts:
+            self.logger.info("No active crypto accounts found, skipping")
+            return
+
+        self.logger.info("Found %d active crypto accounts to sync", len(accounts))
+
+        for account in accounts:
+            try:
+                await self._sync_account(account)
+            except Exception:
+                self.logger.exception(
+                    "Failed to sync account %s (address=%s)",
+                    account.pk,
+                    account.address,
+                )
+
+    async def _sync_account(self, account: Account):
+        """Синхронизирует один аккаунт: проверяет адрес и опрашивает операции."""
+        wallet_id = account.external_id
+
+        if not wallet_id:
+            self.logger.warning(
+                "Account %s has no external_id (wallet_id), skipping sync",
+                account.pk,
+            )
+            return
+
+        # 1. Проверяем актуальность wallet info (адрес может смениться)
+        try:
+            await self._poll_sync_wallet_info(account, wallet_id)
+            account = await Account.get(pk=account.pk).prefetch_related(
+                "currency", "client"
+            )
+        except Exception:
+            self.logger.exception(
+                "Failed to sync wallet info for account %s", account.pk
+            )
+
+        # 2. Запрашиваем список операций — именно из них создаём депозиты
+        try:
+            ops_result = await self.gate.crypto_operations_list(
+                wallet_id=wallet_id,
+                page=1,
+                page_size=50,
+            )
+            await self._poll_process_operations(account, ops_result)
+        except Exception:
+            self.logger.exception("Failed to get operations for account %s", account.pk)
+
+    async def _poll_sync_wallet_info(self, account: Account, wallet_id: str):
+        """Запрашивает crypto_wallet_info и обновляет адрес если он изменился."""
+        result = await self.gate.crypto_wallet_info(wallet_id=wallet_id)
+
+        wallet_data = result.get("data") or result
+        new_address = wallet_data.get("wallet_address") or wallet_data.get("address")
+
+        if not new_address:
+            return
+
+        old_address = account.address
+
+        if new_address == old_address:
+            return
+
+        # Адрес изменился — обновляем
+        self.logger.warning(
+            "Address changed for account %s: %s → %s (wallet_id=%s)",
+            account.pk,
+            old_address,
+            new_address,
+            wallet_id,
+        )
+
+        await Account.filter(pk=account.pk).update(
+            address=new_address,
+            external_updated_at=timezone.now(),
+        )
+
+        await account.fetch_related("client")
+        await self._notify_address_changed(account, old_address or "", new_address)
+
+    def _is_deposit_operation(self, op: dict) -> bool:
+        """Определяет, является ли операция от API депозитом (пополнением)."""
+        op_kind = (op.get("kind") or op.get("type") or "").lower()
+        return op_kind in DEPOSIT_OP_KINDS
+
+    async def _poll_process_operations(self, account: Account, ops_result: dict):
+        """Обрабатывает список операций: создаёт Operation(DEPOSIT) для новых
+        пополнений и публикует в fiscal_stream.
+        """
+        data = ops_result.get("data") or ops_result
+        operations = data.get("operations") or data.get("items") or []
+
+        if not operations:
+            self.logger.debug("No operations for account %s", account.pk)
+            return
+
+        account = await Account.get(pk=account.pk).prefetch_related(
+            "currency", "client"
+        )
+        account_data = dict(account.data) if account.data else {}
+        processed = set(account_data.get("processed_operations", []))
+
+        new_ops_count = 0
+        new_ids = []
+
+        for op in operations:
+            op_id = str(op.get("id") or op.get("operation_id") or "")
+            if not op_id or op_id in processed:
+                continue
+
+            new_ops_count += 1
+            new_ids.append(op_id)
+
+            op_kind = op.get("kind") or op.get("type") or "unknown"
+            op_amount = op.get("amount") or op.get("value") or "?"
+            op_status = op.get("status") or "?"
+
+            self.logger.info(
+                "New operation for account %s: id=%s, kind=%s, amount=%s, status=%s",
+                account.pk,
+                op_id,
+                op_kind,
+                op_amount,
+                op_status,
+            )
+
+            if self._is_deposit_operation(op):
+                amount_str = str(op.get("amount") or op.get("value") or "0")
+                try:
+                    deposit_amount_db = self._parse_amount_db(
+                        amount_str, account.currency
+                    )
+                    await self._create_deposit_and_publish(
+                        account=account,
+                        amount_db=deposit_amount_db,
+                        external_id=op_id,
+                        source_payload=op,
+                        source="crypto_poll",
+                    )
+                except Exception:
+                    self.logger.exception(
+                        "Failed to create deposit operation: account=%s, op_id=%s",
+                        account.pk,
+                        op_id,
+                    )
+
+        if new_ids:
+            account = await Account.get(pk=account.pk)
+            account_data = dict(account.data) if account.data else {}
+            existing_processed = account_data.get("processed_operations", [])
+
+            all_processed = existing_processed + [
+                oid for oid in new_ids if oid not in existing_processed
+            ]
+            if len(all_processed) > self.MAX_PROCESSED_IDS:
+                all_processed = all_processed[-self.MAX_PROCESSED_IDS :]
+
+            account_data["processed_operations"] = all_processed
+            account_data["last_poll"] = {
+                "timestamp": str(timezone.now()),
+                "new_operations_count": new_ops_count,
+                "total_operations_in_response": len(operations),
+            }
+
+            await Account.filter(pk=account.pk).update(data=account_data)
+
+            self.logger.info(
+                "Processed %d new operations for account %s (%d deposits)",
+                new_ops_count,
+                account.pk,
+                sum(
+                    1
+                    for op in operations
+                    if str(op.get("id") or op.get("operation_id") or "") in new_ids
+                    and self._is_deposit_operation(op)
+                ),
+            )

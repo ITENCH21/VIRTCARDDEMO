@@ -80,6 +80,12 @@ class EstimateResponse(BaseModel):
     currency_symbol: str
 
 
+class AmountLimitsResponse(BaseModel):
+    min_amount: Optional[str]
+    max_amount: Optional[str]
+    currency_symbol: str
+
+
 class IssueCardRequest(BaseModel):
     amount: str
     card_name: str = ""

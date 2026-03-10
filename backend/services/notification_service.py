@@ -139,6 +139,32 @@ def format_card_restore_notification(card_last4: str) -> str:
     return f"<b>Карта ****{card_last4} разблокирована</b>"
 
 
+def format_withdraw_notification(operation: Operation, currency_symbol: str) -> str:
+    """Форматирует уведомление о выводе средств."""
+    amount = operation.amount
+    fee = operation.fee
+
+    op_data = operation.data or {}
+    address = ""
+    if isinstance(op_data, dict):
+        address = op_data.get("address", operation.account_data or "")
+    addr_short = (
+        f"{address[:6]}...{address[-4:]}"
+        if address and len(address) > 10
+        else address or "—"
+    )
+
+    lines = [
+        "<b>Вывод выполнен</b>\n",
+        f"Сумма: <b>{amount} {currency_symbol}</b>",
+    ]
+    if fee:
+        lines.append(f"Комиссия: {fee} {currency_symbol}")
+    lines.append(f"Адрес: <code>{addr_short}</code>")
+    lines.append("\nСтатус: Завершено")
+    return "\n".join(lines)
+
+
 def format_operation_failed_notification(operation: Operation, kind_label: str) -> str:
     """Форматирует уведомление о неудавшейся операции."""
     op_data = operation.data or {}
@@ -163,6 +189,7 @@ def format_operation_failed_notification(operation: Operation, kind_label: str) 
 
 KIND_LABELS = {
     OperationKind.DEPOSIT: "Депозит",
+    OperationKind.WITHDRAW: "Вывод",
     OperationKind.CARD_OPEN: "Выпуск карты",
     OperationKind.CARD_TOPUP: "Пополнение карты",
     OperationKind.CARD_CLOSE: "Закрытие карты",
@@ -198,6 +225,9 @@ async def notify_operation(operation: Operation) -> bool:
     if operation.status == Operation.Status.FAILED:
         kind_label = KIND_LABELS.get(kind, kind.value)
         text = format_operation_failed_notification(operation, kind_label)
+
+    elif kind == OperationKind.WITHDRAW:
+        text = format_withdraw_notification(operation, currency_symbol)
 
     elif kind == OperationKind.DEPOSIT:
         text = format_deposit_notification(operation, currency_symbol)

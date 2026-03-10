@@ -99,8 +99,12 @@ async def check_sufficient_funds(
 
 async def calc_card_open_fee(
     amount: Decimal, currency: Currency, method: str = "VC"
-) -> Optional[Decimal]:
-    """Рассчитывает комиссию за выпуск карты."""
+) -> Optional[tuple[Decimal, CardOpenTarifLine]]:
+    """Рассчитывает комиссию за выпуск карты.
+
+    Returns:
+        (fee, tarifline) или None если тариф не найден.
+    """
     tarifline = await CardOpenTarifLine.filter(
         tarif__status="A",
         is_active=True,
@@ -109,13 +113,17 @@ async def calc_card_open_fee(
     ).first()
     if not tarifline:
         return None
-    return tarifline.calc_fee(amount)
+    return tarifline.calc_fee(amount), tarifline
 
 
 async def calc_card_topup_fee(
     amount: Decimal, currency: Currency, method: str = "VC"
-) -> Optional[Decimal]:
-    """Рассчитывает комиссию за пополнение карты."""
+) -> Optional[tuple[Decimal, CardTopUpTarifLine]]:
+    """Рассчитывает комиссию за пополнение карты.
+
+    Returns:
+        (fee, tarifline) или None если тариф не найден.
+    """
     tarifline = await CardTopUpTarifLine.filter(
         tarif__status="A",
         is_active=True,
@@ -124,7 +132,39 @@ async def calc_card_topup_fee(
     ).first()
     if not tarifline:
         return None
-    return tarifline.calc_fee(amount)
+    return tarifline.calc_fee(amount), tarifline
+
+
+async def get_card_open_limits(currency: Currency, method: str = "VC") -> dict:
+    """Возвращает лимиты суммы для выпуска карты из тарифной линии."""
+    tarifline = await CardOpenTarifLine.filter(
+        tarif__status="A",
+        is_active=True,
+        currency_id=currency.pk,
+        method=method,
+    ).first()
+    if not tarifline:
+        return {"min_amount": None, "max_amount": None}
+    return {
+        "min_amount": tarifline.min_amount,
+        "max_amount": tarifline.max_amount,
+    }
+
+
+async def get_card_topup_limits(currency: Currency, method: str = "VC") -> dict:
+    """Возвращает лимиты суммы для пополнения карты из тарифной линии."""
+    tarifline = await CardTopUpTarifLine.filter(
+        tarif__status="A",
+        is_active=True,
+        currency_id=currency.pk,
+        method=method,
+    ).first()
+    if not tarifline:
+        return {"min_amount": None, "max_amount": None}
+    return {
+        "min_amount": tarifline.min_amount,
+        "max_amount": tarifline.max_amount,
+    }
 
 
 async def calc_withdraw_fee(

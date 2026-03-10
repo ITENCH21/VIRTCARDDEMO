@@ -1,18 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
-import { fetchOperations, OperationResponse } from '../api/operations';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { fetchOperations, OperationResponse, OperationFilters } from '../api/operations';
 
 export function useOperations(pageSize = 10) {
   const [items, setItems] = useState<OperationResponse[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
+  const [filters, setFilters] = useState<OperationFilters>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
 
-  const load = useCallback(async (newOffset: number) => {
+  const load = useCallback(async (newOffset: number, f?: OperationFilters) => {
+    const activeFilters = f ?? filtersRef.current;
     try {
       setLoading(true);
       setError(null);
-      const res = await fetchOperations(newOffset, pageSize);
+      const res = await fetchOperations(newOffset, pageSize, activeFilters);
       setItems(res.items);
       setTotal(res.total);
       setOffset(newOffset);
@@ -39,16 +43,23 @@ export function useOperations(pageSize = 10) {
     }
   }, [offset, pageSize, load]);
 
+  const applyFilters = useCallback((newFilters: OperationFilters) => {
+    setFilters(newFilters);
+    load(0, newFilters);
+  }, [load]);
+
   return {
     items,
     total,
     offset,
     loading,
     error,
+    filters,
     nextPage,
     prevPage,
     hasNext: offset + pageSize < total,
     hasPrev: offset > 0,
     refresh: () => load(offset),
+    applyFilters,
   };
 }

@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 # Типы операций, по которым отправляем уведомления
 NOTIFIABLE_KINDS = {
     OperationKind.DEPOSIT,
+    OperationKind.WITHDRAW,
     OperationKind.CARD_OPEN,
     OperationKind.CARD_TOPUP,
     OperationKind.CARD_CLOSE,

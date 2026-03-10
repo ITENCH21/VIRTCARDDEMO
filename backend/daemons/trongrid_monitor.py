@@ -125,8 +125,8 @@ class TronGridMonitorDaemon(PeriodicBaseHandler):
                     account.address,
                 )
 
-            # Rate limiting
-            if (i + 1) % RATE_LIMIT_BATCH_SIZE == 0 and i + 1 < len(accounts):
+            # Rate limiting: пауза между каждым аккаунтом для free tier
+            if i + 1 < len(accounts):
                 await asyncio.sleep(RATE_LIMIT_SLEEP)
 
         # Проверяем stale PENDING операции

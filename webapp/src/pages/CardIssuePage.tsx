@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AmountInput from '../components/AmountInput';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Spinner from '../components/Spinner';
-import { estimateIssue, issueCard, syncOperation, EstimateResponse, CardCurrency, CardType } from '../api/cards';
+import { estimateIssue, issueCard, syncOperation, fetchIssueLimits, EstimateResponse, AmountLimitsResponse, CardCurrency, CardType } from '../api/cards';
 import { usePolling } from '../hooks/usePolling';
 import { formatAmount } from '../lib/format';
 import { hapticFeedback } from '../lib/telegram';
@@ -19,8 +19,33 @@ export default function CardIssuePage() {
   const [error, setError] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [operationId, setOperationId] = useState<string | null>(null);
+  const [limits, setLimits] = useState<AmountLimitsResponse | null>(null);
 
   const { status, isComplete, isFailed, isPolling } = usePolling(operationId);
+
+  useEffect(() => {
+    fetchIssueLimits()
+      .then(setLimits)
+      .catch(() => {});
+  }, []);
+
+  const isAmountInvalid = useMemo(() => {
+    if (!limits || !amount) return false;
+    const num = parseFloat(amount);
+    if (isNaN(num) || num <= 0) return false;
+    if (limits.min_amount !== null && num < parseFloat(limits.min_amount)) return true;
+    if (limits.max_amount !== null && num > parseFloat(limits.max_amount)) return true;
+    return false;
+  }, [amount, limits]);
+
+  const limitsHint = useMemo(() => {
+    if (!limits) return undefined;
+    const parts: string[] = [];
+    if (limits.min_amount !== null) parts.push(`Min: ${limits.min_amount}`);
+    if (limits.max_amount !== null) parts.push(`Max: ${limits.max_amount}`);
+    if (parts.length === 0) return undefined;
+    return parts.join(' — ') + ` ${limits.currency_symbol}`;
+  }, [limits]);
 
   const handleEstimate = async () => {
     if (!amount || parseFloat(amount) <= 0) return;
@@ -82,15 +107,6 @@ export default function CardIssuePage() {
             <Spinner />
             <p className="mt-16">Processing your card...</p>
             <p className="text-hint">Status: {status}</p>
-            <button
-              className="btn mt-16"
-              style={{ background: 'var(--secondary-bg-color)', color: 'var(--text-color)' }}
-              onClick={handleSync}
-              disabled={syncing}
-            >
-              {syncing ? 'Syncing...' : 'Sync Status'}
-            </button>
-            {syncMessage && <p className="text-hint mt-8">{syncMessage}</p>}
           </>
         )}
         {isComplete && (
@@ -185,14 +201,20 @@ export default function CardIssuePage() {
         </select>
       </div>
 
-      <AmountInput value={amount} onChange={setAmount} label="Initial Amount" />
+      <AmountInput
+        value={amount}
+        onChange={setAmount}
+        label="Initial Amount"
+        error={isAmountInvalid}
+        hint={limitsHint}
+      />
 
       {error && <p className="error-text">{error}</p>}
 
       <button
         className="btn btn-primary mt-16"
         onClick={handleEstimate}
-        disabled={loading || !amount || parseFloat(amount) <= 0}
+        disabled={loading || !amount || parseFloat(amount) <= 0 || isAmountInvalid}
       >
         {loading ? 'Calculating...' : 'Continue'}
       </button>

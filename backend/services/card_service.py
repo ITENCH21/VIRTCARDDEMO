@@ -5,6 +5,7 @@
 публикация в NATS для обработки гейтом, проверка условий.
 """
 
+import asyncio
 import uuid
 import logging
 from decimal import Decimal
@@ -70,6 +71,26 @@ class InvalidCardStatusError(CardServiceError):
     """Некорректный статус карты для операции."""
 
 
+class AmountOutOfRangeError(CardServiceError):
+    """Сумма операции вне допустимого диапазона."""
+
+    def __init__(
+        self,
+        min_amount: Optional[Decimal],
+        max_amount: Optional[Decimal],
+        currency_symbol: str,
+    ):
+        self.min_amount = min_amount
+        self.max_amount = max_amount
+        self.currency_symbol = currency_symbol
+        parts = []
+        if min_amount is not None:
+            parts.append(f"мин. {fmt_amount(min_amount)} {currency_symbol}")
+        if max_amount is not None:
+            parts.append(f"макс. {fmt_amount(max_amount)} {currency_symbol}")
+        super().__init__(f"Сумма вне допустимого диапазона: {', '.join(parts)}")
+
+
 # ── Получение карт ────────────────────────────────────────
 
 
@@ -83,6 +104,79 @@ async def get_client_cards(client: Client) -> list[Account]:
         .prefetch_related("currency", "parent")
         .order_by("-created_at")
     )
+
+
+# Маппинг статусов YeezyPay API → Account.Status
+YEEZYPAY_STATUS_MAP = {
+    "ACTIVE": Account.Status.ACTIVE,
+    "BLOCKED": Account.Status.BLOCKED,
+    "CLOSED": Account.Status.CLOSED,
+}
+
+
+async def sync_cards_statuses(cards: list[Account]) -> list[Account]:
+    """Синхронизирует статусы карт с YeezyPay API.
+
+    Для карт с external_id в не-терминальных статусах запрашивает
+    актуальный статус у YeezyPay и обновляет локальную БД при расхождениях.
+    При ошибке API — молча возвращает карты без изменений.
+    """
+    syncable = [
+        c
+        for c in cards
+        if c.external_id
+        and c.status
+        not in (Account.Status.CLOSED, Account.Status.BANNED, Account.Status.PURGE)
+    ]
+    if not syncable:
+        return cards
+
+    try:
+        gate = await _get_gate_instance()
+    except CardServiceError:
+        logger.warning("Cannot sync card statuses: gate unavailable")
+        return cards
+
+    try:
+        tasks = [gate.get_card_details(c.external_id) for c in syncable]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for card, result in zip(syncable, results):
+            if isinstance(result, (Exception, type(None))) or result is None:
+                continue
+
+            remote_status_str = result.get("status")
+            if not remote_status_str:
+                continue
+
+            new_status = YEEZYPAY_STATUS_MAP.get(remote_status_str)
+            if new_status and new_status != card.status:
+                logger.info(
+                    "Card %s status synced: %s → %s",
+                    card.external_id,
+                    card.status,
+                    new_status,
+                )
+                await Account.filter(pk=card.pk).update(
+                    status=new_status,
+                    external_updated_at=timezone.now(),
+                )
+                card.status = new_status
+
+            # Обновляем внешний баланс (информационное поле)
+            remote_balance = result.get("balance")
+            if remote_balance is not None:
+                await Account.filter(pk=card.pk).update(
+                    external_amount_db=remote_balance,
+                    external_updated_at=timezone.now(),
+                )
+                card.external_amount_db = remote_balance
+    except Exception:
+        logger.exception("Failed to sync card statuses from YeezyPay")
+    finally:
+        await gate.close()
+
+    return cards
 
 
 async def get_active_cards(client: Client) -> list[Account]:
@@ -144,6 +238,19 @@ def get_card_status_emoji(card: Account) -> str:
     return status_map.get(card.status, "⚪")
 
 
+# ── Валидация лимитов суммы ───────────────────────────────
+
+
+def _validate_amount_range(amount: Decimal, tarifline, currency_symbol: str) -> None:
+    """Проверяет, что сумма в допустимом диапазоне тарифной линии."""
+    min_amt = tarifline.min_amount
+    max_amt = tarifline.max_amount
+    if min_amt is not None and amount < min_amt:
+        raise AmountOutOfRangeError(min_amt, max_amt, currency_symbol)
+    if max_amt is not None and amount > max_amt:
+        raise AmountOutOfRangeError(min_amt, max_amt, currency_symbol)
+
+
 # ── Выпуск карты ──────────────────────────────────────────
 
 
@@ -169,9 +276,13 @@ async def estimate_card_open(client: Client, amount: Decimal) -> dict:
     currency = account.currency
     amount_db = amount_human_to_db(amount, currency)
 
-    fee = await calc_card_open_fee(amount, currency)
-    if fee is None:
+    result = await calc_card_open_fee(amount, currency)
+    if result is None:
         raise NoTarifError("Тариф на выпуск карты не настроен")
+
+    fee, tarifline = result
+    symbol = currency.symbol or currency.code
+    _validate_amount_range(amount, tarifline, symbol)
 
     fee_db = amount_human_to_db(fee, currency)
     total = amount + fee
@@ -180,9 +291,7 @@ async def estimate_card_open(client: Client, amount: Decimal) -> dict:
     available_db = get_available_balance_db_sync(account)
     if available_db < total_db:
         available_human = amount_db_to_human(available_db, currency)
-        raise InsufficientFundsError(
-            available_human, total, currency.symbol or currency.code
-        )
+        raise InsufficientFundsError(available_human, total, symbol)
 
     return {
         "amount": amount,
@@ -280,9 +389,13 @@ async def estimate_card_topup(
     currency = parent.currency
     amount_db = amount_human_to_db(amount, currency)
 
-    fee = await calc_card_topup_fee(amount, currency)
-    if fee is None:
+    result = await calc_card_topup_fee(amount, currency)
+    symbol = currency.symbol or currency.code
+    if result is None:
         fee = Decimal("0")
+    else:
+        fee, tarifline = result
+        _validate_amount_range(amount, tarifline, symbol)
 
     fee_db = amount_human_to_db(fee, currency)
     total = amount + fee
@@ -291,9 +404,7 @@ async def estimate_card_topup(
     available_db = get_available_balance_db_sync(parent)
     if available_db < total_db:
         available_human = amount_db_to_human(available_db, currency)
-        raise InsufficientFundsError(
-            available_human, total, currency.symbol or currency.code
-        )
+        raise InsufficientFundsError(available_human, total, symbol)
 
     return {
         "amount": amount,
@@ -386,7 +497,11 @@ async def restore_card(client: Client, card_account_id: str) -> Operation:
 async def close_card(client: Client, card_account_id: str) -> Operation:
     """Закрывает карту (возврат остатка на основной аккаунт)."""
     card = await get_card_by_id(client, card_account_id)
-    if card.status in [Account.Status.CLOSED, Account.Status.BANNED]:
+    if card.status in [
+        Account.Status.CLOSED,
+        Account.Status.BANNED,
+        Account.Status.PURGE,
+    ]:
         raise InvalidCardStatusError("Карта уже закрыта")
 
     operation = await Operation.create(
@@ -399,6 +514,10 @@ async def close_card(client: Client, card_account_id: str) -> Operation:
         amount_db=card.amount_db or 0,
         data={},
     )
+
+    # Ставим статус PURGE — карта в процессе закрытия
+    card.status = Account.Status.PURGE
+    await card.save(update_fields=["status"])
 
     logger.info("Card close operation created: #%s, card=%s", operation.pk, card.pk)
     await _publish_gate_task(operation)

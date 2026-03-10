@@ -13,10 +13,13 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 
 interface Props {
   status: string;
+  label?: string;
+  color?: string;
 }
 
-export default function StatusBadge({ status }: Props) {
+export default function StatusBadge({ status, label, color }: Props) {
   const config = STATUS_CONFIG[status] || { label: status, color: 'var(--hint-color)' };
+  const displayColor = color || config.color;
 
   return (
     <span
@@ -26,11 +29,11 @@ export default function StatusBadge({ status }: Props) {
         borderRadius: '6px',
         fontSize: '12px',
         fontWeight: 600,
-        color: config.color,
-        background: `${config.color}20`,
+        color: displayColor,
+        background: `${displayColor}20`,
       }}
     >
-      {config.label}
+      {label || config.label}
     </span>
   );
 }

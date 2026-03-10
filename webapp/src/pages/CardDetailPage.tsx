@@ -2,11 +2,18 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCard } from '../hooks/useCards';
 import { fetchCardSensitive, blockCard, restoreCard, closeCard, CardSensitiveResponse } from '../api/cards';
+import { usePolling } from '../hooks/usePolling';
 import StatusBadge from '../components/StatusBadge';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Spinner from '../components/Spinner';
 import { formatAmount, formatCardNumber } from '../lib/format';
 import { hapticFeedback } from '../lib/telegram';
+
+const ACTION_LABELS: Record<string, { pending: string; done: string }> = {
+  block: { pending: 'Blocking card...', done: 'Card Blocked' },
+  restore: { pending: 'Restoring card...', done: 'Card Restored' },
+  close: { pending: 'Closing card...', done: 'Card Closed' },
+};
 
 export default function CardDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +25,9 @@ export default function CardDetailPage() {
   const [confirmAction, setConfirmAction] = useState<'block' | 'restore' | 'close' | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [operationId, setOperationId] = useState<string | null>(null);
+  const [actionType, setActionType] = useState('');
+  const { isComplete, isFailed, isPolling } = usePolling(operationId);
 
   const handleReveal = async () => {
     if (showSensitive) {
@@ -41,12 +51,13 @@ export default function CardDetailPage() {
     setActionLoading(true);
     setActionError(null);
     try {
-      if (confirmAction === 'block') await blockCard(id);
-      else if (confirmAction === 'restore') await restoreCard(id);
-      else if (confirmAction === 'close') await closeCard(id);
-      hapticFeedback('success');
+      let res;
+      if (confirmAction === 'block') res = await blockCard(id);
+      else if (confirmAction === 'restore') res = await restoreCard(id);
+      else res = await closeCard(id);
+      setActionType(confirmAction);
+      setOperationId(res.operation_id);
       setConfirmAction(null);
-      refresh();
     } catch (e: unknown) {
       setActionError(e instanceof Error ? e.message : 'Action failed');
       hapticFeedback('error');
@@ -55,11 +66,57 @@ export default function CardDetailPage() {
     }
   };
 
+  const handleDone = () => {
+    setOperationId(null);
+    refresh();
+  };
+
+  // Operation in progress or finished — show status screen
+  if (operationId) {
+    const labels = ACTION_LABELS[actionType] || { pending: 'Processing...', done: 'Done' };
+    return (
+      <div className="page text-center" style={{ paddingTop: '60px' }}>
+        {isPolling && (
+          <>
+            <Spinner />
+            <p className="mt-16">{labels.pending}</p>
+          </>
+        )}
+        {isComplete && (
+          <>
+            <h2 style={{ fontSize: '24px', color: 'var(--success-color)' }}>{labels.done}</h2>
+            <button className="btn btn-primary mt-24" onClick={handleDone}>
+              Back to Card
+            </button>
+          </>
+        )}
+        {isFailed && (
+          <>
+            <h2 style={{ fontSize: '24px', color: 'var(--danger-color)' }}>Operation Failed</h2>
+            <p className="text-hint mt-8">Please try again</p>
+            <button className="btn btn-primary mt-24" onClick={handleDone}>
+              Back to Card
+            </button>
+          </>
+        )}
+        {!isPolling && !isComplete && !isFailed && (
+          <>
+            <p className="text-hint">Polling timed out</p>
+            <button className="btn btn-primary mt-16" onClick={handleDone}>
+              Back to Card
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
+
   if (loading) return <div className="page"><Spinner /></div>;
   if (error || !card) return <div className="page"><p className="error-text">{error || 'Card not found'}</p></div>;
 
   const isActive = card.status === 'A' || card.status === 'R';
   const isBlocked = card.status === 'L';
+  const isClosing = card.status === 'P';
   const isClosed = card.status === 'C' || card.status === 'B';
 
   return (
@@ -67,7 +124,7 @@ export default function CardDetailPage() {
       <h1 className="page-title">{card.name} ****{card.last4}</h1>
 
       <div className="card" style={{ textAlign: 'center', padding: '24px' }}>
-        <StatusBadge status={card.status} />
+        <StatusBadge status={card.status} label={isClosing ? 'Closing' : undefined} />
         <div style={{ fontSize: '28px', fontWeight: 700, marginTop: '12px' }}>
           {formatAmount(card.balance, card.currency_symbol)}
         </div>
@@ -123,7 +180,7 @@ export default function CardDetailPage() {
             Restore Card
           </button>
         )}
-        {!isClosed && (
+        {!isClosed && !isClosing && (
           <button className="btn btn-danger" onClick={() => setConfirmAction('close')}>
             Close Card
           </button>

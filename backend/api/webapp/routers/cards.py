@@ -12,6 +12,7 @@ from api.webapp.schemas import (
     CardSensitiveResponse,
     EstimateRequest,
     EstimateResponse,
+    AmountLimitsResponse,
     IssueCardRequest,
     TopupCardRequest,
     OperationCreatedResponse,
@@ -28,12 +29,19 @@ from services.card_service import (
     restore_card,
     close_card,
     sync_operation_status,
+    sync_cards_statuses,
     CardServiceError,
     InsufficientFundsError,
     CardNotFoundError,
     InvalidCardStatusError,
     NoTarifError,
     AccountNotFoundError,
+    AmountOutOfRangeError,
+)
+from services.balance_service import (
+    get_crypto_account,
+    get_card_open_limits,
+    get_card_topup_limits,
 )
 
 router = APIRouter(prefix="/api/v1/cards", tags=["cards"])
@@ -71,23 +79,50 @@ def _handle_card_error(e: CardServiceError):
         raise HTTPException(status_code=400, detail=str(e))
     if isinstance(e, AccountNotFoundError):
         raise HTTPException(status_code=400, detail=str(e))
+    if isinstance(e, AmountOutOfRangeError):
+        raise HTTPException(status_code=400, detail=str(e))
     raise HTTPException(status_code=500, detail="Card service error")
 
 
 @router.get("", response_model=list[CardResponse])
 async def list_cards(client: Client = Depends(get_current_client)):
-    """List all client's virtual cards."""
+    """List all client's virtual cards (statuses synced with YeezyPay)."""
     cards = await get_client_cards(client)
+    cards = await sync_cards_statuses(cards)
     return [_card_to_response(c) for c in cards]
+
+
+@router.get("/limits", response_model=AmountLimitsResponse)
+async def get_issue_limits(client: Client = Depends(get_current_client)):
+    """Лимиты суммы для выпуска карты из тарифной линии."""
+    account = await get_crypto_account(client)
+    if not account:
+        raise HTTPException(status_code=400, detail="USDT-TRC20 аккаунт не найден")
+    limits = await get_card_open_limits(account.currency)
+    symbol = account.currency.symbol or account.currency.code
+    return AmountLimitsResponse(
+        min_amount=(
+            fmt_amount(limits["min_amount"])
+            if limits["min_amount"] is not None
+            else None
+        ),
+        max_amount=(
+            fmt_amount(limits["max_amount"])
+            if limits["max_amount"] is not None
+            else None
+        ),
+        currency_symbol=symbol,
+    )
 
 
 @router.get("/{card_id}", response_model=CardResponse)
 async def get_card(card_id: str, client: Client = Depends(get_current_client)):
-    """Get card details."""
+    """Get card details (status synced with YeezyPay)."""
     try:
         card = await get_card_by_id(client, card_id)
     except CardServiceError as e:
         _handle_card_error(e)
+    await sync_cards_statuses([card])
     return _card_to_response(card)
 
 
@@ -104,10 +139,10 @@ async def get_card_sensitive(
     creds = card.credentials or {}
     response = JSONResponse(
         content=CardSensitiveResponse(
-            card_number=creds.get("card_number", ""),
-            cvv=creds.get("cvv", ""),
-            expiry_month=str(creds.get("expiry_month", "")),
-            expiry_year=str(creds.get("expiry_year", "")),
+            card_number=creds.get("card_number") or "",
+            cvv=creds.get("cvv") or "",
+            expiry_month=str(creds.get("expiry_month") or ""),
+            expiry_year=str(creds.get("expiry_year") or ""),
         ).dict(),
         headers={"Cache-Control": "no-store"},
     )
@@ -164,6 +199,36 @@ async def issue_new_card(
     return OperationCreatedResponse(
         operation_id=str(operation.pk),
         status=_enum_to_str(operation.status),
+    )
+
+
+@router.get("/{card_id}/topup-limits", response_model=AmountLimitsResponse)
+async def get_topup_limits(card_id: str, client: Client = Depends(get_current_client)):
+    """Лимиты суммы для пополнения карты из тарифной линии."""
+    try:
+        card = await get_card_by_id(client, card_id)
+    except CardServiceError as e:
+        _handle_card_error(e)
+
+    parent = card.parent
+    if not parent:
+        raise HTTPException(status_code=400, detail="Родительский аккаунт не найден")
+    await parent.fetch_related("currency")
+
+    limits = await get_card_topup_limits(parent.currency)
+    symbol = parent.currency.symbol or parent.currency.code
+    return AmountLimitsResponse(
+        min_amount=(
+            fmt_amount(limits["min_amount"])
+            if limits["min_amount"] is not None
+            else None
+        ),
+        max_amount=(
+            fmt_amount(limits["max_amount"])
+            if limits["max_amount"] is not None
+            else None
+        ),
+        currency_symbol=symbol,
     )
 
 

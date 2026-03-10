@@ -1,5 +1,7 @@
 """Operations router — history and status polling."""
 
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from models.models import Client, Operation, amount_db_to_human, fmt_amount
@@ -56,10 +58,16 @@ def _operation_to_response(op: Operation) -> OperationResponse:
 async def list_operations(
     offset: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=50),
+    kind: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
     client: Client = Depends(get_current_client),
 ):
-    """List client operations with pagination."""
+    """List client operations with pagination and optional filters."""
     qs = Operation.filter(client=client).prefetch_related("currency")
+    if kind:
+        qs = qs.filter(kind=kind)
+    if status:
+        qs = qs.filter(status=status)
     total = await qs.count()
     operations = await qs.order_by("-created_at").offset(offset).limit(limit)
 

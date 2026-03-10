@@ -4,6 +4,8 @@ interface Props {
   label?: string;
   symbol?: string;
   placeholder?: string;
+  error?: boolean;
+  hint?: string;
 }
 
 export default function AmountInput({
@@ -12,6 +14,8 @@ export default function AmountInput({
   label = 'Amount',
   symbol = 'USDT',
   placeholder = '0.00',
+  error = false,
+  hint,
 }: Props) {
   return (
     <div className="input-group">
@@ -26,7 +30,10 @@ export default function AmountInput({
             onChange(val);
           }}
           placeholder={placeholder}
-          style={{ paddingRight: '60px' }}
+          style={{
+            paddingRight: '60px',
+            borderColor: error ? 'var(--danger-color)' : undefined,
+          }}
         />
         <span
           style={{
@@ -41,6 +48,18 @@ export default function AmountInput({
           {symbol}
         </span>
       </div>
+      {hint && (
+        <p
+          style={{
+            fontSize: '12px',
+            color: error ? 'var(--danger-color)' : 'var(--hint-color)',
+            marginTop: '4px',
+            marginBottom: 0,
+          }}
+        >
+          {hint}
+        </p>
+      )}
     </div>
   );
 }

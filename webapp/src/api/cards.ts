@@ -41,6 +41,20 @@ export function fetchCardSensitive(id: string): Promise<CardSensitiveResponse> {
   return apiFetch(`/cards/${id}/sensitive`);
 }
 
+export interface AmountLimitsResponse {
+  min_amount: string | null;
+  max_amount: string | null;
+  currency_symbol: string;
+}
+
+export function fetchIssueLimits(): Promise<AmountLimitsResponse> {
+  return apiFetch('/cards/limits');
+}
+
+export function fetchTopupLimits(cardId: string): Promise<AmountLimitsResponse> {
+  return apiFetch(`/cards/${cardId}/topup-limits`);
+}
+
 export function estimateIssue(amount: string): Promise<EstimateResponse> {
   return apiFetch('/cards/estimate', {
     method: 'POST',
