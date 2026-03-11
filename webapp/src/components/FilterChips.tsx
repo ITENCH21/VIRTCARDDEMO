@@ -14,9 +14,10 @@ export default function FilterChips({ options, value, onChange }: Props) {
     <div
       style={{
         display: 'flex',
-        gap: '6px',
+        gap: 8,
         overflowX: 'auto',
-        paddingBottom: '4px',
+        paddingBottom: 4,
+        marginBottom: 16,
         WebkitOverflowScrolling: 'touch',
         scrollbarWidth: 'none',
       }}
@@ -29,14 +30,18 @@ export default function FilterChips({ options, value, onChange }: Props) {
             onClick={() => onChange(opt.value)}
             style={{
               flexShrink: 0,
-              padding: '6px 12px',
-              borderRadius: '16px',
-              fontSize: '13px',
+              padding: '8px 16px',
+              borderRadius: 20,
+              fontSize: 13,
               fontWeight: 500,
-              border: active ? 'none' : '1px solid var(--border-color)',
-              background: active ? 'var(--button-color)' : 'transparent',
-              color: active ? 'var(--button-text-color)' : 'var(--text-color)',
-              transition: 'all 0.15s',
+              whiteSpace: 'nowrap',
+              cursor: 'pointer',
+              transition: 'var(--transition-fast)',
+              WebkitTapHighlightColor: 'transparent',
+              background: active ? 'var(--accent-gradient)' : 'var(--bg-glass)',
+              border: active ? '1px solid transparent' : '1px solid var(--border-glass)',
+              color: active ? '#fff' : 'var(--text-secondary)',
+              boxShadow: active ? '0 4px 16px rgba(99,102,241,0.25)' : 'none',
             }}
           >
             {opt.label}

@@ -56,56 +56,57 @@ export default function LoginPage() {
 
   return (
     <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      padding: '24px',
-      textAlign: 'center',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      minHeight: '100vh', padding: 24, textAlign: 'center',
     }}>
-      <h1 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px' }}>
-        Virtual Cards
-      </h1>
-      <p className="text-hint mb-16">
-        Sign in with your Telegram account to get started
-      </p>
-      <div ref={containerRef} />
+      {/* Brand */}
+      <div style={{ marginBottom: 40 }}>
+        <h1 style={{
+          fontSize: 36, fontWeight: 800, letterSpacing: -1,
+          background: 'var(--accent-gradient)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          marginBottom: 8,
+        }}>
+          YeezyPay
+        </h1>
+        <p style={{ fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+          Sign in with your Telegram account to get started
+        </p>
+      </div>
 
-      {/* Dev login — only works when backend DEBUG=true */}
+      {/* Telegram Widget */}
+      <div ref={containerRef} style={{ marginBottom: 32 }} />
+
+      {/* Dev login */}
       <div style={{
-        marginTop: '48px',
-        padding: '16px',
-        border: '1px dashed var(--border-color)',
-        borderRadius: '12px',
-        width: '100%',
-        maxWidth: '300px',
+        padding: 20,
+        background: 'var(--bg-glass)',
+        border: '1px dashed var(--border-glass)',
+        borderRadius: 'var(--radius-lg)',
+        width: '100%', maxWidth: 300,
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
       }}>
-        <p className="text-hint mb-8" style={{ fontSize: '12px' }}>Dev Login (DEBUG mode)</p>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Dev Login (DEBUG mode)</p>
         <input
           type="text"
           inputMode="numeric"
           value={devTgId}
           onChange={(e) => setDevTgId(e.target.value)}
           placeholder="Telegram ID"
-          style={{
-            width: '100%',
-            padding: '10px',
-            border: '1px solid var(--border-color)',
-            borderRadius: '8px',
-            fontSize: '14px',
-            marginBottom: '8px',
-          }}
+          className="form-input"
+          style={{ marginBottom: 10, textAlign: 'center' }}
         />
         <button
           className="btn btn-secondary"
           onClick={handleDevLogin}
           disabled={devLoading || !devTgId}
-          style={{ fontSize: '14px', padding: '10px' }}
+          style={{ fontSize: 14 }}
         >
           {devLoading ? 'Logging in...' : 'Dev Login'}
         </button>
-        {devError && <p className="error-text">{devError}</p>}
+        {devError && <p className="error-text" style={{ marginTop: 8 }}>{devError}</p>}
       </div>
     </div>
   );

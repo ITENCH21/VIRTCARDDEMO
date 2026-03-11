@@ -130,5 +130,11 @@ class Account(BaseModel):
 
     objects = AccountQuerySet.as_manager()  # type: ignore[arg-type]
 
+    def __str__(self) -> str:
+        label = self.name or str(self.id)[:8]
+        currency_code = self.currency.code if self.currency_id else "?"
+        client_name = self.client.name if self.client_id else "?"
+        return f"{label} ({client_name} / {currency_code})"
+
     class Meta:
         unique_together = (("address", "currency"),)

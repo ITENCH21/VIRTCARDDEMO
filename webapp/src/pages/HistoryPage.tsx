@@ -2,6 +2,7 @@ import { useOperations } from '../hooks/useOperations';
 import OperationListItem from '../components/OperationListItem';
 import FilterChips from '../components/FilterChips';
 import Spinner from '../components/Spinner';
+import { ChevronLeftIcon, ChevronRightIcon } from '../components/icons';
 
 const KIND_OPTIONS = [
   { value: 'DE', label: 'Deposit' },
@@ -27,16 +28,19 @@ export default function HistoryPage() {
     <div className="page">
       <h1 className="page-title">History</h1>
 
-      <div className="mb-8">
-        <div className="text-hint mb-8" style={{ fontSize: '12px' }}>Type</div>
+      {/* Type Filter */}
+      <div style={{ marginBottom: 10 }}>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>Type</div>
         <FilterChips
           options={KIND_OPTIONS}
           value={filters.kind || ''}
           onChange={(kind) => applyFilters({ ...filters, kind: kind || undefined })}
         />
       </div>
-      <div className="mb-16">
-        <div className="text-hint mb-8" style={{ fontSize: '12px' }}>Status</div>
+
+      {/* Status Filter */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>Status</div>
         <FilterChips
           options={STATUS_OPTIONS}
           value={filters.status || ''}
@@ -48,31 +52,55 @@ export default function HistoryPage() {
       {error && <p className="error-text">{error}</p>}
 
       {!loading && items.length === 0 && (
-        <p className="text-hint text-center mt-24">No operations yet</p>
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: 15 }}>No operations yet</p>
+        </div>
       )}
 
-      {items.map((op) => (
-        <OperationListItem key={op.id} operation={op} />
-      ))}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {items.map((op) => (
+          <OperationListItem key={op.id} operation={op} />
+        ))}
+      </div>
 
+      {/* Pagination */}
       {(hasPrev || hasNext) && (
-        <div className="flex-between mt-16">
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          marginTop: 20, padding: '12px 0',
+        }}>
           <button
-            className="btn btn-secondary"
-            style={{ width: 'auto', padding: '8px 16px' }}
             onClick={prevPage}
             disabled={!hasPrev}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '8px 16px', borderRadius: 'var(--radius-md)',
+              background: hasPrev ? 'var(--bg-glass)' : 'transparent',
+              border: hasPrev ? '1px solid var(--border-glass)' : '1px solid transparent',
+              color: hasPrev ? 'var(--text-primary)' : 'var(--text-muted)',
+              cursor: hasPrev ? 'pointer' : 'default',
+              fontSize: 14, fontWeight: 500,
+              opacity: hasPrev ? 1 : 0.4,
+            }}
           >
-            Previous
+            <ChevronLeftIcon size={16} /> Prev
           </button>
-          <span className="text-hint">{total} total</span>
+          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{total} total</span>
           <button
-            className="btn btn-secondary"
-            style={{ width: 'auto', padding: '8px 16px' }}
             onClick={nextPage}
             disabled={!hasNext}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '8px 16px', borderRadius: 'var(--radius-md)',
+              background: hasNext ? 'var(--bg-glass)' : 'transparent',
+              border: hasNext ? '1px solid var(--border-glass)' : '1px solid transparent',
+              color: hasNext ? 'var(--text-primary)' : 'var(--text-muted)',
+              cursor: hasNext ? 'pointer' : 'default',
+              fontSize: 14, fontWeight: 500,
+              opacity: hasNext ? 1 : 0.4,
+            }}
           >
-            Next
+            Next <ChevronRightIcon size={16} />
           </button>
         </div>
       )}

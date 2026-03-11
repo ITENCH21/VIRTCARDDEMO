@@ -1,26 +1,51 @@
-import { createContext, useEffect, ReactNode } from 'react';
-import { getThemeParams, isTelegramWebApp } from '../lib/telegram';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
+import { getTelegramWebApp } from '../lib/telegram';
 
-export const ThemeContext = createContext({});
+interface ThemeContextType {
+  isDark: boolean;
+  toggleTheme: () => void;
+}
+
+export const ThemeContext = createContext<ThemeContextType>({
+  isDark: true,
+  toggleTheme: () => {},
+});
+
+export function useTheme() {
+  return useContext(ThemeContext);
+}
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  useEffect(() => {
-    if (isTelegramWebApp()) {
-      const params = getThemeParams();
-      const root = document.documentElement;
-      // Map TG theme vars to CSS custom properties
-      if (params.bg_color) root.style.setProperty('--bg-color', params.bg_color);
-      if (params.text_color) root.style.setProperty('--text-color', params.text_color);
-      if (params.hint_color) root.style.setProperty('--hint-color', params.hint_color);
-      if (params.link_color) root.style.setProperty('--link-color', params.link_color);
-      if (params.button_color) root.style.setProperty('--button-color', params.button_color);
-      if (params.button_text_color) root.style.setProperty('--button-text-color', params.button_text_color);
-      if (params.secondary_bg_color) root.style.setProperty('--secondary-bg-color', params.secondary_bg_color);
+  const [isDark, setIsDark] = useState(() => {
+    // Check Telegram colorScheme first
+    const tg = getTelegramWebApp();
+    if (tg?.colorScheme) {
+      return tg.colorScheme === 'dark';
     }
+    // Fallback: check localStorage or default to dark
+    const saved = localStorage.getItem('theme');
+    return saved !== 'light';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDark) {
+      root.classList.remove('light');
+    } else {
+      root.classList.add('light');
+    }
+  }, [isDark]);
+
+  const toggleTheme = useCallback(() => {
+    setIsDark((prev) => {
+      const next = !prev;
+      localStorage.setItem('theme', next ? 'dark' : 'light');
+      return next;
+    });
   }, []);
 
   return (
-    <ThemeContext.Provider value={{}}>
+    <ThemeContext.Provider value={{ isDark, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

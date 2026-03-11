@@ -4,6 +4,7 @@ import { useCards } from '../hooks/useCards';
 import CardListItem from '../components/CardListItem';
 import FilterChips from '../components/FilterChips';
 import Spinner from '../components/Spinner';
+import { PlusIcon } from '../components/icons';
 
 const CARD_STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
@@ -29,25 +30,14 @@ export default function CardsPage() {
 
   return (
     <div className="page">
-      <div className="flex-between mb-16">
-        <h1 className="page-title" style={{ marginBottom: 0 }}>My Cards</h1>
-        <button
-          className="btn btn-primary"
-          style={{ width: 'auto', padding: '8px 16px', fontSize: '14px' }}
-          onClick={() => navigate('/cards/issue')}
-        >
-          + New Card
-        </button>
-      </div>
+      <div style={{ height: 16 }} />
 
       {cards.length > 0 && (
-        <div className="mb-16">
-          <FilterChips
-            options={CARD_STATUS_OPTIONS}
-            value={statusFilter}
-            onChange={setStatusFilter}
-          />
-        </div>
+        <FilterChips
+          options={CARD_STATUS_OPTIONS}
+          value={statusFilter}
+          onChange={setStatusFilter}
+        />
       )}
 
       {loading && <Spinner />}
@@ -55,20 +45,31 @@ export default function CardsPage() {
 
       {!loading && cards.length === 0 && (
         <div className="text-center mt-24">
-          <p className="text-hint">No cards yet</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 15 }}>No cards yet</p>
           <button className="btn btn-primary mt-16" onClick={() => navigate('/cards/issue')}>
+            <PlusIcon size={18} />
             Issue Your First Card
           </button>
         </div>
       )}
 
       {!loading && cards.length > 0 && filtered.length === 0 && (
-        <p className="text-hint text-center mt-24">No cards with this status</p>
+        <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginTop: 24 }}>No cards with this status</p>
       )}
 
       {filtered.map((card) => (
         <CardListItem key={card.id} card={card} />
       ))}
+
+      {cards.length > 0 && (
+        <>
+          <div style={{ height: 24 }} />
+          <button className="btn btn-primary" onClick={() => navigate('/cards/issue')}>
+            <PlusIcon size={18} />
+            Issue New Card
+          </button>
+        </>
+      )}
     </div>
   );
 }

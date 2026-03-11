@@ -6,6 +6,8 @@ from models.models import (
     Transaction,
     AccountMove,
     TransactionKind,
+    Currency,
+    CurrencyRate,
     DepositTarifLine,
     WithdrawTarifLine,
     CardOpenTarifLine,
@@ -31,6 +33,29 @@ logging.basicConfig(
 )
 
 WITH_CACHE = os.getenv("FISCAL_DISABLE_CACHE") not in ["True", "1"]
+
+
+async def convert_amount_db(amount_db: int, currency_from, currency_to) -> int:
+    """Конвертирует amount_db из одной валюты в другую через CurrencyRate.
+
+    Если прямой курс (from→to) не найден, пробует обратный (to→from)
+    и инвертирует его.
+    """
+    if currency_from.pk == currency_to.pk:
+        return amount_db
+    try:
+        rate_obj = await CurrencyRate.get(
+            currency_from=currency_from, currency_to=currency_to
+        )
+        rate = rate_obj.rate
+    except DoesNotExist:
+        rate_obj = await CurrencyRate.get(
+            currency_from=currency_to, currency_to=currency_from
+        )
+        rate = Decimal("1") / rate_obj.rate
+    human = amount_db_to_human(amount_db, currency_from)
+    converted = human * rate
+    return amount_human_to_db(Decimal(converted), currency_to)
 
 
 class FiscalMicroservice(BaseHandler):
@@ -289,9 +314,10 @@ class FiscalMicroservice(BaseHandler):
         amount_db: int,
         tarifline=None,
     ) -> Transaction:
-        """Перемещение средств между аккаунтами (parent <-> card account)."""
+        """Перемещение средств между аккаунтами (одновалютный move)."""
         await account_from.fetch_related("currency")
         currency = account_from.currency
+
         transaction = Transaction(
             account_from=account_from,
             account_to=account_to,
@@ -680,7 +706,20 @@ class FiscalMicroservice(BaseHandler):
         await instance.fetch_related("account", "account__client", "account__currency")
         parent_account = instance.account
         client = parent_account.client
-        currency = parent_account.currency
+        parent_currency = parent_account.currency
+
+        # Целевая валюта карты (USD/EUR) из operation.data
+        card_currency_code = payload.get("card_currency", "USD")
+        try:
+            target_currency = await Currency.get(
+                code=card_currency_code, is_active=True
+            )
+        except DoesNotExist:
+            self.logger.error(
+                "Card currency %s not found, falling back to parent currency",
+                card_currency_code,
+            )
+            target_currency = parent_currency
 
         card_id = payload["gate"]["result"]["card_id"]
 
@@ -702,7 +741,7 @@ class FiscalMicroservice(BaseHandler):
             new_account = await Account.create(
                 kind=Account.Kind.VIRTUAL_CARD,
                 parent=parent_account,
-                currency=currency,
+                currency=target_currency,
                 client=client,
                 external_id=card_id,
                 data=acc_data,
@@ -722,6 +761,7 @@ class FiscalMicroservice(BaseHandler):
                 credentials=acc_creds,
                 data=acc_data,
                 status=Account.Status.ACTIVE,
+                currency=target_currency,
             )
 
         # ID карты в результат
@@ -751,13 +791,28 @@ class FiscalMicroservice(BaseHandler):
         await operation_log(uid, LogTag.DONE, f"Card opened, account={new_account.pk}")
         self.logger.info("operation_card_open_process: Operation #%s COMPLETE", uid)
 
-        # Move: parent -> card account
+        usdt_amount_db = payload.get("amount", 0)
+        target_amount_db = await convert_amount_db(
+            usdt_amount_db, parent_currency, target_currency
+        )
+
+        # Move 1: USDT(client) -> USDT(company)
+        company_usdt = await self._get_company_account(parent_currency.pk)
         await self._inner_move_process(
             instance,
             parent_account,
-            new_account,
-            payload.get("amount", 0),
+            company_usdt,
+            usdt_amount_db,
             tarifline=tarifline,
+        )
+
+        # Move 2: USD(company) -> USD(card)
+        company_card_currency = await self._get_company_account(target_currency.pk)
+        await self._inner_move_process(
+            instance,
+            company_card_currency,
+            new_account,
+            target_amount_db,
         )
 
         await self._post_done(instance)
@@ -766,7 +821,18 @@ class FiscalMicroservice(BaseHandler):
     async def operation_card_topup_process(self, instance: Operation, operation: dict):
         uid = instance.pk
         payload = operation["payload"]
-        await instance.fetch_related("account", "account__parent", "currency")
+        await instance.fetch_related(
+            "account",
+            "account__parent",
+            "account__currency",
+            "account__parent__currency",
+            "currency",
+        )
+
+        card_account = instance.account
+        parent_account = card_account.parent
+        parent_currency = parent_account.currency
+        card_currency = card_account.currency
 
         tarifline = await self._get_card_topup_tarifline(instance)
 
@@ -784,15 +850,30 @@ class FiscalMicroservice(BaseHandler):
         )
 
         # Unhold с parent аккаунта
-        await self._unhold_amount(instance, payload, instance.account.parent)
+        await self._unhold_amount(instance, payload, parent_account)
 
-        # Move: parent -> card account
+        usdt_amount_db = payload.get("amount", 0)
+        target_amount_db = await convert_amount_db(
+            usdt_amount_db, parent_currency, card_currency
+        )
+
+        # Move 1: USDT(client) -> USDT(company)
+        company_usdt = await self._get_company_account(parent_currency.pk)
         await self._inner_move_process(
             instance,
-            instance.account.parent,
-            instance.account,
-            payload.get("amount", 0),
+            parent_account,
+            company_usdt,
+            usdt_amount_db,
             tarifline=tarifline,
+        )
+
+        # Move 2: USD(company) -> USD(card)
+        company_card_currency = await self._get_company_account(card_currency.pk)
+        await self._inner_move_process(
+            instance,
+            company_card_currency,
+            card_account,
+            target_amount_db,
         )
 
         await operation_log(uid, LogTag.DONE, "Card topped up")
@@ -803,7 +884,12 @@ class FiscalMicroservice(BaseHandler):
     async def operation_card_close_process(self, instance: Operation, operation: dict):
         uid = instance.pk
         payload = operation["payload"]
-        await instance.fetch_related("account", "account__parent")
+        await instance.fetch_related(
+            "account",
+            "account__currency",
+            "account__parent",
+            "account__parent__currency",
+        )
 
         card_acc = instance.account
         if card_acc.status == Account.Status.CLOSED:
@@ -812,7 +898,11 @@ class FiscalMicroservice(BaseHandler):
             )
             return
 
-        # Баланс для возврата
+        parent_account = card_acc.parent
+        card_currency = card_acc.currency
+        parent_currency = parent_account.currency
+
+        # Баланс для возврата (в валюте карты — USD/EUR)
         gate_balance = payload.get("gate", {}).get("balance_db")
         if not gate_balance:
             gate_balance = card_acc.amount_db or 0
@@ -825,12 +915,27 @@ class FiscalMicroservice(BaseHandler):
                 promo_amount = used_promo.get("amount_db", 0)
                 gate_balance = max(0, gate_balance - promo_amount)
 
-        # Move: card -> parent
+        # Конвертируем баланс карты (USD/EUR) обратно в USDT для parent
+        usdt_amount_db = await convert_amount_db(
+            gate_balance, card_currency, parent_currency
+        )
+
+        # Move 1: USD(card) -> USD(company)
+        company_card_currency = await self._get_company_account(card_currency.pk)
         await self._inner_move_process(
             instance,
-            instance.account,
-            instance.account.parent,
+            card_acc,
+            company_card_currency,
             gate_balance,
+        )
+
+        # Move 2: USDT(company) -> USDT(client)
+        company_usdt = await self._get_company_account(parent_currency.pk)
+        await self._inner_move_process(
+            instance,
+            company_usdt,
+            parent_account,
+            usdt_amount_db,
         )
 
         await Operation.filter(pk=uid).update(

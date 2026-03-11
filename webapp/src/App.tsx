@@ -29,8 +29,10 @@ function App() {
   }
 
   return (
-    <Layout>
-      <Routes>
+    <>
+      <div className="bg-mesh" />
+      <Layout>
+        <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/cards" element={<CardsPage />} />
         <Route path="/cards/issue" element={<CardIssuePage />} />
@@ -42,7 +44,8 @@ function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </Layout>
+      </Layout>
+    </>
   );
 }
 

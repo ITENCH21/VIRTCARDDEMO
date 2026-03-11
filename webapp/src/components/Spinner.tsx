@@ -1,25 +1,32 @@
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '24px',
-  },
-  spinner: {
-    width: '32px',
-    height: '32px',
-    border: '3px solid var(--border-color)',
-    borderTopColor: 'var(--button-color)',
-    borderRadius: '50%',
-    animation: 'spin 0.8s linear infinite',
-  },
-};
+interface Props {
+  size?: number;
+  label?: string;
+  sublabel?: string;
+}
 
-export default function Spinner() {
+export default function Spinner({ size = 32, label, sublabel }: Props) {
   return (
-    <div style={styles.container}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      <div style={styles.spinner} />
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div
+        style={{
+          width: size,
+          height: size,
+          border: '3px solid rgba(99,102,241,0.15)',
+          borderTopColor: 'var(--accent-1)',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+        }}
+      />
+      {label && (
+        <div style={{ fontSize: 17, fontWeight: 600, marginTop: 20, color: 'var(--text-primary)' }}>
+          {label}
+        </div>
+      )}
+      {sublabel && (
+        <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 6 }}>
+          {sublabel}
+        </div>
+      )}
     </div>
   );
 }

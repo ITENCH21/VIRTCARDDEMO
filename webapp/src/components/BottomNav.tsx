@@ -1,64 +1,96 @@
 import { useLocation, useNavigate } from 'react-router-dom';
+import { HomeIcon, CreditCardIcon, ClockIcon, UserIcon } from './icons';
 
 const tabs = [
-  { path: '/', label: 'Home', icon: '\u2302' },
-  { path: '/cards', label: 'Cards', icon: '\u2750' },
-  { path: '/deposit', label: 'Deposit', icon: '\u2B07' },
-  { path: '/withdraw', label: 'Withdraw', icon: '\u2B06' },
-  { path: '/history', label: 'History', icon: '\u2630' },
-  { path: '/profile', label: 'Profile', icon: '\u2699' },
+  { path: '/', label: 'Home', Icon: HomeIcon },
+  { path: '/cards', label: 'Cards', Icon: CreditCardIcon },
+  { path: '/history', label: 'History', Icon: ClockIcon },
+  { path: '/profile', label: 'Profile', Icon: UserIcon },
 ];
-
-const navStyle: React.CSSProperties = {
-  position: 'fixed',
-  bottom: 0,
-  left: 0,
-  right: 0,
-  display: 'flex',
-  justifyContent: 'space-around',
-  alignItems: 'center',
-  height: '64px',
-  background: 'var(--card-bg)',
-  borderTop: '1px solid var(--border-color)',
-  zIndex: 100,
-  paddingBottom: 'env(safe-area-inset-bottom)',
-};
 
 export default function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
 
   return (
-    <nav style={navStyle}>
-      {tabs.map((tab) => {
-        const isActive =
-          tab.path === '/'
-            ? location.pathname === '/'
-            : location.pathname.startsWith(tab.path);
+    <nav
+      style={{
+        position: 'fixed',
+        bottom: 0,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '100%',
+        maxWidth: 430,
+        zIndex: 200,
+        padding: '8px 16px',
+        paddingBottom: 'calc(8px + var(--safe-bottom))',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        background: 'var(--tabbar-bg)',
+        borderTop: '1px solid var(--border-glass)',
+        transition: 'background 0.3s ease',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
+        {tabs.map((tab) => {
+          const isActive =
+            tab.path === '/'
+              ? location.pathname === '/'
+              : location.pathname.startsWith(tab.path);
 
-        return (
-          <button
-            key={tab.path}
-            onClick={() => navigate(tab.path)}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '2px',
-              background: 'none',
-              color: isActive ? 'var(--button-color)' : 'var(--hint-color)',
-              fontSize: '20px',
-              padding: '4px 12px',
-              transition: 'color 0.2s',
-            }}
-          >
-            <span>{tab.icon}</span>
-            <span style={{ fontSize: '10px', fontWeight: isActive ? 600 : 400 }}>
-              {tab.label}
-            </span>
-          </button>
-        );
-      })}
+          return (
+            <button
+              key={tab.path}
+              onClick={() => navigate(tab.path)}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 4,
+                padding: '6px 12px',
+                cursor: 'pointer',
+                borderRadius: 12,
+                background: 'none',
+                position: 'relative',
+                WebkitTapHighlightColor: 'transparent',
+                transition: 'var(--transition-fast)',
+              }}
+            >
+              {isActive && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: -8,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: 20,
+                    height: 3,
+                    background: 'var(--accent-gradient)',
+                    borderRadius: 2,
+                  }}
+                />
+              )}
+              <tab.Icon
+                size={22}
+                style={{
+                  color: isActive ? 'var(--accent-1)' : 'var(--text-muted)',
+                  transition: 'var(--transition-fast)',
+                }}
+              />
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 500,
+                  color: isActive ? 'var(--accent-1)' : 'var(--text-muted)',
+                  transition: 'var(--transition-fast)',
+                }}
+              >
+                {tab.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </nav>
   );
 }

@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AmountInput from '../components/AmountInput';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { useBalance } from '../hooks/useBalance';
 import { estimateWithdraw, createWithdraw, WithdrawEstimateResponse } from '../api/withdraw';
 import { formatAmount } from '../lib/format';
 import { hapticFeedback } from '../lib/telegram';
+import { CheckIcon } from '../components/icons';
 
 const TRC20_RE = /^T[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{33}$/;
 
@@ -22,6 +24,8 @@ function formatTarif(est: WithdrawEstimateResponse): string {
 
 export default function WithdrawPage() {
   const navigate = useNavigate();
+  const { data: balanceData } = useBalance();
+  const mainAccount = balanceData?.accounts?.[0];
   const [amount, setAmount] = useState('');
   const [address, setAddress] = useState('');
   const [estimate, setEstimate] = useState<WithdrawEstimateResponse | null>(null);
@@ -29,7 +33,6 @@ export default function WithdrawPage() {
   const [error, setError] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-
   const [addressError, setAddressError] = useState<string | null>(null);
 
   const handleEstimate = async () => {
@@ -79,13 +82,22 @@ export default function WithdrawPage() {
 
   if (submitted) {
     return (
-      <div className="page text-center" style={{ paddingTop: '60px' }}>
-        <h2 style={{ fontSize: '24px', color: 'var(--success-color)' }}>Withdrawal Submitted!</h2>
-        <p className="text-hint mt-8">Your request is being processed. You will be notified when it's complete.</p>
-        <button className="btn btn-primary mt-24" onClick={() => navigate('/history')}>
+      <div className="page" style={{ paddingTop: 60, textAlign: 'center' }}>
+        <div style={{
+          width: 56, height: 56, borderRadius: '50%', margin: '0 auto 20px',
+          background: 'rgba(16,185,129,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'var(--success)',
+        }}>
+          <CheckIcon size={28} />
+        </div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>Withdrawal Submitted!</h2>
+        <p style={{ color: 'var(--text-secondary)', marginTop: 8, lineHeight: 1.5 }}>
+          Your request is being processed. You will be notified when it's complete.
+        </p>
+        <button className="btn btn-primary" style={{ marginTop: 24 }} onClick={() => navigate('/history')}>
           View History
         </button>
-        <button className="btn btn-secondary mt-8" onClick={() => navigate('/')}>
+        <button className="btn btn-secondary" style={{ marginTop: 10 }} onClick={() => navigate('/')}>
           Home
         </button>
       </div>
@@ -96,32 +108,56 @@ export default function WithdrawPage() {
     <div className="page">
       <h1 className="page-title">Withdraw USDT</h1>
 
-      <AmountInput value={amount} onChange={handleAmountChange} label="Amount" />
+      {/* Available Balance */}
+      {mainAccount && (
+        <div className="glass-card" style={{ padding: '16px 20px', marginBottom: 20, textAlign: 'center' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Available Balance</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', marginTop: 4 }}>
+            {formatAmount(mainAccount.available, mainAccount.currency_symbol)}
+          </div>
+        </div>
+      )}
 
-      <div className="input-group">
-        <label>USDT TRC-20 Address</label>
+      {/* Amount */}
+      <AmountInput
+        value={amount}
+        onChange={handleAmountChange}
+        label="Amount"
+        presets={[50, 100, 200, 500, 1000]}
+      />
+
+      {/* Address */}
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>
+          USDT TRC-20 Address
+        </label>
         <input
           type="text"
           value={address}
           onChange={(e) => { setAddress(e.target.value); setAddressError(null); setEstimate(null); }}
           placeholder="T..."
+          className="form-input"
+          style={{
+            borderColor: addressError ? 'var(--danger)' : undefined,
+          }}
         />
-        {addressError && <p className="error-text" style={{ marginTop: '4px' }}>{addressError}</p>}
+        {addressError && <p className="error-text" style={{ marginTop: 4 }}>{addressError}</p>}
       </div>
 
+      {/* Fee Breakdown */}
       {estimate && (
-        <div className="card mt-16" style={{ padding: '12px 16px' }}>
-          <div className="flex-between mb-8">
-            <span className="text-hint">Commission</span>
-            <span className="text-hint">{formatTarif(estimate)}</span>
+        <div className="glass-card" style={{ padding: '16px 20px', marginBottom: 16 }}>
+          <div className="info-row">
+            <span style={{ color: 'var(--text-muted)' }}>Commission</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{formatTarif(estimate)}</span>
           </div>
-          <div className="flex-between mb-8">
-            <span className="text-hint">Fee</span>
-            <span>{formatAmount(estimate.fee, estimate.currency_symbol)}</span>
+          <div className="info-row">
+            <span style={{ color: 'var(--text-muted)' }}>Fee</span>
+            <span style={{ fontWeight: 600 }}>{formatAmount(estimate.fee, estimate.currency_symbol)}</span>
           </div>
-          <div className="flex-between" style={{ fontWeight: 700 }}>
-            <span>Total</span>
-            <span>{formatAmount(estimate.total, estimate.currency_symbol)}</span>
+          <div className="info-row" style={{ borderTop: '1px solid var(--border-glass)', paddingTop: 10, marginTop: 4 }}>
+            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Total</span>
+            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{formatAmount(estimate.total, estimate.currency_symbol)}</span>
           </div>
         </div>
       )}
@@ -130,17 +166,19 @@ export default function WithdrawPage() {
 
       {!estimate ? (
         <button
-          className="btn btn-primary mt-16"
+          className="btn btn-primary"
           onClick={handleEstimate}
           disabled={loading || !amount || parseFloat(amount) <= 0 || !address.trim()}
+          style={{ marginTop: 8 }}
         >
           {loading ? 'Calculating...' : 'Continue'}
         </button>
       ) : (
         <button
-          className="btn btn-primary mt-16"
+          className="btn btn-primary"
           onClick={() => setShowConfirm(true)}
           disabled={loading}
+          style={{ marginTop: 8 }}
         >
           Withdraw
         </button>
@@ -156,21 +194,23 @@ export default function WithdrawPage() {
       >
         {estimate && (
           <div>
-            <div className="flex-between mb-8">
-              <span className="text-hint">Amount</span>
-              <span>{formatAmount(estimate.amount, estimate.currency_symbol)}</span>
+            <div className="info-row">
+              <span style={{ color: 'var(--text-secondary)' }}>Amount</span>
+              <span style={{ fontWeight: 600 }}>{formatAmount(estimate.amount, estimate.currency_symbol)}</span>
             </div>
-            <div className="flex-between mb-8">
-              <span className="text-hint">Fee ({formatTarif(estimate)})</span>
-              <span>{formatAmount(estimate.fee, estimate.currency_symbol)}</span>
+            <div className="info-row">
+              <span style={{ color: 'var(--text-secondary)' }}>Fee ({formatTarif(estimate)})</span>
+              <span style={{ fontWeight: 600 }}>{formatAmount(estimate.fee, estimate.currency_symbol)}</span>
             </div>
-            <div className="flex-between mb-8" style={{ fontWeight: 700, borderTop: '1px solid var(--border-color)', paddingTop: '8px' }}>
-              <span>Total</span>
-              <span>{formatAmount(estimate.total, estimate.currency_symbol)}</span>
+            <div className="info-row" style={{ borderTop: '1px solid var(--border-glass)', paddingTop: 12, marginTop: 4 }}>
+              <span style={{ fontWeight: 700 }}>Total</span>
+              <span style={{ fontWeight: 700 }}>{formatAmount(estimate.total, estimate.currency_symbol)}</span>
             </div>
-            <div className="flex-between mt-8">
-              <span className="text-hint">Address</span>
-              <span style={{ fontSize: '12px', wordBreak: 'break-all', maxWidth: '60%', textAlign: 'right' }}>{address}</span>
+            <div className="info-row" style={{ marginTop: 8 }}>
+              <span style={{ color: 'var(--text-muted)' }}>Address</span>
+              <span style={{ fontSize: 11, wordBreak: 'break-all', maxWidth: '60%', textAlign: 'right', color: 'var(--text-secondary)' }}>
+                {address}
+              </span>
             </div>
           </div>
         )}

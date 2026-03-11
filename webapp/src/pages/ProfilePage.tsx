@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { apiFetch } from '../api/client';
 import Spinner from '../components/Spinner';
+import { UserIcon, MailIcon, PhoneIcon, MessageIcon, LogOutIcon } from '../components/icons';
 
 interface Profile {
   name: string;
@@ -52,57 +53,106 @@ export default function ProfilePage() {
 
   if (loading) return <div className="page"><Spinner /></div>;
 
+  const initials = (profile?.name || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+
   return (
     <div className="page">
-      <h1 className="page-title">Profile</h1>
+      {/* Avatar */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 28 }}>
+        <div style={{
+          width: 80, height: 80, borderRadius: '50%',
+          background: 'var(--accent-gradient)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 28, fontWeight: 700, color: '#fff',
+          boxShadow: '0 0 0 4px var(--bg-primary), 0 0 0 6px rgba(99,102,241,0.3)',
+        }}>
+          {initials}
+        </div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginTop: 14 }}>
+          {profile?.name || 'User'}
+        </div>
+        {profile?.telegram_username && (
+          <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 2 }}>
+            @{profile.telegram_username}
+          </div>
+        )}
+      </div>
 
+      {/* Editable Fields */}
+      <div className="glass-card" style={{ padding: 20, marginBottom: 16 }}>
+        {/* Name */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>
+            <UserIcon size={16} /> Name
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => { setName(e.target.value); setDirty(true); }}
+            className="form-input"
+          />
+        </div>
+
+        {/* Email */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>
+            <MailIcon size={16} /> Email
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setDirty(true); }}
+            placeholder="your@email.com"
+            className="form-input"
+          />
+        </div>
+
+        {/* Phone */}
+        <div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>
+            <PhoneIcon size={16} /> Phone
+          </label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => { setPhone(e.target.value); setDirty(true); }}
+            placeholder="+1234567890"
+            className="form-input"
+          />
+        </div>
+      </div>
+
+      {/* Telegram Info */}
       {profile?.telegram_username && (
-        <p className="text-hint mb-16">@{profile.telegram_username}</p>
+        <div className="glass-card" style={{ padding: '14px 20px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <MessageIcon size={18} style={{ color: 'var(--accent-1)' }} />
+          <div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Telegram</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>@{profile.telegram_username}</div>
+          </div>
+        </div>
       )}
-
-      <div className="input-group">
-        <label>Name</label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => { setName(e.target.value); setDirty(true); }}
-        />
-      </div>
-
-      <div className="input-group">
-        <label>Email</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => { setEmail(e.target.value); setDirty(true); }}
-          placeholder="your@email.com"
-        />
-      </div>
-
-      <div className="input-group">
-        <label>Phone</label>
-        <input
-          type="tel"
-          value={phone}
-          onChange={(e) => { setPhone(e.target.value); setDirty(true); }}
-          placeholder="+1234567890"
-        />
-      </div>
 
       {error && <p className="error-text">{error}</p>}
 
       {dirty && (
         <button
-          className="btn btn-primary mt-16"
+          className="btn btn-primary"
           onClick={handleSave}
           disabled={saving}
+          style={{ marginBottom: 12 }}
         >
-          {saving ? 'Saving...' : 'Save'}
+          {saving ? 'Saving...' : 'Save Changes'}
         </button>
       )}
 
-      <button className="btn btn-secondary mt-24" onClick={logout}>
-        Log Out
+      {/* Logout */}
+      <button
+        className="btn btn-danger"
+        onClick={logout}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: dirty ? 0 : 12 }}
+      >
+        <LogOutIcon size={18} /> Log Out
       </button>
     </div>
   );

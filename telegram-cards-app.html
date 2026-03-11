@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CardVault — Telegram Mini App</title>
+<style>
+/* ═══════════════════════════════════════════
+   CSS RESET & VARIABLES
+   ═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── DARK THEME (default) ── */
+:root {
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #111827;
+  --bg-card: rgba(255,255,255,0.04);
+  --bg-glass: rgba(255,255,255,0.06);
+  --bg-glass-hover: rgba(255,255,255,0.10);
+  --border-glass: rgba(255,255,255,0.08);
+  --border-glass-active: rgba(255,255,255,0.15);
+  --header-bg: rgba(10,14,26,0.75);
+  --tabbar-bg: rgba(10,14,26,0.85);
+  --modal-bg: #111827;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --accent-1: #6366f1;
+  --accent-2: #8b5cf6;
+  --accent-3: #06b6d4;
+  --accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
+
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+
+  --balance-text-gradient: linear-gradient(135deg, #fff, #c7d2fe);
+  --balance-hero-bg: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1), rgba(6,182,212,0.08));
+  --balance-hero-border: rgba(99,102,241,0.2);
+  --balance-hero-orb1: rgba(99,102,241,0.15);
+  --balance-hero-orb2: rgba(6,182,212,0.1);
+
+  --mesh-c1: rgba(99,102,241,0.12);
+  --mesh-c2: rgba(139,92,246,0.08);
+  --mesh-c3: rgba(6,182,212,0.06);
+
+  --tx-border: rgba(255,255,255,0.04);
+  --qr-shadow: 0 8px 40px rgba(0,0,0,0.4);
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+  --shadow-glow: 0 0 30px rgba(99,102,241,0.15);
+
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── LIGHT THEME ── */
+:root.light {
+  --bg-primary: #f0f2f8;
+  --bg-secondary: #ffffff;
+  --bg-card: rgba(0,0,0,0.02);
+  --bg-glass: rgba(255,255,255,0.65);
+  --bg-glass-hover: rgba(255,255,255,0.85);
+  --border-glass: rgba(0,0,0,0.06);
+  --border-glass-active: rgba(0,0,0,0.12);
+  --header-bg: rgba(240,242,248,0.8);
+  --tabbar-bg: rgba(255,255,255,0.88);
+  --modal-bg: #ffffff;
+
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+
+  --accent-1: #6366f1;
+  --accent-2: #8b5cf6;
+  --accent-3: #06b6d4;
+  --accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
+
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --info: #2563eb;
+
+  --balance-text-gradient: linear-gradient(135deg, #1e293b, #4338ca);
+  --balance-hero-bg: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.07), rgba(6,182,212,0.05));
+  --balance-hero-border: rgba(99,102,241,0.15);
+  --balance-hero-orb1: rgba(99,102,241,0.08);
+  --balance-hero-orb2: rgba(6,182,212,0.06);
+
+  --mesh-c1: rgba(99,102,241,0.06);
+  --mesh-c2: rgba(139,92,246,0.04);
+  --mesh-c3: rgba(6,182,212,0.03);
+
+  --tx-border: rgba(0,0,0,0.04);
+  --qr-shadow: 0 8px 40px rgba(0,0,0,0.1);
+
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.1);
+  --shadow-glow: 0 0 30px rgba(99,102,241,0.08);
+}
+
+html, body {
+  font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', system-ui, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 15px;
+  line-height: 1.5;
+  transition: background 0.4s ease, color 0.3s ease;
+}
+
+/* ═══════════════════════════════════════════
+   BACKGROUND MESH
+   ═══════════════════════════════════════════ */
+.bg-mesh {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none; overflow: hidden;
+}
+.bg-mesh::before {
+  content: '';
+  position: absolute; top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background:
+    radial-gradient(ellipse 600px 600px at 20% 10%, var(--mesh-c1), transparent),
+    radial-gradient(ellipse 500px 500px at 80% 20%, var(--mesh-c2), transparent),
+    radial-gradient(ellipse 400px 400px at 50% 80%, var(--mesh-c3), transparent);
+  animation: meshFloat 20s ease-in-out infinite;
+}
+@keyframes meshFloat {
+  0%, 100% { transform: translate(0,0) rotate(0deg); }
+  33% { transform: translate(20px,-30px) rotate(1deg); }
+  66% { transform: translate(-15px,20px) rotate(-1deg); }
+}
+
+/* ═══════════════════════════════════════════
+   THEME TOGGLE
+   ═══════════════════════════════════════════ */
+.theme-toggle {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: var(--transition-fast);
+}
+.theme-toggle:hover { background: var(--bg-glass-hover); }
+.theme-toggle svg { width: 18px; height: 18px; }
+.theme-toggle .icon-sun { display: none; }
+.theme-toggle .icon-moon { display: block; }
+:root.light .theme-toggle .icon-sun { display: block; }
+:root.light .theme-toggle .icon-moon { display: none; }
+
+/* ═══════════════════════════════════════════
+   APP SHELL
+   ═══════════════════════════════════════════ */
+.app {
+  position: relative; z-index: 1;
+  max-width: 430px; margin: 0 auto;
+  min-height: 100vh; display: flex; flex-direction: column;
+}
+
+/* Header */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+  padding-top: calc(16px + var(--safe-top));
+  position: sticky; top: 0; z-index: 100;
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--border-glass);
+  transition: background 0.3s ease;
+}
+.header-left { display: flex; align-items: center; gap: 8px; }
+.header-back {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--bg-glass); border: 1px solid var(--border-glass);
+  color: var(--text-primary);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: var(--transition-fast);
+}
+.header-back:hover { background: var(--bg-glass-hover); }
+.header-back.hidden { visibility: hidden; width: 0; overflow: hidden; margin: 0; padding: 0; border: 0; }
+.header-title { font-size: 17px; font-weight: 600; letter-spacing: -0.2px; }
+.header-right { display: flex; align-items: center; gap: 8px; }
+
+/* Page content */
+.page-content { flex: 1; padding: 0 20px 100px; overflow-y: auto; }
+
+/* ═══════════════════════════════════════════
+   TAB BAR
+   ═══════════════════════════════════════════ */
+.tab-bar {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px; z-index: 200;
+  padding: 8px 16px; padding-bottom: calc(8px + var(--safe-bottom));
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  background: var(--tabbar-bg);
+  border-top: 1px solid var(--border-glass);
+  transition: background 0.3s ease;
+}
+.tab-bar-inner { display: flex; justify-content: space-around; align-items: center; }
+.tab-item {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 6px 12px; cursor: pointer; border-radius: 12px;
+  transition: var(--transition-fast); -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+.tab-item svg { width: 22px; height: 22px; stroke: var(--text-muted); transition: var(--transition-fast); }
+.tab-item span { font-size: 10px; font-weight: 500; color: var(--text-muted); transition: var(--transition-fast); }
+.tab-item.active svg { stroke: var(--accent-1); }
+.tab-item.active span { color: var(--accent-1); }
+.tab-item.active::before {
+  content: ''; position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+  width: 20px; height: 3px; background: var(--accent-gradient); border-radius: 2px;
+}
+
+/* ═══════════════════════════════════════════
+   GLASSMORPHISM CARDS
+   ═══════════════════════════════════════════ */
+.glass-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg); padding: 20px;
+  transition: var(--transition-normal);
+}
+.glass-card:hover { background: var(--bg-glass-hover); border-color: var(--border-glass-active); }
+
+/* ═══════════════════════════════════════════
+   BALANCE HERO CARD
+   ═══════════════════════════════════════════ */
+.balance-hero {
+  background: var(--balance-hero-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--balance-hero-border);
+  border-radius: var(--radius-xl); padding: 28px 24px;
+  margin: 8px 0 24px; position: relative; overflow: hidden;
+  box-shadow: var(--shadow-glow);
+}
+.balance-hero::before {
+  content: ''; position: absolute; top: -60%; right: -30%;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, var(--balance-hero-orb1), transparent 70%);
+  border-radius: 50%; animation: orbFloat 8s ease-in-out infinite;
+}
+.balance-hero::after {
+  content: ''; position: absolute; bottom: -40%; left: -20%;
+  width: 160px; height: 160px;
+  background: radial-gradient(circle, var(--balance-hero-orb2), transparent 70%);
+  border-radius: 50%; animation: orbFloat 12s ease-in-out infinite reverse;
+}
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0,0); }
+  50% { transform: translate(20px,-20px); }
+}
+.balance-label {
+  font-size: 13px; color: var(--text-secondary);
+  margin-bottom: 6px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.balance-amount {
+  font-size: 38px; font-weight: 700; letter-spacing: -1.5px;
+  background: var(--balance-text-gradient);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; position: relative; z-index: 1;
+}
+.balance-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; position: relative; z-index: 1; }
+
+/* ═══════════════════════════════════════════
+   QUICK ACTIONS
+   ═══════════════════════════════════════════ */
+.quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+.quick-action {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.quick-action-icon {
+  width: 52px; height: 52px; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition-normal); position: relative; overflow: hidden;
+}
+.quick-action-icon::before {
+  content: ''; position: absolute; inset: 0; border-radius: 16px; padding: 1px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.02));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+:root.light .quick-action-icon::before {
+  background: linear-gradient(135deg, rgba(0,0,0,0.04), rgba(0,0,0,0.01));
+}
+.quick-action-icon svg { width: 22px; height: 22px; position: relative; z-index: 1; }
+.quick-action:active .quick-action-icon { transform: scale(0.92); }
+
+.qa-deposit { background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05)); }
+.qa-deposit svg { stroke: #10b981; }
+.qa-withdraw { background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05)); }
+.qa-withdraw svg { stroke: #ef4444; }
+.qa-newcard { background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(99,102,241,0.05)); }
+.qa-newcard svg { stroke: #6366f1; }
+.qa-cards { background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05)); }
+.qa-cards svg { stroke: #f59e0b; }
+
+.quick-action-label { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
+
+/* ═══════════════════════════════════════════
+   SECTION HEADERS
+   ═══════════════════════════════════════════ */
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.section-title { font-size: 17px; font-weight: 600; letter-spacing: -0.2px; }
+.section-link { font-size: 13px; color: var(--accent-1); cursor: pointer; font-weight: 500; }
+
+/* ═══════════════════════════════════════════
+   VIRTUAL CARD
+   ═══════════════════════════════════════════ */
+.virtual-card {
+  width: 100%; aspect-ratio: 1.6 / 1; border-radius: var(--radius-xl); padding: 24px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  position: relative; overflow: hidden; cursor: pointer; transition: var(--transition-normal);
+}
+.virtual-card:active { transform: scale(0.98); }
+.virtual-card.card-style-1 { background: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa); }
+.virtual-card.card-style-2 { background: linear-gradient(135deg, #06b6d4, #3b82f6, #6366f1); }
+.virtual-card.card-style-3 { background: linear-gradient(135deg, #ec4899, #8b5cf6, #6366f1); }
+.virtual-card::before {
+  content: ''; position: absolute; top: -30%; right: -20%; width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(255,255,255,0.1), transparent 70%); border-radius: 50%;
+}
+.virtual-card::after {
+  content: ''; position: absolute; bottom: -20%; left: -10%; width: 150px; height: 150px;
+  background: radial-gradient(circle, rgba(255,255,255,0.05), transparent 70%); border-radius: 50%;
+}
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1; }
+.card-brand { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+.card-type-badge {
+  font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.15); padding: 3px 10px; border-radius: 20px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.card-chip {
+  width: 36px; height: 28px; background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border-radius: 6px; position: relative; z-index: 1; opacity: 0.9;
+}
+.card-chip::after {
+  content: ''; position: absolute; top: 50%; left: 4px; right: 4px; height: 1px; background: rgba(0,0,0,0.2);
+}
+.card-number {
+  font-size: 16px; font-weight: 500; color: rgba(255,255,255,0.9);
+  letter-spacing: 3px; font-family: 'SF Mono','Menlo',monospace; position: relative; z-index: 1;
+}
+.card-bottom { display: flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 1; }
+.card-holder { font-size: 11px; text-transform: uppercase; color: rgba(255,255,255,0.6); letter-spacing: 1px; }
+.card-holder-name { font-size: 14px; font-weight: 600; color: #fff; margin-top: 2px; }
+.card-balance-label { font-size: 11px; color: rgba(255,255,255,0.6); text-align: right; }
+.card-balance-val { font-size: 18px; font-weight: 700; color: #fff; margin-top: 2px; }
+
+/* ═══════════════════════════════════════════
+   CARD LIST ITEMS
+   ═══════════════════════════════════════════ */
+.card-list-item {
+  display: flex; align-items: center; gap: 14px; padding: 16px;
+  background: var(--bg-glass); border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md); margin-bottom: 10px;
+  cursor: pointer; transition: var(--transition-normal);
+}
+.card-list-item:active { transform: scale(0.98); }
+.card-list-item:hover { background: var(--bg-glass-hover); }
+.card-mini-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.card-mini-icon.active-card { background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05)); }
+.card-mini-icon.active-card svg { stroke: #10b981; }
+.card-mini-icon.blocked-card { background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05)); }
+.card-mini-icon.blocked-card svg { stroke: #ef4444; }
+.card-mini-icon.closed-card { background: linear-gradient(135deg, rgba(100,116,139,0.15), rgba(100,116,139,0.05)); }
+.card-mini-icon.closed-card svg { stroke: #64748b; }
+.card-mini-icon svg { width: 20px; height: 20px; }
+.card-list-info { flex: 1; min-width: 0; }
+.card-list-name { font-size: 15px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-list-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.card-list-right { text-align: right; flex-shrink: 0; }
+.card-list-balance { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.card-list-status { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; margin-top: 4px; display: inline-block; }
+.status-active { background: rgba(16,185,129,0.12); color: var(--success); }
+.status-blocked { background: rgba(239,68,68,0.12); color: var(--danger); }
+.status-closed { background: rgba(100,116,139,0.12); color: #64748b; }
+.status-pending { background: rgba(245,158,11,0.12); color: var(--warning); }
+
+/* ═══════════════════════════════════════════
+   FILTER PILLS
+   ═══════════════════════════════════════════ */
+.filter-pills {
+  display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+  margin-bottom: 16px; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.filter-pills::-webkit-scrollbar { display: none; }
+.filter-pill {
+  padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 500;
+  white-space: nowrap; cursor: pointer; transition: var(--transition-fast);
+  background: var(--bg-glass); border: 1px solid var(--border-glass);
+  color: var(--text-secondary); -webkit-tap-highlight-color: transparent;
+}
+.filter-pill.active { background: var(--accent-gradient); border-color: transparent; color: #fff; }
+.filter-pill:not(.active):hover { background: var(--bg-glass-hover); }
+
+/* ═══════════════════════════════════════════
+   TRANSACTION LIST
+   ═══════════════════════════════════════════ */
+.tx-item {
+  display: flex; align-items: center; gap: 14px; padding: 14px 0;
+  border-bottom: 1px solid var(--tx-border); transition: var(--transition-fast);
+}
+.tx-item:last-child { border-bottom: none; }
+.tx-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.tx-icon svg { width: 18px; height: 18px; }
+.tx-icon.tx-deposit { background: rgba(16,185,129,0.12); }
+.tx-icon.tx-deposit svg { stroke: #10b981; }
+.tx-icon.tx-withdraw { background: rgba(239,68,68,0.12); }
+.tx-icon.tx-withdraw svg { stroke: #ef4444; }
+.tx-icon.tx-card { background: rgba(99,102,241,0.12); }
+.tx-icon.tx-card svg { stroke: #6366f1; }
+.tx-info { flex: 1; min-width: 0; }
+.tx-title { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+.tx-date { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.tx-right { text-align: right; flex-shrink: 0; }
+.tx-amount { font-size: 14px; font-weight: 600; }
+.tx-amount.positive { color: var(--success); }
+.tx-amount.negative { color: var(--text-primary); }
+.tx-status-badge { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; margin-top: 3px; display: inline-block; }
+
+/* ═══════════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════════ */
+.btn {
+  width: 100%; padding: 16px; border-radius: var(--radius-md);
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: var(--transition-normal);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  border: none; -webkit-tap-highlight-color: transparent;
+  position: relative; overflow: hidden;
+}
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--accent-gradient); color: #fff; box-shadow: 0 4px 16px rgba(99,102,241,0.3); }
+.btn-primary:hover { box-shadow: 0 6px 24px rgba(99,102,241,0.4); }
+.btn-secondary { background: var(--bg-glass); border: 1px solid var(--border-glass); color: var(--text-primary); }
+.btn-danger { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.2); color: var(--danger); }
+.btn-success { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.2); color: var(--success); }
+.btn svg { width: 18px; height: 18px; }
+.btn-group { display: flex; gap: 10px; margin-top: 16px; }
+.btn-group .btn { flex: 1; }
+
+/* ═══════════════════════════════════════════
+   FORM ELEMENTS
+   ═══════════════════════════════════════════ */
+.form-group { margin-bottom: 18px; }
+.form-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px; display: block; }
+.form-input {
+  width: 100%; padding: 14px 16px;
+  background: var(--bg-glass); border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md); color: var(--text-primary);
+  font-size: 15px; outline: none; transition: var(--transition-fast);
+}
+.form-input:focus { border-color: var(--accent-1); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.form-input::placeholder { color: var(--text-muted); }
+.form-select {
+  width: 100%; padding: 14px 16px;
+  background: var(--bg-glass); border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md); color: var(--text-primary);
+  font-size: 15px; outline: none; appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center;
+  cursor: pointer; transition: var(--transition-fast);
+}
+.form-select:focus { border-color: var(--accent-1); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.form-select option { background: var(--bg-secondary); color: var(--text-primary); }
+
+/* ═══════════════════════════════════════════
+   AMOUNT SELECTOR (Preset Chips)
+   ═══════════════════════════════════════════ */
+.amount-display {
+  text-align: center; padding: 20px 0 8px;
+}
+.amount-display-value {
+  font-size: 48px; font-weight: 700; letter-spacing: -2px;
+  color: var(--text-primary); transition: var(--transition-fast);
+  position: relative; display: inline-block;
+}
+.amount-display-value .currency {
+  font-size: 28px; font-weight: 500; color: var(--text-muted);
+  vertical-align: super; margin-right: 2px;
+}
+.amount-display-sub {
+  font-size: 13px; color: var(--text-muted); margin-top: 4px;
+}
+
+.amount-chips {
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+  margin: 16px 0 20px;
+}
+.amount-chip {
+  padding: 10px 20px; border-radius: 24px;
+  font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: var(--transition-fast);
+  background: var(--bg-glass); border: 1.5px solid var(--border-glass);
+  color: var(--text-secondary); -webkit-tap-highlight-color: transparent;
+  min-width: 72px; text-align: center;
+}
+.amount-chip:active { transform: scale(0.95); }
+.amount-chip.selected {
+  background: var(--accent-gradient); border-color: transparent;
+  color: #fff; box-shadow: 0 4px 16px rgba(99,102,241,0.25);
+}
+.amount-chip:not(.selected):hover { background: var(--bg-glass-hover); border-color: var(--border-glass-active); }
+
+.amount-custom-row {
+  display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 16px;
+}
+.amount-custom-input {
+  width: 120px; padding: 10px 14px;
+  background: var(--bg-glass); border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md); color: var(--text-primary);
+  font-size: 16px; font-weight: 600; text-align: center; outline: none;
+  transition: var(--transition-fast);
+  -moz-appearance: textfield;
+}
+.amount-custom-input::-webkit-inner-spin-button,
+.amount-custom-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.amount-custom-input:focus { border-color: var(--accent-1); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.amount-custom-label { font-size: 13px; color: var(--text-muted); }
+
+/* ═══════════════════════════════════════════
+   INFO ROW
+   ═══════════════════════════════════════════ */
+.info-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid var(--tx-border);
+}
+.info-row:last-child { border-bottom: none; }
+.info-row-label { font-size: 13px; color: var(--text-secondary); }
+.info-row-value { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+
+/* ═══════════════════════════════════════════
+   QR & DEPOSIT
+   ═══════════════════════════════════════════ */
+.qr-wrapper {
+  width: 200px; height: 200px; margin: 24px auto;
+  background: #fff; border-radius: 16px; padding: 16px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--qr-shadow);
+}
+.address-box {
+  background: var(--bg-glass); border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md); padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px; margin: 16px 0;
+}
+.address-text {
+  flex: 1; font-size: 13px; font-family: 'SF Mono','Menlo',monospace;
+  color: var(--text-primary); word-break: break-all; line-height: 1.4;
+}
+.copy-btn {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--accent-gradient); border: none; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; transition: var(--transition-fast);
+}
+.copy-btn:active { transform: scale(0.92); }
+.copy-btn svg { width: 18px; height: 18px; }
+
+/* ═══════════════════════════════════════════
+   PROFILE
+   ═══════════════════════════════════════════ */
+.profile-avatar {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: var(--accent-gradient);
+  display: flex; align-items: center; justify-content: center;
+  margin: 16px auto; font-size: 32px; font-weight: 700; color: #fff;
+  position: relative;
+}
+.profile-avatar::after {
+  content: ''; position: absolute; inset: -3px; border-radius: 50%; padding: 2px;
+  background: var(--accent-gradient);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.profile-name { text-align: center; font-size: 20px; font-weight: 700; margin-top: 12px; }
+.profile-tg { text-align: center; font-size: 14px; color: var(--accent-1); margin-top: 4px; }
+.profile-field {
+  display: flex; align-items: center; gap: 14px; padding: 16px;
+  background: var(--bg-glass); border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md); margin-bottom: 10px;
+  cursor: pointer; transition: var(--transition-normal);
+}
+.profile-field:hover { background: var(--bg-glass-hover); }
+.profile-field-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: rgba(99,102,241,0.12);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.profile-field-icon svg { width: 18px; height: 18px; stroke: var(--accent-1); }
+.profile-field-info { flex: 1; }
+.profile-field-label { font-size: 12px; color: var(--text-muted); }
+.profile-field-value { font-size: 15px; font-weight: 500; color: var(--text-primary); margin-top: 2px; }
+.profile-field-arrow { color: var(--text-muted); }
+.profile-field-arrow svg { width: 16px; height: 16px; }
+
+/* ═══════════════════════════════════════════
+   REVEAL FIELDS
+   ═══════════════════════════════════════════ */
+.reveal-field {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; background: var(--bg-glass); border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md); margin-bottom: 10px;
+}
+.reveal-label { font-size: 12px; color: var(--text-muted); }
+.reveal-value {
+  font-size: 15px; font-weight: 600; font-family: 'SF Mono','Menlo',monospace;
+  color: var(--text-primary); margin-top: 2px; letter-spacing: 1px;
+}
+.reveal-value.hidden-val { letter-spacing: 3px; color: var(--text-muted); }
+
+/* ═══════════════════════════════════════════
+   MODAL / CONFIRM
+   ═══════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none; transition: var(--transition-normal);
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-sheet {
+  width: 100%; max-width: 430px;
+  background: var(--modal-bg); border: 1px solid var(--border-glass);
+  border-top-left-radius: var(--radius-xl); border-top-right-radius: var(--radius-xl);
+  padding: 24px 20px; padding-bottom: calc(24px + var(--safe-bottom));
+  transform: translateY(100%); transition: var(--transition-slow);
+}
+.modal-overlay.open .modal-sheet { transform: translateY(0); }
+.modal-handle { width: 36px; height: 4px; background: var(--text-muted); opacity: 0.3; border-radius: 2px; margin: 0 auto 20px; }
+.modal-title { font-size: 18px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+.modal-desc { font-size: 14px; color: var(--text-secondary); text-align: center; margin-bottom: 24px; line-height: 1.5; }
+
+/* ═══════════════════════════════════════════
+   TOAST
+   ═══════════════════════════════════════════ */
+.toast {
+  position: fixed; top: 20px; left: 50%;
+  transform: translateX(-50%) translateY(-120px); z-index: 600;
+  max-width: 380px; width: calc(100% - 40px);
+  padding: 14px 18px; background: var(--bg-secondary);
+  border: 1px solid var(--border-glass); border-radius: var(--radius-md);
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: var(--shadow-lg); transition: var(--transition-slow);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.toast-icon svg { width: 16px; height: 16px; }
+.toast-icon.toast-success { background: rgba(16,185,129,0.15); }
+.toast-icon.toast-success svg { stroke: #10b981; }
+.toast-icon.toast-error { background: rgba(239,68,68,0.15); }
+.toast-icon.toast-error svg { stroke: #ef4444; }
+.toast-text { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+
+/* ═══════════════════════════════════════════
+   POLLING
+   ═══════════════════════════════════════════ */
+.polling-status { text-align: center; padding: 40px 20px; }
+.polling-spinner {
+  width: 56px; height: 56px; margin: 0 auto 20px;
+  border: 3px solid rgba(99,102,241,0.15);
+  border-top: 3px solid var(--accent-1);
+  border-radius: 50%; animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.polling-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+.polling-desc { font-size: 13px; color: var(--text-secondary); }
+
+/* ═══════════════════════════════════════════
+   PAGINATION
+   ═══════════════════════════════════════════ */
+.pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 20px; padding-bottom: 20px; }
+.pagination-btn {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--bg-glass); border: 1px solid var(--border-glass);
+  color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 13px; font-weight: 500; transition: var(--transition-fast);
+}
+.pagination-btn.active { background: var(--accent-gradient); border-color: transparent; color: #fff; }
+.pagination-btn:hover:not(.active) { background: var(--bg-glass-hover); }
+.pagination-btn svg { width: 16px; height: 16px; }
+
+/* ═══════════════════════════════════════════
+   SCREENS & MISC
+   ═══════════════════════════════════════════ */
+.screen { display: none; animation: fadeSlideIn 0.3s ease forwards; }
+.screen.active { display: block; }
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.divider { height: 1px; background: var(--tx-border); margin: 16px 0; }
+.spacer-sm { height: 8px; }
+.spacer-md { height: 16px; }
+.spacer-lg { height: 24px; }
+.text-center { text-align: center; }
+.text-secondary { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+.text-sm { font-size: 13px; }
+.fw-600 { font-weight: 600; }
+.scroll-horizontal {
+  display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px;
+  scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.scroll-horizontal::-webkit-scrollbar { display: none; }
+.scroll-horizontal > * { scroll-snap-align: center; flex-shrink: 0; }
+.ripple { position: relative; overflow: hidden; }
+::-webkit-scrollbar { width: 0; height: 0; }
+</style>
+</head>
+<body>
+
+<div class="bg-mesh"></div>
+
+<div class="app" id="app">
+  <!-- HEADER -->
+  <div class="header" id="header">
+    <div class="header-left">
+      <div class="header-back hidden" id="headerBack" onclick="goBack()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </div>
+    </div>
+    <div class="header-title" id="headerTitle">CardVault</div>
+    <div class="header-right">
+      <div class="theme-toggle" onclick="toggleTheme()">
+        <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE CONTENT -->
+  <div class="page-content" id="pageContent">
+
+    <!-- ═══════════ DASHBOARD ═══════════ -->
+    <div class="screen active" id="screen-dashboard">
+      <div class="balance-hero">
+        <div class="balance-label">Total Balance</div>
+        <div class="balance-amount">$12,847.50</div>
+        <div class="balance-sub">Available: $11,230.00</div>
+      </div>
+
+      <div class="quick-actions">
+        <div class="quick-action" onclick="navigateTo('deposit')">
+          <div class="quick-action-icon qa-deposit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+          </div>
+          <div class="quick-action-label">Deposit</div>
+        </div>
+        <div class="quick-action" onclick="navigateTo('withdraw')">
+          <div class="quick-action-icon qa-withdraw">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+          </div>
+          <div class="quick-action-label">Withdraw</div>
+        </div>
+        <div class="quick-action" onclick="navigateTo('issue-card')">
+          <div class="quick-action-icon qa-newcard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+          <div class="quick-action-label">New Card</div>
+        </div>
+        <div class="quick-action" onclick="switchTab('cards')">
+          <div class="quick-action-icon qa-cards">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </div>
+          <div class="quick-action-label">My Cards</div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <div class="section-title">Active Card</div>
+        <div class="section-link" onclick="switchTab('cards')">All Cards</div>
+      </div>
+
+      <div class="scroll-horizontal" style="margin-bottom: 28px;">
+        <div class="virtual-card card-style-1" style="min-width: 300px;" onclick="navigateTo('card-details')">
+          <div class="card-top">
+            <div><div class="card-brand">CardVault</div><div class="spacer-sm"></div><div class="card-chip"></div></div>
+            <div class="card-type-badge">Standard</div>
+          </div>
+          <div class="card-number">&bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; 4291</div>
+          <div class="card-bottom">
+            <div><div class="card-holder">Card Holder</div><div class="card-holder-name">Alex Johnson</div></div>
+            <div><div class="card-balance-label">Balance</div><div class="card-balance-val">$3,450.00</div></div>
+          </div>
+        </div>
+        <div class="virtual-card card-style-2" style="min-width: 300px;" onclick="navigateTo('card-details')">
+          <div class="card-top">
+            <div><div class="card-brand">CardVault</div><div class="spacer-sm"></div><div class="card-chip"></div></div>
+            <div class="card-type-badge">Wallet</div>
+          </div>
+          <div class="card-number">&bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; 8817</div>
+          <div class="card-bottom">
+            <div><div class="card-holder">Card Holder</div><div class="card-holder-name">Alex Johnson</div></div>
+            <div><div class="card-balance-label">Balance</div><div class="card-balance-val">$1,280.50</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <div class="section-title">Recent Activity</div>
+        <div class="section-link" onclick="switchTab('history')">See All</div>
+      </div>
+
+      <div class="glass-card" style="padding: 4px 16px;">
+        <div class="tx-item">
+          <div class="tx-icon tx-deposit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
+          <div class="tx-info"><div class="tx-title">USDT Deposit</div><div class="tx-date">Mar 10, 2026 &bull; 14:23</div></div>
+          <div class="tx-right"><div class="tx-amount positive">+$500.00</div><div class="tx-status-badge status-active">Complete</div></div>
+        </div>
+        <div class="tx-item">
+          <div class="tx-icon tx-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+          <div class="tx-info"><div class="tx-title">Card Topup &bull; *4291</div><div class="tx-date">Mar 9, 2026 &bull; 11:05</div></div>
+          <div class="tx-right"><div class="tx-amount negative">-$200.00</div><div class="tx-status-badge status-active">Complete</div></div>
+        </div>
+        <div class="tx-item">
+          <div class="tx-icon tx-withdraw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></div>
+          <div class="tx-info"><div class="tx-title">USDT Withdrawal</div><div class="tx-date">Mar 8, 2026 &bull; 09:12</div></div>
+          <div class="tx-right"><div class="tx-amount negative">-$1,000.00</div><div class="tx-status-badge status-pending">Processing</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ CARDS LIST ═══════════ -->
+    <div class="screen" id="screen-cards">
+      <div class="spacer-md"></div>
+      <div class="filter-pills">
+        <div class="filter-pill active" onclick="filterCards(this)">All</div>
+        <div class="filter-pill" onclick="filterCards(this)">Active</div>
+        <div class="filter-pill" onclick="filterCards(this)">Blocked</div>
+        <div class="filter-pill" onclick="filterCards(this)">Closed</div>
+      </div>
+      <div id="cardsList">
+        <div class="card-list-item" onclick="navigateTo('card-details')">
+          <div class="card-mini-icon active-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+          <div class="card-list-info"><div class="card-list-name">Business Card</div><div class="card-list-meta">Standard &bull; *4291 &bull; USD</div></div>
+          <div class="card-list-right"><div class="card-list-balance">$3,450.00</div><div class="card-list-status status-active">Active</div></div>
+        </div>
+        <div class="card-list-item" onclick="navigateTo('card-details')">
+          <div class="card-mini-icon active-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+          <div class="card-list-info"><div class="card-list-name">Crypto Wallet</div><div class="card-list-meta">Wallet &bull; *8817 &bull; USD</div></div>
+          <div class="card-list-right"><div class="card-list-balance">$1,280.50</div><div class="card-list-status status-active">Active</div></div>
+        </div>
+        <div class="card-list-item" onclick="navigateTo('card-details')">
+          <div class="card-mini-icon active-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+          <div class="card-list-info"><div class="card-list-name">Travel EUR</div><div class="card-list-meta">Standard &bull; *3352 &bull; EUR</div></div>
+          <div class="card-list-right"><div class="card-list-balance">&euro;780.00</div><div class="card-list-status status-active">Active</div></div>
+        </div>
+        <div class="card-list-item">
+          <div class="card-mini-icon blocked-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+          <div class="card-list-info"><div class="card-list-name">Old Card</div><div class="card-list-meta">Standard &bull; *1190 &bull; USD</div></div>
+          <div class="card-list-right"><div class="card-list-balance">$0.00</div><div class="card-list-status status-blocked">Blocked</div></div>
+        </div>
+        <div class="card-list-item">
+          <div class="card-mini-icon closed-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+          <div class="card-list-info"><div class="card-list-name">Test Card</div><div class="card-list-meta">Wallet &bull; *6673 &bull; USD</div></div>
+          <div class="card-list-right"><div class="card-list-balance">$0.00</div><div class="card-list-status status-closed">Closed</div></div>
+        </div>
+      </div>
+      <div class="spacer-lg"></div>
+      <button class="btn btn-primary ripple" onclick="navigateTo('issue-card')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Issue New Card
+      </button>
+    </div>
+
+    <!-- ═══════════ CARD DETAILS ═══════════ -->
+    <div class="screen" id="screen-card-details">
+      <div class="spacer-sm"></div>
+      <div class="virtual-card card-style-1">
+        <div class="card-top">
+          <div><div class="card-brand">CardVault</div><div class="spacer-sm"></div><div class="card-chip"></div></div>
+          <div class="card-type-badge">Standard</div>
+        </div>
+        <div class="card-number">&bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; 4291</div>
+        <div class="card-bottom">
+          <div><div class="card-holder">Card Holder</div><div class="card-holder-name">Alex Johnson</div></div>
+          <div><div class="card-balance-label">Balance</div><div class="card-balance-val">$3,450.00</div></div>
+        </div>
+      </div>
+      <div class="spacer-lg"></div>
+      <div class="section-header">
+        <div class="section-title">Card Details</div>
+        <div class="section-link" id="revealToggle" onclick="toggleReveal()">Show</div>
+      </div>
+      <div class="reveal-field"><div><div class="reveal-label">Card Number</div><div class="reveal-value" id="revealPan"><span class="hidden-val">&bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; 4291</span></div></div></div>
+      <div class="reveal-field"><div><div class="reveal-label">Expiry</div><div class="reveal-value" id="revealExp"><span class="hidden-val">&bull;&bull; / &bull;&bull;</span></div></div></div>
+      <div class="reveal-field"><div><div class="reveal-label">CVV</div><div class="reveal-value" id="revealCvv"><span class="hidden-val">&bull;&bull;&bull;</span></div></div></div>
+      <div class="spacer-lg"></div>
+      <button class="btn btn-primary ripple" onclick="navigateTo('topup-card')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+        Top Up Card
+      </button>
+      <div class="btn-group">
+        <button class="btn btn-danger ripple" onclick="showConfirm('block')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Block
+        </button>
+        <button class="btn btn-secondary ripple" onclick="showConfirm('close')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Close
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════ ISSUE CARD ═══════════ -->
+    <div class="screen" id="screen-issue-card">
+      <div class="spacer-lg"></div>
+      <div class="form-group">
+        <label class="form-label">Card Name</label>
+        <input class="form-input" type="text" placeholder="e.g. Business, Travel, Personal">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Currency</label>
+        <select class="form-select" id="issueCurrency" onchange="updateIssuePresets()">
+          <option value="USD">USD — US Dollar</option>
+          <option value="EUR">EUR — Euro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Card Type</label>
+        <select class="form-select">
+          <option value="standard">Standard</option>
+          <option value="wallet">Wallet</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Initial Top-up</label>
+        <div class="amount-display">
+          <div class="amount-display-value" id="issueAmountDisplay"><span class="currency">$</span>100</div>
+        </div>
+        <div class="amount-chips" id="issueChips">
+          <div class="amount-chip" onclick="selectIssueAmount(this, 50)">$50</div>
+          <div class="amount-chip selected" onclick="selectIssueAmount(this, 100)">$100</div>
+          <div class="amount-chip" onclick="selectIssueAmount(this, 150)">$150</div>
+          <div class="amount-chip" onclick="selectIssueAmount(this, 200)">$200</div>
+          <div class="amount-chip" onclick="selectIssueAmount(this, 300)">$300</div>
+          <div class="amount-chip" onclick="selectIssueAmount(this, 500)">$500</div>
+        </div>
+        <div class="amount-custom-row">
+          <span class="amount-custom-label">or enter custom:</span>
+          <input class="amount-custom-input" type="number" placeholder="0" id="issueCustomAmount" oninput="customIssueAmount(this)">
+        </div>
+      </div>
+
+      <div class="glass-card" style="margin-top: 8px;">
+        <div class="info-row"><span class="info-row-label">Card Issue Fee</span><span class="info-row-value">$3.00</span></div>
+        <div class="info-row"><span class="info-row-label">Top-up Amount</span><span class="info-row-value" id="issueTopupVal">$100.00</span></div>
+        <div class="info-row"><span class="info-row-label">Top-up Fee (2%)</span><span class="info-row-value" id="issueFeeVal">$2.00</span></div>
+        <div class="divider"></div>
+        <div class="info-row"><span class="info-row-label fw-600" style="color: var(--text-primary);">Total</span><span class="info-row-value" id="issueTotalVal" style="color: var(--accent-1); font-size: 16px;">$105.00</span></div>
+      </div>
+      <div class="spacer-lg"></div>
+      <button class="btn btn-primary ripple" id="issueCta" onclick="navigateTo('polling')">Issue Card — $105.00</button>
+    </div>
+
+    <!-- ═══════════ TOP UP CARD ═══════════ -->
+    <div class="screen" id="screen-topup-card">
+      <div class="spacer-lg"></div>
+      <div class="text-center" style="margin-bottom: 8px;">
+        <div class="text-secondary text-sm">Top up card</div>
+        <div style="font-size: 17px; font-weight: 600; margin-top: 4px;">Business Card &bull; *4291</div>
+        <div class="text-muted text-sm" style="margin-top: 2px;">Current Balance: $3,450.00</div>
+      </div>
+
+      <div class="amount-display">
+        <div class="amount-display-value" id="topupAmountDisplay"><span class="currency">$</span>200</div>
+      </div>
+      <div class="amount-chips" id="topupChips">
+        <div class="amount-chip" onclick="selectTopupAmount(this, 50)">$50</div>
+        <div class="amount-chip" onclick="selectTopupAmount(this, 100)">$100</div>
+        <div class="amount-chip selected" onclick="selectTopupAmount(this, 200)">$200</div>
+        <div class="amount-chip" onclick="selectTopupAmount(this, 300)">$300</div>
+        <div class="amount-chip" onclick="selectTopupAmount(this, 500)">$500</div>
+        <div class="amount-chip" onclick="selectTopupAmount(this, 1000)">$1000</div>
+      </div>
+      <div class="amount-custom-row">
+        <span class="amount-custom-label">or enter custom:</span>
+        <input class="amount-custom-input" type="number" placeholder="0" id="topupCustomAmount" oninput="customTopupAmount(this)">
+      </div>
+
+      <div class="glass-card">
+        <div class="info-row"><span class="info-row-label">Top-up Amount</span><span class="info-row-value" id="topupAmountVal">$200.00</span></div>
+        <div class="info-row"><span class="info-row-label">Fee (2%)</span><span class="info-row-value" id="topupFeeVal">$4.00</span></div>
+        <div class="divider"></div>
+        <div class="info-row"><span class="info-row-label fw-600" style="color: var(--text-primary);">Total Debit</span><span class="info-row-value" id="topupTotalVal" style="color: var(--accent-1); font-size: 16px;">$204.00</span></div>
+      </div>
+      <div class="spacer-lg"></div>
+      <button class="btn btn-primary ripple" id="topupCta" onclick="navigateTo('polling')">Confirm Top Up — $204.00</button>
+    </div>
+
+    <!-- ═══════════ DEPOSIT ═══════════ -->
+    <div class="screen" id="screen-deposit">
+      <div class="spacer-lg"></div>
+      <div class="text-center"><div style="font-size: 15px; font-weight: 500; color: var(--text-secondary);">Send USDT (TRC-20) to:</div></div>
+      <div class="qr-wrapper">
+        <svg width="168" height="168" viewBox="0 0 168 168">
+          <rect width="168" height="168" fill="#fff"/>
+          <g fill="#000">
+            <rect x="8" y="8" width="42" height="42"/><rect x="14" y="14" width="30" height="30" fill="#fff"/><rect x="20" y="20" width="18" height="18"/>
+            <rect x="118" y="8" width="42" height="42"/><rect x="124" y="14" width="30" height="30" fill="#fff"/><rect x="130" y="20" width="18" height="18"/>
+            <rect x="8" y="118" width="42" height="42"/><rect x="14" y="124" width="30" height="30" fill="#fff"/><rect x="20" y="130" width="18" height="18"/>
+            <rect x="58" y="8" width="6" height="6"/><rect x="70" y="8" width="6" height="6"/><rect x="82" y="8" width="6" height="6"/><rect x="94" y="14" width="6" height="6"/><rect x="106" y="8" width="6" height="6"/>
+            <rect x="58" y="20" width="6" height="6"/><rect x="82" y="20" width="6" height="6"/><rect x="70" y="32" width="6" height="6"/><rect x="94" y="26" width="6" height="6"/>
+            <rect x="8" y="58" width="6" height="6"/><rect x="20" y="58" width="6" height="6"/><rect x="32" y="64" width="6" height="6"/><rect x="58" y="58" width="6" height="6"/><rect x="70" y="64" width="6" height="6"/><rect x="82" y="58" width="6" height="6"/><rect x="94" y="64" width="6" height="6"/><rect x="106" y="58" width="6" height="6"/><rect x="118" y="64" width="6" height="6"/><rect x="130" y="58" width="6" height="6"/><rect x="142" y="64" width="6" height="6"/><rect x="154" y="58" width="6" height="6"/>
+            <rect x="8" y="70" width="6" height="6"/><rect x="20" y="76" width="6" height="6"/><rect x="32" y="70" width="6" height="6"/><rect x="58" y="76" width="6" height="6"/><rect x="82" y="76" width="6" height="6"/><rect x="106" y="70" width="6" height="6"/><rect x="130" y="76" width="6" height="6"/>
+            <rect x="8" y="82" width="6" height="6"/><rect x="20" y="88" width="6" height="6"/><rect x="44" y="82" width="6" height="6"/><rect x="70" y="88" width="6" height="6"/><rect x="94" y="82" width="6" height="6"/><rect x="118" y="88" width="6" height="6"/><rect x="142" y="82" width="6" height="6"/><rect x="154" y="88" width="6" height="6"/>
+            <rect x="58" y="94" width="6" height="6"/><rect x="82" y="94" width="6" height="6"/><rect x="106" y="100" width="6" height="6"/><rect x="130" y="94" width="6" height="6"/>
+            <rect x="58" y="106" width="6" height="6"/><rect x="70" y="112" width="6" height="6"/><rect x="94" y="106" width="6" height="6"/><rect x="118" y="112" width="6" height="6"/><rect x="142" y="106" width="6" height="6"/>
+            <rect x="58" y="118" width="6" height="6"/><rect x="82" y="124" width="6" height="6"/><rect x="94" y="118" width="6" height="6"/><rect x="118" y="124" width="6" height="6"/><rect x="130" y="118" width="6" height="6"/><rect x="154" y="124" width="6" height="6"/>
+            <rect x="58" y="130" width="6" height="6"/><rect x="70" y="136" width="6" height="6"/><rect x="82" y="130" width="6" height="6"/><rect x="106" y="136" width="6" height="6"/><rect x="118" y="130" width="6" height="6"/><rect x="142" y="136" width="6" height="6"/>
+            <rect x="58" y="148" width="6" height="6"/><rect x="82" y="148" width="6" height="6"/><rect x="94" y="154" width="6" height="6"/><rect x="118" y="148" width="6" height="6"/><rect x="142" y="154" width="6" height="6"/>
+          </g>
+        </svg>
+      </div>
+      <div class="address-box">
+        <div class="address-text" id="walletAddress">TN3W4H6rK2ce4vX9YnFQHwKENnHjoxb3m9</div>
+        <button class="copy-btn ripple" onclick="copyAddress()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
+      <div class="glass-card" style="margin-top: 16px;">
+        <div class="info-row"><span class="info-row-label">Network</span><span class="info-row-value">TRON (TRC-20)</span></div>
+        <div class="info-row"><span class="info-row-label">Currency</span><span class="info-row-value">USDT</span></div>
+        <div class="info-row"><span class="info-row-label">Min Deposit</span><span class="info-row-value">10 USDT</span></div>
+      </div>
+      <div class="spacer-md"></div>
+      <div class="text-center text-sm text-secondary" style="line-height: 1.6;">Only send USDT to this address via TRC-20 network. Sending other tokens or using a different network may result in permanent loss.</div>
+    </div>
+
+    <!-- ═══════════ WITHDRAW ═══════════ -->
+    <div class="screen" id="screen-withdraw">
+      <div class="spacer-lg"></div>
+      <div class="text-center" style="margin-bottom: 8px;">
+        <div class="text-secondary text-sm">Available Balance</div>
+        <div style="font-size: 28px; font-weight: 700; letter-spacing: -1px; margin-top: 4px;">$11,230.00</div>
+      </div>
+
+      <div class="amount-display">
+        <div class="amount-display-value" id="withdrawAmountDisplay"><span class="currency">$</span>0</div>
+      </div>
+      <div class="amount-chips" id="withdrawChips">
+        <div class="amount-chip" onclick="selectWithdrawAmount(this, 50)">$50</div>
+        <div class="amount-chip" onclick="selectWithdrawAmount(this, 100)">$100</div>
+        <div class="amount-chip" onclick="selectWithdrawAmount(this, 250)">$250</div>
+        <div class="amount-chip" onclick="selectWithdrawAmount(this, 500)">$500</div>
+        <div class="amount-chip" onclick="selectWithdrawAmount(this, 1000)">$1000</div>
+        <div class="amount-chip" onclick="selectWithdrawAmount(this, 5000)">$5000</div>
+      </div>
+      <div class="amount-custom-row">
+        <span class="amount-custom-label">or enter custom:</span>
+        <input class="amount-custom-input" type="number" placeholder="0" id="withdrawCustomAmount" oninput="customWithdrawAmount(this)">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">TRC-20 Address</label>
+        <input class="form-input" type="text" placeholder="T..." id="withdrawAddress" style="font-family: 'SF Mono',monospace; font-size: 14px;" oninput="validateTrc20Address()">
+        <div id="addressError" style="font-size: 12px; color: var(--danger); margin-top: 6px; display: none;">Invalid TRC-20 address. Must start with T and be 34 characters.</div>
+      </div>
+
+      <div class="glass-card" id="withdrawFees">
+        <div class="info-row"><span class="info-row-label">Amount</span><span class="info-row-value" id="wdAmount">$0.00</span></div>
+        <div class="info-row"><span class="info-row-label">Fee (1.5%)</span><span class="info-row-value" id="wdFeePercent">$0.00</span></div>
+        <div class="info-row"><span class="info-row-label">Fixed Fee</span><span class="info-row-value">$1.00</span></div>
+        <div class="info-row"><span class="info-row-label">Min Fee</span><span class="info-row-value">$5.00</span></div>
+        <div class="divider"></div>
+        <div class="info-row"><span class="info-row-label fw-600" style="color: var(--text-primary);">You Receive</span><span class="info-row-value" id="wdReceive" style="color: var(--success); font-size: 16px;">$0.00</span></div>
+      </div>
+      <div class="spacer-lg"></div>
+      <button class="btn btn-primary ripple" onclick="showConfirm('withdraw')">Confirm Withdrawal</button>
+    </div>
+
+    <!-- ═══════════ HISTORY ═══════════ -->
+    <div class="screen" id="screen-history">
+      <div class="spacer-md"></div>
+      <div class="filter-pills">
+        <div class="filter-pill active">All</div><div class="filter-pill">Deposit</div><div class="filter-pill">Withdraw</div><div class="filter-pill">Card Issue</div><div class="filter-pill">Top-up</div>
+      </div>
+      <div class="filter-pills" style="margin-bottom: 20px;">
+        <div class="filter-pill active">All Status</div><div class="filter-pill">Pending</div><div class="filter-pill">Processing</div><div class="filter-pill">Complete</div><div class="filter-pill">Failed</div>
+      </div>
+      <div class="glass-card" style="padding: 4px 16px;">
+        <div class="tx-item"><div class="tx-icon tx-deposit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div><div class="tx-info"><div class="tx-title">USDT Deposit</div><div class="tx-date">Mar 10, 2026 &bull; 14:23</div></div><div class="tx-right"><div class="tx-amount positive">+$500.00</div><div class="tx-status-badge status-active">Complete</div></div></div>
+        <div class="tx-item"><div class="tx-icon tx-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><div class="tx-info"><div class="tx-title">Card Top-up &bull; *4291</div><div class="tx-date">Mar 9, 2026 &bull; 11:05</div></div><div class="tx-right"><div class="tx-amount negative">-$200.00</div><div class="tx-status-badge status-active">Complete</div></div></div>
+        <div class="tx-item"><div class="tx-icon tx-withdraw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></div><div class="tx-info"><div class="tx-title">USDT Withdrawal</div><div class="tx-date">Mar 8, 2026 &bull; 09:12</div></div><div class="tx-right"><div class="tx-amount negative">-$1,000.00</div><div class="tx-status-badge status-pending">Processing</div></div></div>
+        <div class="tx-item"><div class="tx-icon tx-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="tx-info"><div class="tx-title">Card Issued &bull; *8817</div><div class="tx-date">Mar 7, 2026 &bull; 16:34</div></div><div class="tx-right"><div class="tx-amount negative">-$53.00</div><div class="tx-status-badge status-active">Complete</div></div></div>
+        <div class="tx-item"><div class="tx-icon tx-deposit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div><div class="tx-info"><div class="tx-title">USDT Deposit</div><div class="tx-date">Mar 6, 2026 &bull; 08:17</div></div><div class="tx-right"><div class="tx-amount positive">+$2,000.00</div><div class="tx-status-badge status-active">Complete</div></div></div>
+        <div class="tx-item"><div class="tx-icon tx-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><div class="tx-info"><div class="tx-title">Card Top-up &bull; *4291</div><div class="tx-date">Mar 5, 2026 &bull; 13:22</div></div><div class="tx-right"><div class="tx-amount negative">-$500.00</div><div class="tx-status-badge status-active">Complete</div></div></div>
+        <div class="tx-item"><div class="tx-icon tx-withdraw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></div><div class="tx-info"><div class="tx-title">USDT Withdrawal</div><div class="tx-date">Mar 4, 2026 &bull; 19:45</div></div><div class="tx-right"><div class="tx-amount negative">-$300.00</div><div class="tx-status-badge" style="background: rgba(239,68,68,0.12); color: #ef4444;">Failed</div></div></div>
+        <div class="tx-item"><div class="tx-icon tx-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="tx-info"><div class="tx-title">Card Blocked &bull; *1190</div><div class="tx-date">Mar 3, 2026 &bull; 10:11</div></div><div class="tx-right"><div class="tx-amount negative">—</div><div class="tx-status-badge status-active">Complete</div></div></div>
+        <div class="tx-item"><div class="tx-icon tx-deposit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div><div class="tx-info"><div class="tx-title">USDT Deposit</div><div class="tx-date">Mar 2, 2026 &bull; 22:30</div></div><div class="tx-right"><div class="tx-amount positive">+$5,000.00</div><div class="tx-status-badge status-active">Complete</div></div></div>
+        <div class="tx-item"><div class="tx-icon tx-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="tx-info"><div class="tx-title">Card Issued &bull; *4291</div><div class="tx-date">Mar 1, 2026 &bull; 15:00</div></div><div class="tx-right"><div class="tx-amount negative">-$103.00</div><div class="tx-status-badge status-active">Complete</div></div></div>
+      </div>
+      <div class="pagination">
+        <div class="pagination-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></div>
+        <div class="pagination-btn active">1</div><div class="pagination-btn">2</div><div class="pagination-btn">3</div>
+        <div class="pagination-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+    </div>
+
+    <!-- ═══════════ PROFILE ═══════════ -->
+    <div class="screen" id="screen-profile">
+      <div class="profile-avatar">AJ</div>
+      <div class="profile-name">Alex Johnson</div>
+      <div class="profile-tg">@alexjohnson</div>
+      <div class="spacer-lg"></div>
+      <div class="profile-field">
+        <div class="profile-field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <div class="profile-field-info"><div class="profile-field-label">Full Name</div><div class="profile-field-value">Alex Johnson</div></div>
+        <div class="profile-field-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+      <div class="profile-field">
+        <div class="profile-field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+        <div class="profile-field-info"><div class="profile-field-label">Email</div><div class="profile-field-value">alex@example.com</div></div>
+        <div class="profile-field-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+      <div class="profile-field">
+        <div class="profile-field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+        <div class="profile-field-info"><div class="profile-field-label">Phone</div><div class="profile-field-value">+1 (555) 123-4567</div></div>
+        <div class="profile-field-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+      <div class="profile-field">
+        <div class="profile-field-icon" style="background: rgba(6,182,212,0.12);"><svg viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
+        <div class="profile-field-info"><div class="profile-field-label">Telegram</div><div class="profile-field-value" style="color: var(--accent-3);">@alexjohnson</div></div>
+        <div class="profile-field-arrow" style="visibility: hidden;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+      <div class="spacer-lg"></div>
+      <button class="btn btn-danger ripple" onclick="showConfirm('logout')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Log Out
+      </button>
+    </div>
+
+    <!-- ═══════════ POLLING ═══════════ -->
+    <div class="screen" id="screen-polling">
+      <div class="spacer-lg"></div>
+      <div class="polling-status">
+        <div class="polling-spinner"></div>
+        <div class="polling-title">Processing your request...</div>
+        <div class="polling-desc">This usually takes a few seconds. Please wait.</div>
+        <div class="spacer-lg"></div>
+        <div class="text-muted text-sm" id="pollingTimer">Checking status every 3s...</div>
+        <div class="spacer-lg"></div><div class="spacer-lg"></div>
+        <button class="btn btn-secondary" style="display: none;" id="syncBtn" onclick="navigateTo('dashboard'); switchTab('home');">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Sync Status
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <div class="tab-bar">
+    <div class="tab-bar-inner">
+      <div class="tab-item active" data-tab="home" onclick="switchTab('home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span>
+      </div>
+      <div class="tab-item" data-tab="cards" onclick="switchTab('cards')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><span>Cards</span>
+      </div>
+      <div class="tab-item" data-tab="history" onclick="switchTab('history')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>History</span>
+      </div>
+      <div class="tab-item" data-tab="profile" onclick="switchTab('profile')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Profile</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="confirmTitle">Confirm Action</div>
+    <div class="modal-desc" id="confirmDesc">Are you sure you want to proceed?</div>
+    <button class="btn btn-danger ripple" id="confirmAction" onclick="executeConfirm()">Confirm</button>
+    <div class="spacer-sm"></div>
+    <button class="btn btn-secondary ripple" onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-icon toast-success" id="toastIcon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+  <div class="toast-text" id="toastText">Action completed successfully</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  localStorage.setItem('theme', document.documentElement.classList.contains('light') ? 'light' : 'dark');
+}
+// restore on load
+if (localStorage.getItem('theme') === 'light') document.documentElement.classList.add('light');
+
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+const navStack = ['dashboard'];
+let currentTab = 'home';
+let confirmType = '';
+let isRevealed = false;
+
+const tabScreenMap = { home:'dashboard', cards:'cards', history:'history', profile:'profile' };
+const screenTitles = {
+  dashboard:'CardVault', cards:'My Cards', 'card-details':'Card Details',
+  'issue-card':'New Card', 'topup-card':'Top Up', deposit:'Deposit',
+  withdraw:'Withdraw', history:'History', profile:'Profile', polling:'Processing'
+};
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const t = document.getElementById('screen-' + id);
+  if (t) t.classList.add('active');
+  document.getElementById('headerTitle').textContent = screenTitles[id] || 'CardVault';
+  const back = document.getElementById('headerBack');
+  back.classList.toggle('hidden', ['dashboard','cards','history','profile'].includes(id));
+}
+
+function navigateTo(id) {
+  navStack.push(id);
+  showScreen(id);
+  if (id === 'polling') startPollingDemo();
+}
+
+function goBack() {
+  if (navStack.length > 1) { navStack.pop(); showScreen(navStack[navStack.length - 1]); }
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  const id = tabScreenMap[tab];
+  navStack.length = 0; navStack.push(id); showScreen(id);
+}
+
+// ═══════════════════════════════════════════
+// AMOUNT PRESETS — Issue Card
+// ═══════════════════════════════════════════
+let issueAmount = 100;
+
+function getCurrencySymbol() {
+  return document.getElementById('issueCurrency').value === 'EUR' ? '\u20AC' : '$';
+}
+
+function selectIssueAmount(el, val) {
+  issueAmount = val;
+  document.getElementById('issueCustomAmount').value = '';
+  document.querySelectorAll('#issueChips .amount-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  updateIssueDisplay();
+}
+
+function customIssueAmount(el) {
+  const v = parseFloat(el.value) || 0;
+  issueAmount = v;
+  document.querySelectorAll('#issueChips .amount-chip').forEach(c => c.classList.remove('selected'));
+  updateIssueDisplay();
+}
+
+function updateIssuePresets() {
+  const sym = getCurrencySymbol();
+  const chips = document.querySelectorAll('#issueChips .amount-chip');
+  const vals = [50,100,150,200,300,500];
+  chips.forEach((c,i) => { c.textContent = sym + vals[i]; });
+  updateIssueDisplay();
+}
+
+function updateIssueDisplay() {
+  const sym = getCurrencySymbol();
+  const fee = issueAmount * 0.02;
+  const total = issueAmount + 3 + fee;
+  document.getElementById('issueAmountDisplay').innerHTML = `<span class="currency">${sym}</span>${issueAmount}`;
+  document.getElementById('issueTopupVal').textContent = sym + issueAmount.toFixed(2);
+  document.getElementById('issueFeeVal').textContent = sym + fee.toFixed(2);
+  document.getElementById('issueTotalVal').textContent = sym + total.toFixed(2);
+  document.getElementById('issueCta').textContent = `Issue Card — ${sym}${total.toFixed(2)}`;
+}
+
+// ═══════════════════════════════════════════
+// AMOUNT PRESETS — Top Up
+// ═══════════════════════════════════════════
+let topupAmount = 200;
+
+function selectTopupAmount(el, val) {
+  topupAmount = val;
+  document.getElementById('topupCustomAmount').value = '';
+  document.querySelectorAll('#topupChips .amount-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  updateTopupDisplay();
+}
+
+function customTopupAmount(el) {
+  topupAmount = parseFloat(el.value) || 0;
+  document.querySelectorAll('#topupChips .amount-chip').forEach(c => c.classList.remove('selected'));
+  updateTopupDisplay();
+}
+
+function updateTopupDisplay() {
+  const fee = topupAmount * 0.02;
+  const total = topupAmount + fee;
+  document.getElementById('topupAmountDisplay').innerHTML = `<span class="currency">$</span>${topupAmount}`;
+  document.getElementById('topupAmountVal').textContent = '$' + topupAmount.toFixed(2);
+  document.getElementById('topupFeeVal').textContent = '$' + fee.toFixed(2);
+  document.getElementById('topupTotalVal').textContent = '$' + total.toFixed(2);
+  document.getElementById('topupCta').textContent = `Confirm Top Up — $${total.toFixed(2)}`;
+}
+
+// ═══════════════════════════════════════════
+// AMOUNT PRESETS — Withdraw
+// ═══════════════════════════════════════════
+let withdrawAmount = 0;
+
+function selectWithdrawAmount(el, val) {
+  withdrawAmount = val;
+  document.getElementById('withdrawCustomAmount').value = '';
+  document.querySelectorAll('#withdrawChips .amount-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  updateWithdrawDisplay();
+}
+
+function customWithdrawAmount(el) {
+  withdrawAmount = parseFloat(el.value) || 0;
+  document.querySelectorAll('#withdrawChips .amount-chip').forEach(c => c.classList.remove('selected'));
+  updateWithdrawDisplay();
+}
+
+function updateWithdrawDisplay() {
+  const pFee = withdrawAmount * 0.015;
+  const totalFee = Math.max(pFee + 1, 5);
+  const receive = Math.max(withdrawAmount - totalFee, 0);
+  document.getElementById('withdrawAmountDisplay').innerHTML = `<span class="currency">$</span>${withdrawAmount}`;
+  document.getElementById('wdAmount').textContent = '$' + withdrawAmount.toFixed(2);
+  document.getElementById('wdFeePercent').textContent = '$' + pFee.toFixed(2);
+  document.getElementById('wdReceive').textContent = '$' + receive.toFixed(2);
+}
+
+function validateTrc20Address() {
+  const addr = document.getElementById('withdrawAddress').value;
+  document.getElementById('addressError').style.display =
+    (addr.length > 0 && (addr[0] !== 'T' || addr.length !== 34)) ? 'block' : 'none';
+}
+
+// ═══════════════════════════════════════════
+// CARD REVEAL
+// ═══════════════════════════════════════════
+function toggleReveal() {
+  isRevealed = !isRevealed;
+  document.getElementById('revealToggle').textContent = isRevealed ? 'Hide' : 'Show';
+  if (isRevealed) {
+    document.getElementById('revealPan').innerHTML = '<span>4532 8819 0042 4291</span>';
+    document.getElementById('revealExp').innerHTML = '<span>09/28</span>';
+    document.getElementById('revealCvv').innerHTML = '<span>847</span>';
+  } else {
+    document.getElementById('revealPan').innerHTML = '<span class="hidden-val">&bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; 4291</span>';
+    document.getElementById('revealExp').innerHTML = '<span class="hidden-val">&bull;&bull; / &bull;&bull;</span>';
+    document.getElementById('revealCvv').innerHTML = '<span class="hidden-val">&bull;&bull;&bull;</span>';
+  }
+}
+
+// ═══════════════════════════════════════════
+// CONFIRM DIALOG
+// ═══════════════════════════════════════════
+function showConfirm(type) {
+  confirmType = type;
+  const t = document.getElementById('confirmTitle');
+  const d = document.getElementById('confirmDesc');
+  const a = document.getElementById('confirmAction');
+  const configs = {
+    block: ['Block Card?','This card will be temporarily blocked. You can unblock it later.','Block Card','btn btn-danger ripple'],
+    close: ['Close Card?','This action is permanent. Any remaining balance will be returned to your account.','Close Card','btn btn-danger ripple'],
+    withdraw: ['Confirm Withdrawal?','USDT will be sent to the specified TRC-20 address. This action cannot be undone.','Send USDT','btn btn-primary ripple'],
+    logout: ['Log Out?','You will need to sign in again through Telegram to access your account.','Log Out','btn btn-danger ripple']
+  };
+  const c = configs[type];
+  t.textContent = c[0]; d.textContent = c[1]; a.textContent = c[2]; a.className = c[3];
+  document.getElementById('confirmModal').classList.add('open');
+}
+function closeModal() { document.getElementById('confirmModal').classList.remove('open'); }
+function executeConfirm() {
+  closeModal();
+  if (['withdraw','block','close'].includes(confirmType)) navigateTo('polling');
+  else if (confirmType === 'logout') showToast('Logged out successfully');
+}
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+function showToast(msg, type = 'success') {
+  const toast = document.getElementById('toast');
+  const icon = document.getElementById('toastIcon');
+  document.getElementById('toastText').textContent = msg;
+  icon.className = 'toast-icon toast-' + type;
+  icon.innerHTML = type === 'success'
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// ═══════════════════════════════════════════
+// COPY ADDRESS
+// ═══════════════════════════════════════════
+function copyAddress() {
+  navigator.clipboard.writeText(document.getElementById('walletAddress').textContent)
+    .then(() => showToast('Address copied to clipboard'))
+    .catch(() => showToast('Copy failed', 'error'));
+}
+
+// ═══════════════════════════════════════════
+// FILTER
+// ═══════════════════════════════════════════
+function filterCards(el) {
+  el.parentElement.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ═══════════════════════════════════════════
+// POLLING DEMO
+// ═══════════════════════════════════════════
+function startPollingDemo() {
+  const timer = document.getElementById('pollingTimer');
+  document.getElementById('syncBtn').style.display = 'none';
+  let elapsed = 0;
+  const iv = setInterval(() => {
+    elapsed++;
+    timer.textContent = elapsed < 10 ? `Checking every 3s... (${elapsed}s)` : `Checking every 10s... (${elapsed}s)`;
+    if (elapsed >= 4) {
+      clearInterval(iv);
+      showToast('Operation completed successfully!');
+      setTimeout(() => goBack(), 1500);
+    }
+  }, 1000);
+}
+</script>
+</body>
+</html>

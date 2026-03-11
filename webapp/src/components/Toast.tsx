@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { CheckIcon, XIcon } from './icons';
 
 interface Props {
   message: string;
@@ -13,29 +14,49 @@ export default function Toast({ message, type, onClose, duration = 5000 }: Props
     return () => clearTimeout(timer);
   }, [onClose, duration]);
 
-  const bgColor = type === 'success' ? 'var(--success-color, #28a745)' : 'var(--danger-color, #dc3545)';
+  const isSuccess = type === 'success';
 
   return (
     <div
       onClick={onClose}
       style={{
         position: 'fixed',
-        top: '16px',
-        left: '16px',
-        right: '16px',
-        padding: '12px 16px',
-        background: bgColor,
-        color: '#fff',
-        borderRadius: '8px',
-        fontSize: '14px',
-        fontWeight: 500,
-        zIndex: 1000,
+        top: 20,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 600,
+        maxWidth: 380,
+        width: 'calc(100% - 40px)',
+        padding: '14px 18px',
+        background: 'var(--bg-secondary)',
+        border: '1px solid var(--border-glass)',
+        borderRadius: 'var(--radius-md)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        boxShadow: 'var(--shadow-lg)',
         cursor: 'pointer',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-        animation: 'toast-slide-in 0.3s ease-out',
+        animation: 'toastSlideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
-      {message}
+      <div
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 8,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          background: isSuccess ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
+          color: isSuccess ? 'var(--success)' : 'var(--danger)',
+        }}
+      >
+        {isSuccess ? <CheckIcon size={16} /> : <XIcon size={16} />}
+      </div>
+      <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>
+        {message}
+      </span>
     </div>
   );
 }

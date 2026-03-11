@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useCard } from '../hooks/useCards';
 import AmountInput from '../components/AmountInput';
 import ConfirmDialog from '../components/ConfirmDialog';
+import PollingScreen from '../components/PollingScreen';
 import Spinner from '../components/Spinner';
 import { estimateTopup, topupCard, fetchTopupLimits, EstimateResponse, AmountLimitsResponse } from '../api/cards';
 import { usePolling } from '../hooks/usePolling';
@@ -82,39 +83,42 @@ export default function CardTopupPage() {
 
   if (cardLoading) return <div className="page"><Spinner /></div>;
 
+  const timedOut = !isPolling && !isComplete && !isFailed && !!operationId;
+
   if (operationId) {
     return (
-      <div className="page text-center" style={{ paddingTop: '60px' }}>
+      <div className="page" style={{ paddingTop: 40 }}>
+        <PollingScreen
+          isPolling={isPolling}
+          isComplete={isComplete}
+          isFailed={isFailed}
+          timedOut={timedOut}
+        />
         {isPolling && (
-          <>
-            <Spinner />
-            <p className="mt-16">Processing topup...</p>
-            <p className="text-hint">Status: {status}</p>
-          </>
+          <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+            Status: {status}
+          </p>
         )}
         {isComplete && (
-          <>
-            <h2 style={{ fontSize: '24px', color: 'var(--success-color)' }}>Topup Complete!</h2>
-            <button className="btn btn-primary mt-24" onClick={() => navigate(`/cards/${id}`)}>
+          <div style={{ textAlign: 'center' }}>
+            <button className="btn btn-primary" style={{ marginTop: 20 }} onClick={() => navigate(`/cards/${id}`)}>
               Back to Card
             </button>
-          </>
+          </div>
         )}
         {isFailed && (
-          <>
-            <h2 style={{ fontSize: '24px', color: 'var(--danger-color)' }}>Topup Failed</h2>
-            <button className="btn btn-primary mt-24" onClick={() => { setOperationId(null); setError(null); }}>
+          <div style={{ textAlign: 'center' }}>
+            <button className="btn btn-primary" style={{ marginTop: 20 }} onClick={() => { setOperationId(null); setError(null); }}>
               Try Again
             </button>
-          </>
+          </div>
         )}
-        {!isPolling && !isComplete && !isFailed && (
-          <>
-            <p className="text-hint">Check History for status.</p>
-            <button className="btn btn-primary mt-16" onClick={() => navigate('/history')}>
+        {timedOut && (
+          <div style={{ textAlign: 'center', marginTop: 16 }}>
+            <button className="btn btn-secondary" onClick={() => navigate('/history')}>
               View History
             </button>
-          </>
+          </div>
         )}
       </div>
     );
@@ -122,11 +126,21 @@ export default function CardTopupPage() {
 
   return (
     <div className="page">
-      <h1 className="page-title">Topup Card</h1>
+      <h1 className="page-title">Top Up Card</h1>
+
       {card && (
-        <p className="text-hint mb-16">
-          {card.name} ****{card.last4} &middot; {formatAmount(card.balance, card.currency_symbol)}
-        </p>
+        <div className="glass-card" style={{ padding: '16px 20px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>{card.name}</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>****{card.last4}</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Balance</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-primary)' }}>
+              {formatAmount(card.balance, card.currency_symbol)}
+            </div>
+          </div>
+        </div>
       )}
 
       <AmountInput
@@ -134,39 +148,41 @@ export default function CardTopupPage() {
         onChange={setAmount}
         error={isAmountInvalid}
         hint={limitsHint}
+        presets={[50, 100, 200, 300, 500, 1000]}
       />
 
       {error && <p className="error-text">{error}</p>}
 
       <button
-        className="btn btn-primary mt-16"
+        className="btn btn-primary"
         onClick={handleEstimate}
         disabled={loading || !amount || parseFloat(amount) <= 0 || isAmountInvalid}
+        style={{ marginTop: 8 }}
       >
         {loading ? 'Calculating...' : 'Continue'}
       </button>
 
       <ConfirmDialog
         open={showConfirm}
-        title="Confirm Topup"
-        confirmLabel="Topup"
+        title="Confirm Top Up"
+        confirmLabel="Top Up"
         onConfirm={handleTopup}
         onCancel={() => setShowConfirm(false)}
         loading={loading}
       >
         {estimate && (
           <div>
-            <div className="flex-between mb-8">
-              <span className="text-hint">Amount</span>
-              <span>{formatAmount(estimate.amount, estimate.currency_symbol)}</span>
+            <div className="info-row">
+              <span style={{ color: 'var(--text-secondary)' }}>Amount</span>
+              <span style={{ fontWeight: 600 }}>{formatAmount(estimate.amount, estimate.currency_symbol)}</span>
             </div>
-            <div className="flex-between mb-8">
-              <span className="text-hint">Fee</span>
-              <span>{formatAmount(estimate.fee, estimate.currency_symbol)}</span>
+            <div className="info-row">
+              <span style={{ color: 'var(--text-secondary)' }}>Fee</span>
+              <span style={{ fontWeight: 600 }}>{formatAmount(estimate.fee, estimate.currency_symbol)}</span>
             </div>
-            <div className="flex-between" style={{ fontWeight: 700, borderTop: '1px solid var(--border-color)', paddingTop: '8px' }}>
-              <span>Total</span>
-              <span>{formatAmount(estimate.total, estimate.currency_symbol)}</span>
+            <div className="info-row" style={{ borderTop: '1px solid var(--border-glass)', paddingTop: 12, marginTop: 4 }}>
+              <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Total</span>
+              <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{formatAmount(estimate.total, estimate.currency_symbol)}</span>
             </div>
           </div>
         )}

@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCard } from '../hooks/useCards';
-import { fetchCardSensitive, blockCard, restoreCard, closeCard, CardSensitiveResponse } from '../api/cards';
+import { fetchCardSensitive, blockCard, restoreCard, closeCard, syncOperation, CardSensitiveResponse } from '../api/cards';
 import { usePolling } from '../hooks/usePolling';
+import VirtualCard from '../components/VirtualCard';
+import PollingScreen from '../components/PollingScreen';
 import StatusBadge from '../components/StatusBadge';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Spinner from '../components/Spinner';
+import { EyeIcon, EyeOffIcon, CopyIcon, LockIcon, UnlockIcon, XIcon } from '../components/icons';
 import { formatAmount, formatCardNumber } from '../lib/format';
 import { hapticFeedback } from '../lib/telegram';
 
@@ -28,6 +31,10 @@ export default function CardDetailPage() {
   const [operationId, setOperationId] = useState<string | null>(null);
   const [actionType, setActionType] = useState('');
   const { isComplete, isFailed, isPolling } = usePolling(operationId);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const handleReveal = async () => {
     if (showSensitive) {
@@ -43,6 +50,16 @@ export default function CardDetailPage() {
       setActionError('Failed to load card details');
     } finally {
       setLoadingSensitive(false);
+    }
+  };
+
+  const handleCopy = async (text: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(field);
+      setTimeout(() => setCopied(null), 2000);
+    } catch {
+      // clipboard not available
     }
   };
 
@@ -66,46 +83,68 @@ export default function CardDetailPage() {
     }
   };
 
+  const handleSync = async () => {
+    if (!operationId) return;
+    setSyncing(true);
+    setSyncMessage(null);
+    try {
+      const res = await syncOperation(operationId);
+      setSyncMessage(res.message);
+      if (res.synced) hapticFeedback('success');
+    } catch (e: unknown) {
+      setSyncMessage(e instanceof Error ? e.message : 'Sync failed');
+      hapticFeedback('error');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleDone = () => {
     setOperationId(null);
     refresh();
   };
 
-  // Operation in progress or finished — show status screen
+  const timedOut = !isPolling && !isComplete && !isFailed && !!operationId;
+
   if (operationId) {
     const labels = ACTION_LABELS[actionType] || { pending: 'Processing...', done: 'Done' };
     return (
-      <div className="page text-center" style={{ paddingTop: '60px' }}>
+      <div className="page" style={{ paddingTop: 40 }}>
+        <PollingScreen
+          isPolling={isPolling}
+          isComplete={isComplete}
+          isFailed={isFailed}
+          timedOut={timedOut}
+          onSync={handleSync}
+          syncing={syncing}
+          syncMessage={syncMessage ?? undefined}
+        />
         {isPolling && (
-          <>
-            <Spinner />
-            <p className="mt-16">{labels.pending}</p>
-          </>
+          <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--text-secondary)', marginTop: 8 }}>
+            {labels.pending}
+          </p>
         )}
         {isComplete && (
-          <>
-            <h2 style={{ fontSize: '24px', color: 'var(--success-color)' }}>{labels.done}</h2>
-            <button className="btn btn-primary mt-24" onClick={handleDone}>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--success)', marginTop: 8 }}>{labels.done}</p>
+            <button className="btn btn-primary" style={{ marginTop: 24 }} onClick={handleDone}>
               Back to Card
             </button>
-          </>
+          </div>
         )}
         {isFailed && (
-          <>
-            <h2 style={{ fontSize: '24px', color: 'var(--danger-color)' }}>Operation Failed</h2>
-            <p className="text-hint mt-8">Please try again</p>
-            <button className="btn btn-primary mt-24" onClick={handleDone}>
+          <div style={{ textAlign: 'center' }}>
+            <button className="btn btn-primary" style={{ marginTop: 24 }} onClick={handleDone}>
               Back to Card
             </button>
-          </>
+          </div>
         )}
-        {!isPolling && !isComplete && !isFailed && (
-          <>
-            <p className="text-hint">Polling timed out</p>
-            <button className="btn btn-primary mt-16" onClick={handleDone}>
+        {timedOut && (
+          <div style={{ textAlign: 'center' }}>
+            <button className="btn btn-secondary" style={{ marginTop: 16 }} onClick={handleDone}>
               Back to Card
             </button>
-          </>
+          </div>
         )}
       </div>
     );
@@ -121,42 +160,90 @@ export default function CardDetailPage() {
 
   return (
     <div className="page">
-      <h1 className="page-title">{card.name} ****{card.last4}</h1>
-
-      <div className="card" style={{ textAlign: 'center', padding: '24px' }}>
-        <StatusBadge status={card.status} label={isClosing ? 'Closing' : undefined} />
-        <div style={{ fontSize: '28px', fontWeight: 700, marginTop: '12px' }}>
-          {formatAmount(card.balance, card.currency_symbol)}
-        </div>
+      {/* Virtual Card Visual */}
+      <div style={{ marginBottom: 24 }}>
+        <VirtualCard
+          name={card.name}
+          last4={card.last4}
+          balance={formatAmount(card.balance, card.currency_symbol)}
+          currencySymbol=""
+          variant={parseInt(id || '0', 10)}
+        />
       </div>
 
-      {/* Sensitive data */}
-      <div className="card mt-16">
-        <div className="flex-between">
-          <span style={{ fontWeight: 600 }}>Card Details</span>
+      {/* Status */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+        <StatusBadge status={card.status} label={isClosing ? 'Closing' : undefined} />
+      </div>
+
+      {/* Card Details - Reveal Section */}
+      <div className="glass-card" style={{ padding: 20, marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showSensitive ? 16 : 0 }}>
+          <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-primary)' }}>Card Details</span>
           <button
-            className="btn btn-outline"
-            style={{ width: 'auto', padding: '6px 12px', fontSize: '13px' }}
             onClick={handleReveal}
             disabled={loadingSensitive}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '6px 14px', borderRadius: 20, cursor: 'pointer',
+              background: 'var(--accent-gradient)', border: 'none',
+              color: '#fff', fontSize: 13, fontWeight: 600,
+              opacity: loadingSensitive ? 0.6 : 1,
+            }}
           >
-            {loadingSensitive ? '...' : showSensitive ? 'Hide' : 'Show'}
+            {loadingSensitive ? '...' : showSensitive ? <><EyeOffIcon size={16} /> Hide</> : <><EyeIcon size={16} /> Show</>}
           </button>
         </div>
+
         {showSensitive && sensitive && (
-          <div style={{ marginTop: '12px', fontFamily: 'monospace', fontSize: '16px' }}>
-            <div className="mb-8">
-              <span className="text-hint">Number: </span>
-              {formatCardNumber(sensitive.card_number)}
-            </div>
-            <div className="flex gap-12">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* Card Number */}
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '12px 16px', background: 'var(--bg-glass)', borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-glass)',
+            }}>
               <div>
-                <span className="text-hint">Exp: </span>
-                {sensitive.expiry_month}/{sensitive.expiry_year}
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Card Number</div>
+                <div style={{ fontSize: 16, fontWeight: 600, fontFamily: "'SF Mono','Menlo',monospace", color: 'var(--text-primary)', marginTop: 4 }}>
+                  {formatCardNumber(sensitive.card_number)}
+                </div>
               </div>
-              <div>
-                <span className="text-hint">CVV: </span>
-                {sensitive.cvv}
+              <button
+                onClick={() => handleCopy(sensitive.card_number, 'number')}
+                style={{ background: 'none', border: 'none', color: copied === 'number' ? 'var(--success)' : 'var(--text-muted)', cursor: 'pointer', padding: 4 }}
+              >
+                <CopyIcon size={18} />
+              </button>
+            </div>
+
+            {/* Expiry & CVV row */}
+            <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{
+                flex: 1, padding: '12px 16px', background: 'var(--bg-glass)', borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border-glass)',
+              }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Expiry</div>
+                <div style={{ fontSize: 16, fontWeight: 600, fontFamily: "'SF Mono','Menlo',monospace", color: 'var(--text-primary)', marginTop: 4 }}>
+                  {sensitive.expiry_month}/{sensitive.expiry_year}
+                </div>
+              </div>
+              <div style={{
+                flex: 1, padding: '12px 16px', background: 'var(--bg-glass)', borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border-glass)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+              }}>
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>CVV</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, fontFamily: "'SF Mono','Menlo',monospace", color: 'var(--text-primary)', marginTop: 4 }}>
+                    {sensitive.cvv}
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleCopy(sensitive.cvv, 'cvv')}
+                  style={{ background: 'none', border: 'none', color: copied === 'cvv' ? 'var(--success)' : 'var(--text-muted)', cursor: 'pointer', padding: 4, marginTop: -2 }}
+                >
+                  <CopyIcon size={16} />
+                </button>
               </div>
             </div>
           </div>
@@ -164,30 +251,30 @@ export default function CardDetailPage() {
       </div>
 
       {/* Actions */}
-      <div className="mt-16 flex gap-8" style={{ flexDirection: 'column' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {isActive && (
           <>
             <button className="btn btn-primary" onClick={() => navigate(`/cards/${id}/topup`)}>
-              Topup Card
+              Top Up Card
             </button>
-            <button className="btn btn-secondary" onClick={() => setConfirmAction('block')}>
-              Block Card
+            <button className="btn btn-secondary" onClick={() => setConfirmAction('block')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <LockIcon size={18} /> Block Card
             </button>
           </>
         )}
         {isBlocked && (
-          <button className="btn btn-primary" onClick={() => setConfirmAction('restore')}>
-            Restore Card
+          <button className="btn btn-primary" onClick={() => setConfirmAction('restore')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <UnlockIcon size={18} /> Restore Card
           </button>
         )}
         {!isClosed && !isClosing && (
-          <button className="btn btn-danger" onClick={() => setConfirmAction('close')}>
-            Close Card
+          <button className="btn btn-danger" onClick={() => setConfirmAction('close')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <XIcon size={18} /> Close Card
           </button>
         )}
       </div>
 
-      {actionError && <p className="error-text mt-8">{actionError}</p>}
+      {actionError && <p className="error-text" style={{ marginTop: 8 }}>{actionError}</p>}
 
       <ConfirmDialog
         open={!!confirmAction}
@@ -202,7 +289,7 @@ export default function CardDetailPage() {
         onCancel={() => setConfirmAction(null)}
         loading={actionLoading}
       >
-        <p>
+        <p style={{ color: 'var(--text-secondary)', lineHeight: 1.5 }}>
           {confirmAction === 'block' && 'Are you sure you want to block this card? You can restore it later.'}
           {confirmAction === 'restore' && 'Are you sure you want to restore this card?'}
           {confirmAction === 'close' && 'Are you sure you want to close this card? The remaining balance will be refunded.'}
