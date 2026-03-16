@@ -423,11 +423,11 @@ export default function DashboardPage() {
                   width: 46, height: 46, borderRadius: 14,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: isDark
-                    ? `rgba(255,255,255,${action.opacity})`
+                    ? 'rgba(255,255,255,0.04)'
                     : `linear-gradient(135deg, ${heroShadow}${Math.round(action.opacity * 255).toString(16).padStart(2, '0')}, ${heroShadow}${Math.round(action.opacity * 0.4 * 255).toString(16).padStart(2, '0')})`,
-                  color: isDark ? `rgba(255,255,255,0.85)` : heroShadow,
-                  border: isDark ? '1px solid rgba(255,255,255,0.12)' : 'none',
-                  boxShadow: isDark ? '0 2px 12px rgba(0,0,0,0.3)' : `0 0 14px ${heroShadow}55`,
+                  color: isDark ? 'rgba(255,255,255,0.9)' : heroShadow,
+                  border: isDark ? '1.5px solid rgba(255,255,255,0.22)' : 'none',
+                  boxShadow: isDark ? '0 0 0 0 transparent' : `0 0 14px ${heroShadow}55`,
                   transition: 'background 0.4s ease, color 0.4s ease, box-shadow 0.4s ease',
                 }}>
                   <action.Icon size={20} />
