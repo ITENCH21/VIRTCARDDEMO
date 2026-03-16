@@ -71,10 +71,10 @@ export default function WithdrawPage() {
       await createWithdraw(amount, address.trim());
       setShowConfirm(false);
       setSubmitted(true);
-      hapticFeedback('success');
+      hapticFeedback('notification');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Withdrawal failed');
-      hapticFeedback('error');
+      hapticFeedback('notification');
     } finally {
       setLoading(false);
     }

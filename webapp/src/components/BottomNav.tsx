@@ -2,10 +2,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { HomeIcon, CreditCardIcon, ClockIcon, UserIcon } from './icons';
 
 const tabs = [
-  { path: '/', label: 'Home', Icon: HomeIcon },
-  { path: '/cards', label: 'Cards', Icon: CreditCardIcon },
-  { path: '/history', label: 'History', Icon: ClockIcon },
-  { path: '/profile', label: 'Profile', Icon: UserIcon },
+  { path: '/', label: 'Главная', Icon: HomeIcon },
+  { path: '/cards', label: 'Карты', Icon: CreditCardIcon },
+  { path: '/history', label: 'История', Icon: ClockIcon },
+  { path: '/profile', label: 'Профиль', Icon: UserIcon },
 ];
 
 export default function BottomNav() {

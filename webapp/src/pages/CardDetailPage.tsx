@@ -77,7 +77,7 @@ export default function CardDetailPage() {
       setConfirmAction(null);
     } catch (e: unknown) {
       setActionError(e instanceof Error ? e.message : 'Action failed');
-      hapticFeedback('error');
+      hapticFeedback('notification');
     } finally {
       setActionLoading(false);
     }
@@ -90,10 +90,10 @@ export default function CardDetailPage() {
     try {
       const res = await syncOperation(operationId);
       setSyncMessage(res.message);
-      if (res.synced) hapticFeedback('success');
+      if (res.synced) hapticFeedback('notification');
     } catch (e: unknown) {
       setSyncMessage(e instanceof Error ? e.message : 'Sync failed');
-      hapticFeedback('error');
+      hapticFeedback('notification');
     } finally {
       setSyncing(false);
     }

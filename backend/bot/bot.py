@@ -3,7 +3,7 @@ import logging
 import os
 
 from models import start_orm
-from telegram import Update
+from telegram import MenuButtonWebApp, Update, WebAppInfo
 from tortoise import timezone
 from telegram.ext import (
     Application,
@@ -62,6 +62,18 @@ logger = logging.getLogger("vc-bot")
 
 
 token = os.environ["TELEGRAM_BOT_TOKEN"]
+webapp_url = os.getenv("TELEGRAM_WEBAPP_URL", "").strip()
+
+
+async def configure_telegram_menu(app: Application) -> None:
+    if not webapp_url:
+        logger.warning("TELEGRAM_WEBAPP_URL not set, Telegram WebApp menu button skipped")
+        return
+
+    await app.bot.set_chat_menu_button(
+        menu_button=MenuButtonWebApp(text="Открыть приложение", web_app=WebAppInfo(webapp_url))
+    )
+    logger.info("Telegram WebApp menu button configured: %s", webapp_url)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -87,7 +99,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 def main() -> None:
-    app = Application.builder().token(token).build()
+    app = Application.builder().token(token).post_init(configure_telegram_menu).build()
     asyncio.run(start_orm())
 
     # ── /start ────────────────────────────────────────────

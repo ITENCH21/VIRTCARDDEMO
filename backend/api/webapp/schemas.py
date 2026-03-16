@@ -34,10 +34,32 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 
+class EmailLoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class EmailRegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: str
+
+
+class PinLoginRequest(BaseModel):
+    pin: str
+
+
+class PinSetupRequest(BaseModel):
+    pin: str
+
+
 class ClientInfo(BaseModel):
     id: str
     name: str
     telegram_username: Optional[str]
+    email: Optional[str] = None
+    has_pin: bool = False
+    has_webauthn: bool = False
 
     class Config:
         orm_mode = True
@@ -47,6 +69,10 @@ class AuthResponse(BaseModel):
     access_token: str
     refresh_token: str
     client: ClientInfo
+
+
+class SuccessResponse(BaseModel):
+    success: bool = True
 
 
 # ── Cards ────────────────────────────────────────────────

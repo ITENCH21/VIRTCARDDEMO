@@ -11,20 +11,26 @@ interface Props {
 }
 
 const routeTitles: Record<string, string> = {
-  '/': 'YeezyPay',
-  '/cards': 'My Cards',
-  '/cards/issue': 'New Card',
-  '/deposit': 'Deposit',
-  '/withdraw': 'Withdraw',
-  '/history': 'History',
-  '/profile': 'Profile',
+  '/': 'VirtCardPay',
+  '/cards': 'Мои карты',
+  '/cards/issue': 'Новая карта',
+  '/deposit': 'Пополнение',
+  '/withdraw': 'Вывод',
+  '/history': 'История',
+  '/profile': 'Профиль',
+  '/referral': 'Реферальная программа',
+  '/security': 'Безопасность',
+  '/notifications': 'Уведомления',
+  '/support': 'Поддержка',
+  '/exchange': 'Обмен валют',
+  '/tariffs': 'Тарифы и лимиты',
 };
 
 function getTitle(pathname: string): string {
   if (routeTitles[pathname]) return routeTitles[pathname];
-  if (/^\/cards\/[^/]+\/topup$/.test(pathname)) return 'Top Up';
-  if (/^\/cards\/[^/]+$/.test(pathname)) return 'Card Details';
-  return 'YeezyPay';
+  if (/^\/cards\/[^/]+\/topup$/.test(pathname)) return 'Пополнить карту';
+  if (/^\/cards\/[^/]+$/.test(pathname)) return 'Детали карты';
+  return 'VirtCardPay';
 }
 
 const rootPaths = ['/', '/cards', '/history', '/profile'];

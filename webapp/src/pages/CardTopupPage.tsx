@@ -72,10 +72,10 @@ export default function CardTopupPage() {
       const res = await topupCard(id!, amount);
       setOperationId(res.operation_id);
       setShowConfirm(false);
-      hapticFeedback('success');
+      hapticFeedback('notification');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Topup failed');
-      hapticFeedback('error');
+      hapticFeedback('notification');
     } finally {
       setLoading(false);
     }

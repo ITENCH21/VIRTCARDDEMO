@@ -49,7 +49,7 @@ export default function VirtualCard({ name, last4, balance, currencySymbol, vari
       {/* Top: Brand + badge */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 1 }}>
         <div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', letterSpacing: 1 }}>YeezyPay</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', letterSpacing: 1 }}>VirtCardPay</div>
           <div style={{ height: 8 }} />
           {/* Chip */}
           <div style={{

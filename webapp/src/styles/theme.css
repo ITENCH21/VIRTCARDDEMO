@@ -1,40 +1,42 @@
 /* ═══════════════════════════════════════════
    DARK THEME (default)
+   Unified with VirtCardPay landing design system
    ═══════════════════════════════════════════ */
 :root {
-  --bg-primary: #0a0e1a;
-  --bg-secondary: #111827;
+  --bg-primary: #0F172A;
+  --bg-secondary: #1E293B;
   --bg-card: rgba(255,255,255,0.04);
   --bg-glass: rgba(255,255,255,0.06);
   --bg-glass-hover: rgba(255,255,255,0.10);
   --border-glass: rgba(255,255,255,0.08);
   --border-glass-active: rgba(255,255,255,0.15);
-  --header-bg: rgba(10,14,26,0.75);
-  --tabbar-bg: rgba(10,14,26,0.85);
-  --modal-bg: #111827;
+  --header-bg: rgba(15,23,42,0.75);
+  --tabbar-bg: rgba(15,23,42,0.85);
+  --modal-bg: #1E293B;
 
   --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
 
-  --accent-1: #6366f1;
-  --accent-2: #8b5cf6;
+  /* VirtCardPay blue palette (matching landing) */
+  --accent-1: #3B82F6;
+  --accent-2: #1D4ED8;
   --accent-3: #06b6d4;
-  --accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
+  --accent-gradient: linear-gradient(135deg, #3B82F6, #1D4ED8);
 
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
   --info: #3b82f6;
 
-  --balance-text-gradient: linear-gradient(135deg, #fff, #c7d2fe);
-  --balance-hero-bg: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1), rgba(6,182,212,0.08));
-  --balance-hero-border: rgba(99,102,241,0.2);
-  --balance-hero-orb1: rgba(99,102,241,0.15);
+  --balance-text-gradient: linear-gradient(135deg, #fff, #93C5FD);
+  --balance-hero-bg: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(29,78,216,0.1), rgba(6,182,212,0.08));
+  --balance-hero-border: rgba(59,130,246,0.2);
+  --balance-hero-orb1: rgba(59,130,246,0.15);
   --balance-hero-orb2: rgba(6,182,212,0.1);
 
-  --mesh-c1: rgba(99,102,241,0.12);
-  --mesh-c2: rgba(139,92,246,0.08);
+  --mesh-c1: rgba(59,130,246,0.12);
+  --mesh-c2: rgba(29,78,216,0.08);
   --mesh-c3: rgba(6,182,212,0.06);
 
   --tx-border: rgba(255,255,255,0.04);
@@ -48,7 +50,7 @@
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.2);
   --shadow-md: 0 4px 20px rgba(0,0,0,0.3);
   --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
-  --shadow-glow: 0 0 30px rgba(99,102,241,0.15);
+  --shadow-glow: 0 0 30px rgba(59,130,246,0.15);
 
   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -74,42 +76,43 @@
 }
 
 /* ═══════════════════════════════════════════
-   LIGHT THEME
+   LIGHT THEME (matching landing light theme)
    ═══════════════════════════════════════════ */
 :root.light {
-  --bg-primary: #f0f2f8;
+  --bg-primary: #F4F7FF;
   --bg-secondary: #ffffff;
   --bg-card: rgba(0,0,0,0.02);
   --bg-glass: rgba(255,255,255,0.65);
   --bg-glass-hover: rgba(255,255,255,0.85);
   --border-glass: rgba(0,0,0,0.06);
   --border-glass-active: rgba(0,0,0,0.12);
-  --header-bg: rgba(240,242,248,0.8);
+  --header-bg: rgba(244,247,255,0.8);
   --tabbar-bg: rgba(255,255,255,0.88);
   --modal-bg: #ffffff;
 
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
   --text-muted: #94a3b8;
 
-  --accent-1: #6366f1;
-  --accent-2: #8b5cf6;
+  /* VirtCardPay blue palette (matching landing) */
+  --accent-1: #3B82F6;
+  --accent-2: #1D4ED8;
   --accent-3: #06b6d4;
-  --accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
+  --accent-gradient: linear-gradient(135deg, #3B82F6, #1D4ED8);
 
   --success: #059669;
   --warning: #d97706;
   --danger: #dc2626;
   --info: #2563eb;
 
-  --balance-text-gradient: linear-gradient(135deg, #1e293b, #4338ca);
-  --balance-hero-bg: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.07), rgba(6,182,212,0.05));
-  --balance-hero-border: rgba(99,102,241,0.15);
-  --balance-hero-orb1: rgba(99,102,241,0.08);
+  --balance-text-gradient: linear-gradient(135deg, #0F172A, #1D4ED8);
+  --balance-hero-bg: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(29,78,216,0.07), rgba(6,182,212,0.05));
+  --balance-hero-border: rgba(59,130,246,0.15);
+  --balance-hero-orb1: rgba(59,130,246,0.08);
   --balance-hero-orb2: rgba(6,182,212,0.06);
 
-  --mesh-c1: rgba(99,102,241,0.06);
-  --mesh-c2: rgba(139,92,246,0.04);
+  --mesh-c1: rgba(59,130,246,0.06);
+  --mesh-c2: rgba(29,78,216,0.04);
   --mesh-c3: rgba(6,182,212,0.03);
 
   --tx-border: rgba(0,0,0,0.04);
@@ -118,7 +121,7 @@
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
   --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
   --shadow-lg: 0 8px 40px rgba(0,0,0,0.1);
-  --shadow-glow: 0 0 30px rgba(99,102,241,0.08);
+  --shadow-glow: 0 0 30px rgba(59,130,246,0.08);
 
   /* Backward compat */
   --bg-color: var(--bg-primary);

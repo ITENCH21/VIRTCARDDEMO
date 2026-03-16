@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { apiFetch } from '../api/client';
 import Spinner from '../components/Spinner';
@@ -11,8 +12,86 @@ interface Profile {
   telegram_username: string | null;
 }
 
+const menuItems = [
+  {
+    path: '/referral',
+    label: 'Реферальная программа',
+    desc: 'Приглашайте друзей и получайте бонусы',
+    color: '#10b981',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+  },
+  {
+    path: '/security',
+    label: 'Безопасность',
+    desc: 'Пароль, PIN, биометрия',
+    color: '#6366f1',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    ),
+  },
+  {
+    path: '/notifications',
+    label: 'Уведомления',
+    desc: 'Настройки и история уведомлений',
+    color: '#f59e0b',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+      </svg>
+    ),
+  },
+  {
+    path: '/exchange',
+    label: 'Обмен валют',
+    desc: 'USDT, USD, EUR конвертация',
+    color: '#06b6d4',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+        <polyline points="17 1 21 5 17 9" />
+        <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+        <polyline points="7 23 3 19 7 15" />
+        <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+      </svg>
+    ),
+  },
+  {
+    path: '/tariffs',
+    label: 'Тарифы и лимиты',
+    desc: 'Комиссии и ограничения по картам',
+    color: '#8b5cf6',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+        <rect x="1" y="4" width="22" height="16" rx="2" />
+        <line x1="1" y1="10" x2="23" y2="10" />
+      </svg>
+    ),
+  },
+  {
+    path: '/support',
+    label: 'Поддержка',
+    desc: 'Чат с поддержкой 24/7',
+    color: '#2AABEE',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+    ),
+  },
+];
+
 export default function ProfilePage() {
   const { logout } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -80,10 +159,9 @@ export default function ProfilePage() {
 
       {/* Editable Fields */}
       <div className="glass-card" style={{ padding: 20, marginBottom: 16 }}>
-        {/* Name */}
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>
-            <UserIcon size={16} /> Name
+            <UserIcon size={16} /> Имя
           </label>
           <input
             type="text"
@@ -93,7 +171,6 @@ export default function ProfilePage() {
           />
         </div>
 
-        {/* Email */}
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>
             <MailIcon size={16} /> Email
@@ -107,16 +184,15 @@ export default function ProfilePage() {
           />
         </div>
 
-        {/* Phone */}
         <div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>
-            <PhoneIcon size={16} /> Phone
+            <PhoneIcon size={16} /> Телефон
           </label>
           <input
             type="tel"
             value={phone}
             onChange={(e) => { setPhone(e.target.value); setDirty(true); }}
-            placeholder="+1234567890"
+            placeholder="+7 (999) 123-45-67"
             className="form-input"
           />
         </div>
@@ -140,19 +216,61 @@ export default function ProfilePage() {
           className="btn btn-primary"
           onClick={handleSave}
           disabled={saving}
-          style={{ marginBottom: 12 }}
+          style={{ marginBottom: 16 }}
         >
-          {saving ? 'Saving...' : 'Save Changes'}
+          {saving ? 'Сохранение...' : 'Сохранить изменения'}
         </button>
       )}
+
+      {/* Menu Items */}
+      <div style={{ marginTop: dirty ? 0 : 8, marginBottom: 16 }}>
+        <div className="section-title" style={{ marginBottom: 12 }}>Сервисы</div>
+        <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
+          {menuItems.map((item, idx) => (
+            <div
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                padding: '14px 18px',
+                cursor: 'pointer',
+                borderBottom: idx < menuItems.length - 1 ? '1px solid var(--border-glass)' : 'none',
+                transition: 'background 0.15s ease',
+              }}
+            >
+              <div style={{
+                width: 40, height: 40, borderRadius: 12,
+                background: `${item.color}15`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: item.color, flexShrink: 0,
+              }}>
+                {item.icon}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
+                  {item.label}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                  {item.desc}
+                </div>
+              </div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" width="16" height="16" style={{ flexShrink: 0 }}>
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Logout */}
       <button
         className="btn btn-danger"
         onClick={logout}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: dirty ? 0 : 12 }}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
       >
-        <LogOutIcon size={18} /> Log Out
+        <LogOutIcon size={18} /> Выйти
       </button>
     </div>
   );

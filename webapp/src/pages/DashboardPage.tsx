@@ -60,7 +60,7 @@ export default function DashboardPage() {
               fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1,
               position: 'relative', zIndex: 1,
             }}>
-              {client?.name ? `Hi, ${client.name.split(' ')[0]}` : 'Total Balance'}
+              {client?.name ? `Привет, ${client.name.split(' ')[0]}` : 'Общий баланс'}
             </div>
 
             {data.accounts.map((acc) => (
@@ -85,10 +85,10 @@ export default function DashboardPage() {
           {/* Quick Actions */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 28 }}>
             {[
-              { label: 'Deposit', Icon: ArrowDownIcon, bg: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))', color: '#10b981', path: '/deposit' },
-              { label: 'Withdraw', Icon: ArrowUpIcon, bg: 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05))', color: '#ef4444', path: '/withdraw' },
-              { label: 'New Card', Icon: PlusIcon, bg: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(99,102,241,0.05))', color: '#6366f1', path: '/cards/issue' },
-              { label: 'My Cards', Icon: CreditCardIcon, bg: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05))', color: '#f59e0b', path: '/cards' },
+              { label: 'Пополнить', Icon: ArrowDownIcon, bg: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))', color: '#10b981', path: '/deposit' },
+              { label: 'Вывести', Icon: ArrowUpIcon, bg: 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05))', color: '#ef4444', path: '/withdraw' },
+              { label: 'Новая карта', Icon: PlusIcon, bg: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(99,102,241,0.05))', color: '#6366f1', path: '/cards/issue' },
+              { label: 'Мои карты', Icon: CreditCardIcon, bg: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05))', color: '#f59e0b', path: '/cards' },
             ].map((action) => (
               <div
                 key={action.label}
@@ -117,8 +117,8 @@ export default function DashboardPage() {
           {activeCards.length > 0 && (
             <>
               <div className="section-header">
-                <div className="section-title">Active Cards</div>
-                <div className="section-link" onClick={() => navigate('/cards')}>All Cards</div>
+                <div className="section-title">Активные карты</div>
+                <div className="section-link" onClick={() => navigate('/cards')}>Все карты</div>
               </div>
               <div className="scroll-horizontal" style={{ marginBottom: 28 }}>
                 {activeCards.slice(0, 5).map((card, i) => (
@@ -141,8 +141,8 @@ export default function DashboardPage() {
           {recentOps.length > 0 && (
             <>
               <div className="section-header">
-                <div className="section-title">Recent Activity</div>
-                <div className="section-link" onClick={() => navigate('/history')}>See All</div>
+                <div className="section-title">Последние операции</div>
+                <div className="section-link" onClick={() => navigate('/history')}>Все</div>
               </div>
               <div className="glass-card" style={{ padding: '4px 16px' }}>
                 {recentOps.map((op) => (

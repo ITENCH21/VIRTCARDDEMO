@@ -101,6 +101,15 @@ class Client(BaseModel):
     # language_code: 'zh-hans',
     telegram_language_code = CharField(max_length=10, null=True, blank=True)
 
+    # Email/Password auth
+    password_hash = CharField(max_length=128, null=True, blank=True)
+    password_salt = CharField(max_length=64, null=True, blank=True)
+    # PIN auth
+    pin_hash = CharField(max_length=128, null=True, blank=True)
+    # WebAuthn
+    webauthn_credential_id = CharField(max_length=512, null=True, blank=True)
+    webauthn_public_key = TextField(null=True, blank=True)
+
     group = ForeignKey(
         ClientGroup,
         related_name="clients",

@@ -61,6 +61,7 @@ services:
       - ./admin/static:/static
       - ./admin/media:/media
       - ./webapp/dist:/webapp
+      - ./landing:/landing
     depends_on:
       - webapp_build
       - webapp_api

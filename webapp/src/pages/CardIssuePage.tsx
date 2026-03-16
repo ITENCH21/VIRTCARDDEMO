@@ -72,10 +72,10 @@ export default function CardIssuePage() {
       const res = await issueCard(amount, cardName, cardCurrency, cardType);
       setOperationId(res.operation_id);
       setShowConfirm(false);
-      hapticFeedback('success');
+      hapticFeedback('notification');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Issue failed');
-      hapticFeedback('error');
+      hapticFeedback('notification');
     } finally {
       setLoading(false);
     }
@@ -88,10 +88,10 @@ export default function CardIssuePage() {
     try {
       const res = await syncOperation(operationId);
       setSyncMessage(res.message);
-      if (res.synced) hapticFeedback('success');
+      if (res.synced) hapticFeedback('notification');
     } catch (e: unknown) {
       setSyncMessage(e instanceof Error ? e.message : 'Sync failed');
-      hapticFeedback('error');
+      hapticFeedback('notification');
     } finally {
       setSyncing(false);
     }

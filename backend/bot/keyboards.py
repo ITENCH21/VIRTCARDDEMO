@@ -2,7 +2,9 @@
 Inline-клавиатуры для Telegram-бота.
 """
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+import os
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
 
 # ── Callback data prefixes ────────────────────────────────
@@ -39,13 +41,20 @@ CB_HISTORY_NEXT = "history:next:"  # history:next:<offset>
 ISSUE_AMOUNT, ISSUE_NAME, ISSUE_CONFIRM = range(3)
 TOPUP_AMOUNT, TOPUP_CONFIRM = range(10, 12)
 
+WEBAPP_URL = os.getenv("TELEGRAM_WEBAPP_URL", "").strip()
+
 
 # ── Клавиатуры ────────────────────────────────────────────
 
 
 def main_menu_keyboard() -> InlineKeyboardMarkup:
     """Главное меню бота."""
-    return InlineKeyboardMarkup(
+    buttons = []
+    if WEBAPP_URL:
+        buttons.append(
+            [InlineKeyboardButton("📱 Открыть приложение", web_app=WebAppInfo(WEBAPP_URL))]
+        )
+    buttons.extend(
         [
             [InlineKeyboardButton("💰 Баланс", callback_data=CB_BALANCE)],
             [InlineKeyboardButton("📥 Пополнить", callback_data=CB_DEPOSIT)],
@@ -54,6 +63,7 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
             [InlineKeyboardButton("📋 История", callback_data=CB_HISTORY)],
         ]
     )
+    return InlineKeyboardMarkup(buttons)
 
 
 def back_to_menu_keyboard() -> InlineKeyboardMarkup:
