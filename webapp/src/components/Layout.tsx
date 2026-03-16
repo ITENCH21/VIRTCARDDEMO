@@ -12,7 +12,7 @@ interface Props {
 }
 
 const routeTitles: Record<string, string> = {
-  '/': 'VirtCardPay',
+  '/': '',
   '/cards': 'Мои карты',
   '/cards/issue': 'Новая карта',
   '/deposit': 'Пополнение',
@@ -98,15 +98,19 @@ export default function Layout({ children }: Props) {
           )}
         </div>
 
-        <div
-          style={{
-            fontSize: 17,
-            fontWeight: 600,
-            letterSpacing: -0.2,
-            color: 'var(--text-primary)',
-          }}
-        >
-          {title}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {title === '' ? (
+            <>
+              <img src="/public/logo.png" alt="VirtCardPay" style={{ width: 28, height: 28, borderRadius: 8, objectFit: 'cover' }} />
+              <span style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.3, color: 'var(--text-primary)' }}>
+                VirtCardPay
+              </span>
+            </>
+          ) : (
+            <span style={{ fontSize: 17, fontWeight: 600, letterSpacing: -0.2, color: 'var(--text-primary)' }}>
+              {title}
+            </span>
+          )}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

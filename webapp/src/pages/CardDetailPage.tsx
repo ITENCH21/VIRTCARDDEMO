@@ -13,9 +13,9 @@ import { formatAmount, formatCardNumber } from '../lib/format';
 import { hapticFeedback } from '../lib/telegram';
 
 const ACTION_LABELS: Record<string, { pending: string; done: string }> = {
-  block: { pending: 'Blocking card...', done: 'Card Blocked' },
-  restore: { pending: 'Restoring card...', done: 'Card Restored' },
-  close: { pending: 'Closing card...', done: 'Card Closed' },
+  block:   { pending: 'Блокировка карты...', done: 'Карта заблокирована' },
+  restore: { pending: 'Восстановление карты...', done: 'Карта восстановлена' },
+  close:   { pending: 'Закрытие карты...', done: 'Карта закрыта' },
 };
 
 export default function CardDetailPage() {
@@ -32,7 +32,6 @@ export default function CardDetailPage() {
   const [actionType, setActionType] = useState('');
   const { isComplete, isFailed, isPolling } = usePolling(operationId);
   const [copied, setCopied] = useState<string | null>(null);
-
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
@@ -47,7 +46,7 @@ export default function CardDetailPage() {
       setSensitive(data);
       setShowSensitive(true);
     } catch {
-      setActionError('Failed to load card details');
+      setActionError('Ошибка загрузки реквизитов');
     } finally {
       setLoadingSensitive(false);
     }
@@ -59,7 +58,7 @@ export default function CardDetailPage() {
       setCopied(field);
       setTimeout(() => setCopied(null), 2000);
     } catch {
-      // clipboard not available
+      // clipboard не доступен
     }
   };
 
@@ -76,7 +75,7 @@ export default function CardDetailPage() {
       setOperationId(res.operation_id);
       setConfirmAction(null);
     } catch (e: unknown) {
-      setActionError(e instanceof Error ? e.message : 'Action failed');
+      setActionError(e instanceof Error ? e.message : 'Ошибка операции');
       hapticFeedback('notification');
     } finally {
       setActionLoading(false);
@@ -92,7 +91,7 @@ export default function CardDetailPage() {
       setSyncMessage(res.message);
       if (res.synced) hapticFeedback('notification');
     } catch (e: unknown) {
-      setSyncMessage(e instanceof Error ? e.message : 'Sync failed');
+      setSyncMessage(e instanceof Error ? e.message : 'Ошибка синхронизации');
       hapticFeedback('notification');
     } finally {
       setSyncing(false);
@@ -107,7 +106,7 @@ export default function CardDetailPage() {
   const timedOut = !isPolling && !isComplete && !isFailed && !!operationId;
 
   if (operationId) {
-    const labels = ACTION_LABELS[actionType] || { pending: 'Processing...', done: 'Done' };
+    const labels = ACTION_LABELS[actionType] || { pending: 'Обработка...', done: 'Готово' };
     return (
       <div className="page" style={{ paddingTop: 40 }}>
         <PollingScreen
@@ -128,21 +127,21 @@ export default function CardDetailPage() {
           <div style={{ textAlign: 'center' }}>
             <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--success)', marginTop: 8 }}>{labels.done}</p>
             <button className="btn btn-primary" style={{ marginTop: 24 }} onClick={handleDone}>
-              Back to Card
+              Вернуться к карте
             </button>
           </div>
         )}
         {isFailed && (
           <div style={{ textAlign: 'center' }}>
             <button className="btn btn-primary" style={{ marginTop: 24 }} onClick={handleDone}>
-              Back to Card
+              Вернуться к карте
             </button>
           </div>
         )}
         {timedOut && (
           <div style={{ textAlign: 'center' }}>
             <button className="btn btn-secondary" style={{ marginTop: 16 }} onClick={handleDone}>
-              Back to Card
+              Вернуться к карте
             </button>
           </div>
         )}
@@ -151,17 +150,17 @@ export default function CardDetailPage() {
   }
 
   if (loading) return <div className="page"><Spinner /></div>;
-  if (error || !card) return <div className="page"><p className="error-text">{error || 'Card not found'}</p></div>;
+  if (error || !card) return <div className="page"><p className="error-text">{error || 'Карта не найдена'}</p></div>;
 
-  const isActive = card.status === 'A' || card.status === 'R';
+  const isActive  = card.status === 'A' || card.status === 'R';
   const isBlocked = card.status === 'L';
   const isClosing = card.status === 'P';
-  const isClosed = card.status === 'C' || card.status === 'B';
+  const isClosed  = card.status === 'C' || card.status === 'B';
 
   return (
     <div className="page">
-      {/* Virtual Card Visual */}
-      <div style={{ marginBottom: 24 }}>
+      {/* Карта */}
+      <div style={{ marginBottom: 20 }}>
         <VirtualCard
           name={card.name}
           last4={card.last4}
@@ -171,15 +170,15 @@ export default function CardDetailPage() {
         />
       </div>
 
-      {/* Status */}
+      {/* Статус */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-        <StatusBadge status={card.status} label={isClosing ? 'Closing' : undefined} />
+        <StatusBadge status={card.status} label={isClosing ? 'Закрывается' : undefined} />
       </div>
 
-      {/* Card Details - Reveal Section */}
+      {/* Реквизиты */}
       <div className="glass-card" style={{ padding: 20, marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showSensitive ? 16 : 0 }}>
-          <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-primary)' }}>Card Details</span>
+          <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>Реквизиты карты</span>
           <button
             onClick={handleReveal}
             disabled={loadingSensitive}
@@ -189,42 +188,48 @@ export default function CardDetailPage() {
               background: 'var(--accent-gradient)', border: 'none',
               color: '#fff', fontSize: 13, fontWeight: 600,
               opacity: loadingSensitive ? 0.6 : 1,
+              transition: 'opacity 0.15s ease',
             }}
           >
-            {loadingSensitive ? '...' : showSensitive ? <><EyeOffIcon size={16} /> Hide</> : <><EyeIcon size={16} /> Show</>}
+            {loadingSensitive
+              ? '...'
+              : showSensitive
+                ? <><EyeOffIcon size={15} /> Скрыть</>
+                : <><EyeIcon size={15} /> Показать</>
+            }
           </button>
         </div>
 
         {showSensitive && sensitive && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {/* Card Number */}
+            {/* Номер карты */}
             <div style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               padding: '12px 16px', background: 'var(--bg-glass)', borderRadius: 'var(--radius-md)',
               border: '1px solid var(--border-glass)',
             }}>
               <div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Card Number</div>
-                <div style={{ fontSize: 16, fontWeight: 600, fontFamily: "'SF Mono','Menlo',monospace", color: 'var(--text-primary)', marginTop: 4 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8 }}>Номер карты</div>
+                <div style={{ fontSize: 16, fontWeight: 700, fontFamily: "'SF Mono','Menlo','Consolas',monospace", color: 'var(--text-primary)', marginTop: 4, letterSpacing: 1 }}>
                   {formatCardNumber(sensitive.card_number)}
                 </div>
               </div>
               <button
                 onClick={() => handleCopy(sensitive.card_number, 'number')}
-                style={{ background: 'none', border: 'none', color: copied === 'number' ? 'var(--success)' : 'var(--text-muted)', cursor: 'pointer', padding: 4 }}
+                style={{ background: 'none', border: 'none', color: copied === 'number' ? 'var(--success)' : 'var(--text-muted)', cursor: 'pointer', padding: 6 }}
               >
                 <CopyIcon size={18} />
               </button>
             </div>
 
-            {/* Expiry & CVV row */}
+            {/* Срок и CVV */}
             <div style={{ display: 'flex', gap: 12 }}>
               <div style={{
                 flex: 1, padding: '12px 16px', background: 'var(--bg-glass)', borderRadius: 'var(--radius-md)',
                 border: '1px solid var(--border-glass)',
               }}>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Expiry</div>
-                <div style={{ fontSize: 16, fontWeight: 600, fontFamily: "'SF Mono','Menlo',monospace", color: 'var(--text-primary)', marginTop: 4 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8 }}>Срок действия</div>
+                <div style={{ fontSize: 16, fontWeight: 700, fontFamily: "'SF Mono','Menlo','Consolas',monospace", color: 'var(--text-primary)', marginTop: 4 }}>
                   {sensitive.expiry_month}/{sensitive.expiry_year}
                 </div>
               </div>
@@ -233,8 +238,8 @@ export default function CardDetailPage() {
                 border: '1px solid var(--border-glass)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
               }}>
                 <div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>CVV</div>
-                  <div style={{ fontSize: 16, fontWeight: 600, fontFamily: "'SF Mono','Menlo',monospace", color: 'var(--text-primary)', marginTop: 4 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8 }}>CVV</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, fontFamily: "'SF Mono','Menlo','Consolas',monospace", color: 'var(--text-primary)', marginTop: 4 }}>
                     {sensitive.cvv}
                   </div>
                 </div>
@@ -250,49 +255,61 @@ export default function CardDetailPage() {
         )}
       </div>
 
-      {/* Actions */}
+      {/* Действия */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {isActive && (
           <>
             <button className="btn btn-primary" onClick={() => navigate(`/cards/${id}/topup`)}>
-              Top Up Card
+              Пополнить карту
             </button>
-            <button className="btn btn-secondary" onClick={() => setConfirmAction('block')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <LockIcon size={18} /> Block Card
+            <button
+              className="btn btn-secondary"
+              onClick={() => setConfirmAction('block')}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            >
+              <LockIcon size={18} /> Заблокировать карту
             </button>
           </>
         )}
         {isBlocked && (
-          <button className="btn btn-primary" onClick={() => setConfirmAction('restore')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <UnlockIcon size={18} /> Restore Card
+          <button
+            className="btn btn-primary"
+            onClick={() => setConfirmAction('restore')}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+          >
+            <UnlockIcon size={18} /> Разблокировать карту
           </button>
         )}
         {!isClosed && !isClosing && (
-          <button className="btn btn-danger" onClick={() => setConfirmAction('close')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <XIcon size={18} /> Close Card
+          <button
+            className="btn btn-danger"
+            onClick={() => setConfirmAction('close')}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+          >
+            <XIcon size={18} /> Закрыть карту
           </button>
         )}
       </div>
 
-      {actionError && <p className="error-text" style={{ marginTop: 8 }}>{actionError}</p>}
+      {actionError && <p className="error-text" style={{ marginTop: 12 }}>{actionError}</p>}
 
       <ConfirmDialog
         open={!!confirmAction}
         title={
-          confirmAction === 'block' ? 'Block Card' :
-          confirmAction === 'restore' ? 'Restore Card' :
-          'Close Card'
+          confirmAction === 'block'   ? 'Заблокировать карту' :
+          confirmAction === 'restore' ? 'Разблокировать карту' :
+          'Закрыть карту'
         }
-        confirmLabel={confirmAction === 'close' ? 'Close Card' : 'Confirm'}
+        confirmLabel={confirmAction === 'close' ? 'Закрыть карту' : 'Подтвердить'}
         danger={confirmAction === 'close'}
         onConfirm={handleAction}
         onCancel={() => setConfirmAction(null)}
         loading={actionLoading}
       >
-        <p style={{ color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-          {confirmAction === 'block' && 'Are you sure you want to block this card? You can restore it later.'}
-          {confirmAction === 'restore' && 'Are you sure you want to restore this card?'}
-          {confirmAction === 'close' && 'Are you sure you want to close this card? The remaining balance will be refunded.'}
+        <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          {confirmAction === 'block'   && 'Вы уверены, что хотите заблокировать карту? Вы сможете разблокировать её позже.'}
+          {confirmAction === 'restore' && 'Вы уверены, что хотите разблокировать карту?'}
+          {confirmAction === 'close'   && 'Вы уверены, что хотите закрыть карту? Остаток средств будет возвращён на счёт.'}
         </p>
       </ConfirmDialog>
     </div>
