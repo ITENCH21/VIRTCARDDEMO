@@ -97,7 +97,7 @@ export default function WithdrawPage() {
       {/* Balance */}
       {mainAccount && (
         <div style={{
-          borderRadius: 'var(--radius-xl)', padding: '20px 24px', marginBottom: 20,
+          borderRadius: 'var(--radius-xl)', padding: '18px 20px', marginBottom: 20,
           background: 'linear-gradient(135deg, #1e3a5f, #1e40af, #2563eb)',
           boxShadow: '0 8px 32px rgba(37,99,235,0.35)',
           textAlign: 'center', position: 'relative', overflow: 'hidden',
@@ -107,13 +107,18 @@ export default function WithdrawPage() {
             background: 'radial-gradient(circle, rgba(255,255,255,0.08), transparent 70%)',
             borderRadius: '50%', pointerEvents: 'none',
           }} />
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
             {t('withdraw_available')}
           </div>
-          <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', letterSpacing: -0.5 }}>
-            {formatAmount(mainAccount.available, mainAccount.currency_symbol)}
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 26, fontWeight: 800, color: '#fff', letterSpacing: -0.5 }}>
+              {parseFloat(mainAccount.available).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.75)' }}>
+              {mainAccount.currency_symbol}
+            </span>
           </div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', letterSpacing: 0.3 }}>
             {mainAccount.currency_code} · {t('main_account')}
           </div>
         </div>
