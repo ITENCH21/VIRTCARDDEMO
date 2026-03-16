@@ -11,7 +11,6 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   ClockIcon,
-  UsersIcon,
   TrendingUpIcon,
   MessageIcon,
   UserIcon,
@@ -41,7 +40,6 @@ export default function DesktopLayout({ children }: Props) {
     { path: '/withdraw', label: t('action_withdraw'), Icon: ArrowUpIcon },
     { path: '/history', label: t('nav_history'), Icon: ClockIcon },
     { path: '/services', label: t('nav_services'), Icon: GridIcon },
-    { path: '/referral', label: t('profile_menu_referral'), Icon: UsersIcon },
     { path: '/tariffs', label: t('title_tariffs'), Icon: TrendingUpIcon },
     { path: '/support', label: t('title_support'), Icon: MessageIcon },
   ];
