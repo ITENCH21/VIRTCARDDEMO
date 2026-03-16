@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { apiFetch } from '../api/client';
 import Spinner from '../components/Spinner';
 import { UserIcon, MailIcon, PhoneIcon, MessageIcon, LogOutIcon } from '../components/icons';
+import { useLang } from '../contexts/LangContext';
 
 interface Profile {
   name: string;
@@ -12,84 +13,8 @@ interface Profile {
   telegram_username: string | null;
 }
 
-const menuItems = [
-  {
-    path: '/referral',
-    label: 'Реферальная программа',
-    desc: 'Приглашайте друзей и получайте бонусы',
-    color: '#10b981',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    ),
-  },
-  {
-    path: '/security',
-    label: 'Безопасность',
-    desc: 'Пароль, PIN, биометрия',
-    color: '#6366f1',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      </svg>
-    ),
-  },
-  {
-    path: '/notifications',
-    label: 'Уведомления',
-    desc: 'Настройки и история уведомлений',
-    color: '#f59e0b',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-      </svg>
-    ),
-  },
-  {
-    path: '/exchange',
-    label: 'Обмен валют',
-    desc: 'USDT, USD, EUR конвертация',
-    color: '#06b6d4',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-        <polyline points="17 1 21 5 17 9" />
-        <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-        <polyline points="7 23 3 19 7 15" />
-        <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-      </svg>
-    ),
-  },
-  {
-    path: '/tariffs',
-    label: 'Тарифы и лимиты',
-    desc: 'Комиссии и ограничения по картам',
-    color: '#8b5cf6',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-        <rect x="1" y="4" width="22" height="16" rx="2" />
-        <line x1="1" y1="10" x2="23" y2="10" />
-      </svg>
-    ),
-  },
-  {
-    path: '/support',
-    label: 'Поддержка',
-    desc: 'Чат с поддержкой 24/7',
-    color: '#2AABEE',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-      </svg>
-    ),
-  },
-];
-
 export default function ProfilePage() {
+  const { t } = useLang();
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -100,6 +25,96 @@ export default function ProfilePage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [dirty, setDirty] = useState(false);
+
+  const menuItems = [
+    {
+      path: '/referral',
+      label: t('profile_menu_referral'),
+      desc: t('profile_menu_referral_desc'),
+      color: '#10b981',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      ),
+    },
+    {
+      path: '/security',
+      label: t('profile_menu_security'),
+      desc: t('profile_menu_security_desc'),
+      color: '#6366f1',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+      ),
+    },
+    {
+      path: '/notifications',
+      label: t('profile_menu_notifications'),
+      desc: t('profile_menu_notifications_desc'),
+      color: '#f59e0b',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+      ),
+    },
+    {
+      path: '/exchange',
+      label: t('profile_menu_exchange'),
+      desc: t('profile_menu_exchange_desc'),
+      color: '#06b6d4',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+          <polyline points="17 1 21 5 17 9" />
+          <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+          <polyline points="7 23 3 19 7 15" />
+          <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+        </svg>
+      ),
+    },
+    {
+      path: '/tariffs',
+      label: t('profile_menu_tariffs'),
+      desc: t('profile_menu_tariffs_desc'),
+      color: '#8b5cf6',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+          <rect x="1" y="4" width="22" height="16" rx="2" />
+          <line x1="1" y1="10" x2="23" y2="10" />
+        </svg>
+      ),
+    },
+    {
+      path: '/faq',
+      label: t('profile_menu_faq'),
+      desc: t('profile_menu_faq_desc'),
+      color: '#f97316',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+      ),
+    },
+    {
+      path: '/support',
+      label: t('profile_menu_support'),
+      desc: t('profile_menu_support_desc'),
+      color: '#2AABEE',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+      ),
+    },
+  ];
 
   useEffect(() => {
     apiFetch<Profile>('/profile')
@@ -161,7 +176,7 @@ export default function ProfilePage() {
       <div className="glass-card" style={{ padding: 20, marginBottom: 16 }}>
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>
-            <UserIcon size={16} /> Имя
+            <UserIcon size={16} /> {t('profile_name_label')}
           </label>
           <input
             type="text"
@@ -186,7 +201,7 @@ export default function ProfilePage() {
 
         <div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>
-            <PhoneIcon size={16} /> Телефон
+            <PhoneIcon size={16} /> {t('profile_phone_label')}
           </label>
           <input
             type="tel"
@@ -218,13 +233,13 @@ export default function ProfilePage() {
           disabled={saving}
           style={{ marginBottom: 16 }}
         >
-          {saving ? 'Сохранение...' : 'Сохранить изменения'}
+          {saving ? t('profile_saving') : t('profile_save')}
         </button>
       )}
 
       {/* Menu Items */}
       <div style={{ marginTop: dirty ? 0 : 8, marginBottom: 16 }}>
-        <div className="section-title" style={{ marginBottom: 12 }}>Сервисы</div>
+        <div className="section-title" style={{ marginBottom: 12 }}>{t('profile_section_title')}</div>
         <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
           {menuItems.map((item, idx) => (
             <div
@@ -270,7 +285,7 @@ export default function ProfilePage() {
         onClick={logout}
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
       >
-        <LogOutIcon size={18} /> Выйти
+        <LogOutIcon size={18} /> {t('logout')}
       </button>
     </div>
   );

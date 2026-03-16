@@ -1,16 +1,19 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { HomeIcon, CreditCardIcon, ClockIcon, UserIcon } from './icons';
-
-const tabs = [
-  { path: '/', label: 'Главная', Icon: HomeIcon },
-  { path: '/cards', label: 'Карты', Icon: CreditCardIcon },
-  { path: '/history', label: 'История', Icon: ClockIcon },
-  { path: '/profile', label: 'Профиль', Icon: UserIcon },
-];
+import { HomeIcon, CreditCardIcon, ClockIcon, UserIcon, GridIcon } from './icons';
+import { useLang } from '../contexts/LangContext';
 
 export default function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useLang();
+
+  const tabs = [
+    { path: '/', label: t('nav_home'), Icon: HomeIcon },
+    { path: '/cards', label: t('nav_cards'), Icon: CreditCardIcon },
+    { path: '/history', label: t('nav_history'), Icon: ClockIcon },
+    { path: '/services', label: t('nav_services'), Icon: GridIcon },
+    { path: '/profile', label: t('nav_profile'), Icon: UserIcon },
+  ];
 
   return (
     <nav

@@ -3,12 +3,14 @@ import { QRCodeSVG } from 'qrcode.react';
 import { fetchDeposit, DepositResponse } from '../api/deposit';
 import Spinner from '../components/Spinner';
 import { CopyIcon, CheckIcon } from '../components/icons';
+import { useLang } from '../contexts/LangContext';
 
 export default function DepositPage() {
   const [data, setData] = useState<DepositResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const { t } = useLang();
 
   useEffect(() => {
     fetchDeposit()
@@ -47,7 +49,7 @@ export default function DepositPage() {
           </svg>
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Сеть</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('deposit_network')}</div>
           <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginTop: 2 }}>TRON (TRC-20)</div>
         </div>
         <div style={{
@@ -65,10 +67,9 @@ export default function DepositPage() {
         {data?.address ? (
           <>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 20 }}>
-              Отсканируйте QR или скопируйте адрес
+              {t('deposit_scan')}
             </div>
 
-            {/* QR Code */}
             <div style={{
               display: 'inline-block', padding: 16, background: '#fff',
               borderRadius: 'var(--radius-lg)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
@@ -77,7 +78,6 @@ export default function DepositPage() {
               <QRCodeSVG value={data.address} size={180} />
             </div>
 
-            {/* Address Box */}
             <div style={{
               padding: '14px 16px',
               background: 'var(--bg-glass)', border: '1px solid var(--border-glass)',
@@ -90,21 +90,20 @@ export default function DepositPage() {
               {data.address}
             </div>
 
-            {/* Copy Button */}
             <button
               className="btn btn-primary"
               onClick={handleCopy}
               style={{ marginTop: 16, display: 'inline-flex', alignItems: 'center', gap: 8 }}
             >
               {copied
-                ? <><CheckIcon size={18} /> Скопировано!</>
-                : <><CopyIcon size={18} /> Скопировать адрес</>
+                ? <><CheckIcon size={18} /> {t('copied')}</>
+                : <><CopyIcon size={18} /> {t('copy_address')}</>
               }
             </button>
           </>
         ) : (
           <p style={{ color: 'var(--text-secondary)', padding: '20px 0', lineHeight: 1.5 }}>
-            Кошелёк создаётся. Пожалуйста, попробуйте позже.
+            {t('wallet_creating')}
           </p>
         )}
       </div>
@@ -118,8 +117,7 @@ export default function DepositPage() {
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
           <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-            Отправляйте только <strong>USDT (TRC-20)</strong> на этот адрес.
-            Отправка других токенов приведёт к безвозвратной потере средств.
+            {t('deposit_warning')}
           </p>
         </div>
       </div>

@@ -10,7 +10,6 @@ import {
   CreditCardIcon,
   ArrowDownIcon,
   ArrowUpIcon,
-  ArrowsUpDownIcon,
   ClockIcon,
   UsersIcon,
   TrendingUpIcon,
@@ -19,54 +18,58 @@ import {
   LogOutIcon,
   SunIcon,
   MoonIcon,
+  GridIcon,
 } from './icons';
 
 interface Props {
   children: ReactNode;
 }
 
-const navItems = [
-  { path: '/', label: 'Главная', Icon: HomeIcon },
-  { path: '/cards', label: 'Карты', Icon: CreditCardIcon },
-  { path: '/deposit', label: 'Пополнить', Icon: ArrowDownIcon },
-  { path: '/withdraw', label: 'Вывести', Icon: ArrowUpIcon },
-  { path: '/history', label: 'История', Icon: ClockIcon },
-  { path: '/referral', label: 'Рефералы', Icon: UsersIcon },
-  { path: '/tariffs', label: 'Тарифы', Icon: TrendingUpIcon },
-  { path: '/support', label: 'Поддержка', Icon: MessageIcon },
-];
-
-const routeTitles: Record<string, string> = {
-  '/': 'Главная',
-  '/cards': 'Мои карты',
-  '/cards/issue': 'Новая карта',
-  '/deposit': 'Пополнение',
-  '/withdraw': 'Вывод',
-  '/history': 'История',
-  '/profile': 'Профиль',
-  '/referral': 'Реферальная программа',
-  '/security': 'Безопасность',
-  '/notifications': 'Уведомления',
-  '/support': 'Поддержка',
-  '/exchange': 'Обмен валют',
-  '/tariffs': 'Тарифы и лимиты',
-};
-
-function getTitle(pathname: string): string {
-  if (routeTitles[pathname]) return routeTitles[pathname];
-  if (/^\/cards\/[^/]+\/topup$/.test(pathname)) return 'Пополнить карту';
-  if (/^\/cards\/[^/]+$/.test(pathname)) return 'Детали карты';
-  return 'VirtCardPay';
-}
-
 export default function DesktopLayout({ children }: Props) {
   const { client, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
-  const { lang, toggleLang } = useLang();
+  const { lang, toggleLang, t } = useLang();
   const { notifications, dismiss } = useNotifications();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const navItems = [
+    { path: '/', label: t('nav_home'), Icon: HomeIcon },
+    { path: '/cards', label: t('nav_cards'), Icon: CreditCardIcon },
+    { path: '/deposit', label: t('action_deposit'), Icon: ArrowDownIcon },
+    { path: '/withdraw', label: t('action_withdraw'), Icon: ArrowUpIcon },
+    { path: '/history', label: t('nav_history'), Icon: ClockIcon },
+    { path: '/services', label: t('nav_services'), Icon: GridIcon },
+    { path: '/referral', label: t('profile_menu_referral'), Icon: UsersIcon },
+    { path: '/tariffs', label: t('title_tariffs'), Icon: TrendingUpIcon },
+    { path: '/support', label: t('title_support'), Icon: MessageIcon },
+  ];
+
+  const routeKeys: Record<string, Parameters<typeof t>[0]> = {
+    '/': 'nav_home',
+    '/cards': 'title_cards',
+    '/cards/issue': 'title_issue',
+    '/deposit': 'title_deposit',
+    '/withdraw': 'title_withdraw',
+    '/history': 'history_title',
+    '/profile': 'title_profile',
+    '/referral': 'title_referral',
+    '/security': 'title_security',
+    '/notifications': 'title_notifications',
+    '/support': 'title_support',
+    '/exchange': 'title_exchange',
+    '/tariffs': 'title_tariffs',
+    '/services': 'title_services',
+    '/faq': 'title_faq',
+  };
+
+  const getTitle = (pathname: string): string => {
+    if (routeKeys[pathname]) return t(routeKeys[pathname]);
+    if (/^\/cards\/[^/]+\/topup$/.test(pathname)) return t('title_card_topup');
+    if (/^\/cards\/[^/]+$/.test(pathname)) return t('title_card_detail');
+    return 'VirtCardPay';
+  };
 
   const title = getTitle(location.pathname);
 
@@ -133,11 +136,11 @@ export default function DesktopLayout({ children }: Props) {
             onClick={() => handleNav('/profile')}
           >
             <UserIcon size={20} />
-            <span>Настройки</span>
+            <span>{lang === 'ru' ? 'Настройки' : 'Settings'}</span>
           </button>
           <button className="lk-sidebar-item lk-sidebar-logout" onClick={handleLogout}>
             <LogOutIcon size={20} />
-            <span>Выйти</span>
+            <span>{t('logout')}</span>
           </button>
         </div>
       </aside>
@@ -150,7 +153,7 @@ export default function DesktopLayout({ children }: Props) {
             <button
               className="lk-hamburger"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              aria-label="Меню"
+              aria-label={lang === 'ru' ? 'Меню' : 'Menu'}
             >
               <span />
               <span />
@@ -161,7 +164,7 @@ export default function DesktopLayout({ children }: Props) {
                 <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
                   <path d="M19 9H3M3 9L8 3M3 9L8 15" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                Меню
+                {lang === 'ru' ? 'Меню' : 'Menu'}
               </div>
             ) : (
               <h1 className="lk-topbar-title">{title}</h1>

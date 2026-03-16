@@ -22,7 +22,7 @@ export default function FilterChips({ options, value, onChange }: Props) {
         scrollbarWidth: 'none',
       }}
     >
-      {[{ value: '', label: 'All' }, ...options].map((opt) => {
+      {[{ value: '', label: 'Все' }, ...options].map((opt) => {
         const active = value === opt.value;
         return (
           <button

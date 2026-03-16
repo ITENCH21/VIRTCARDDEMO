@@ -11,40 +11,44 @@ interface Props {
   children: ReactNode;
 }
 
-const routeTitles: Record<string, string> = {
-  '/': '',
-  '/cards': 'Мои карты',
-  '/cards/issue': 'Новая карта',
-  '/deposit': 'Пополнение',
-  '/withdraw': 'Вывод',
-  '/history': 'История',
-  '/profile': 'Профиль',
-  '/referral': 'Реферальная программа',
-  '/security': 'Безопасность',
-  '/notifications': 'Уведомления',
-  '/support': 'Поддержка',
-  '/exchange': 'Обмен валют',
-  '/tariffs': 'Тарифы и лимиты',
+type TKey = Parameters<ReturnType<typeof useLang>['t']>[0];
+
+const routeKeys: Record<string, TKey> = {
+  '/cards': 'title_cards',
+  '/cards/issue': 'title_issue',
+  '/deposit': 'title_deposit',
+  '/withdraw': 'title_withdraw',
+  '/history': 'history_title',
+  '/profile': 'title_profile',
+  '/referral': 'title_referral',
+  '/security': 'title_security',
+  '/notifications': 'title_notifications',
+  '/support': 'title_support',
+  '/exchange': 'title_exchange',
+  '/tariffs': 'title_tariffs',
+  '/services': 'title_services',
+  '/faq': 'title_faq',
 };
 
-function getTitle(pathname: string): string {
-  if (routeTitles[pathname]) return routeTitles[pathname];
-  if (/^\/cards\/[^/]+\/topup$/.test(pathname)) return 'Пополнить карту';
-  if (/^\/cards\/[^/]+$/.test(pathname)) return 'Детали карты';
-  return 'VirtCardPay';
-}
-
-const rootPaths = ['/', '/cards', '/history', '/profile'];
+const rootPaths = ['/', '/cards', '/history', '/services', '/profile'];
 
 export default function Layout({ children }: Props) {
   const { notifications, dismiss } = useNotifications();
   const { isDark, toggleTheme } = useTheme();
-  const { lang, toggleLang } = useLang();
+  const { lang, toggleLang, t } = useLang();
   const location = useLocation();
   const navigate = useNavigate();
 
   const showBack = !rootPaths.includes(location.pathname);
-  const title = getTitle(location.pathname);
+
+  const getTitle = (): string => {
+    if (location.pathname === '/') return '';
+    if (routeKeys[location.pathname]) return t(routeKeys[location.pathname]);
+    if (/^\/cards\/[^/]+\/topup$/.test(location.pathname)) return t('title_card_topup');
+    if (/^\/cards\/[^/]+$/.test(location.pathname)) return t('title_card_detail');
+    return 'VirtCardPay';
+  };
+  const title = getTitle();
 
   return (
     <div className="app-shell">

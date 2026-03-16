@@ -1,4 +1,30 @@
 /* ═══════════════════════════════════════════
+   USERNAME MARQUEE
+   ═══════════════════════════════════════════ */
+@keyframes usernameMarquee {
+  0%        { transform: translateX(0); }
+  70%       { transform: translateX(var(--marquee-dist)); }
+  85%       { transform: translateX(var(--marquee-dist)); }
+  100%      { transform: translateX(0); }
+}
+.username-marquee-badge {
+  max-width: 90px;
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.username-marquee-badge .username-text {
+  display: inline-block;
+  white-space: nowrap;
+  will-change: transform;
+}
+.username-marquee-badge.scrolling .username-text {
+  animation: usernameMarquee 4s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+/* ═══════════════════════════════════════════
    CSS RESET
    ═══════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

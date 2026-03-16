@@ -1,3 +1,5 @@
+import { useLang } from '../contexts/LangContext';
+
 interface Props {
   name?: string;
   last4: string;
@@ -39,6 +41,7 @@ function getCornerRibbon(status?: string): { bg: string; color: string } | null 
 }
 
 export default function VirtualCard({ name, last4, balance, currencySymbol, currencyCode, variant = 0, onClick, noShadow, status, onHide }: Props) {
+  const { t } = useLang();
   const isClosed = status === 'C';
   const theme = getCardTheme(currencyCode);
   const ribbon = getCornerRibbon(status);
@@ -113,7 +116,7 @@ export default function VirtualCard({ name, last4, balance, currencySymbol, curr
                   padding: '2px 7px', fontSize: 9, fontWeight: 700,
                   color: '#fff', letterSpacing: 0.3, whiteSpace: 'nowrap',
                 }}>
-                  Карта закрыта
+                  {t('card_status_closed')}
                 </div>
                 {onHide && (
                   <button
@@ -124,7 +127,7 @@ export default function VirtualCard({ name, last4, balance, currencySymbol, curr
                       fontSize: 9, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
                     }}
                   >
-                    Скрыть
+                    {t('card_hide')}
                   </button>
                 )}
               </>
@@ -135,7 +138,7 @@ export default function VirtualCard({ name, last4, balance, currencySymbol, curr
                 padding: '2px 7px', fontSize: 9, fontWeight: 700,
                 color: '#fff', letterSpacing: 0.3, whiteSpace: 'nowrap',
               }}>
-                Карта активна
+                {t('card_status_active')}
               </div>
             )}
             {status === 'L' && (
@@ -144,7 +147,7 @@ export default function VirtualCard({ name, last4, balance, currencySymbol, curr
                 padding: '2px 7px', fontSize: 9, fontWeight: 700,
                 color: '#0284c7', letterSpacing: 0.3, whiteSpace: 'nowrap',
               }}>
-                Карта заморожена
+                {t('card_status_frozen')}
               </div>
             )}
           </div>

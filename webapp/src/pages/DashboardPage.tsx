@@ -293,15 +293,24 @@ export default function DashboardPage() {
                   <span style={{ color: '#93C5FD' }}>Card</span>
                   <span style={{ color: '#FCD34D' }}>Pay</span>
                 </span>
-                {client && (
-                  <span style={{
-                    fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: 500,
-                    background: 'rgba(255,255,255,0.08)', borderRadius: 6,
-                    padding: '2px 8px', border: '1px solid rgba(255,255,255,0.12)',
-                  }}>
-                    @{client.telegram_username || client.name}
-                  </span>
-                )}
+                {client && (() => {
+                  const username = '@' + (client.telegram_username || client.name);
+                  const isLong = username.length > 12;
+                  const overflowPx = Math.max(0, username.length * 6.5 - 74);
+                  return (
+                    <span
+                      className={`username-marquee-badge${isLong ? ' scrolling' : ''}`}
+                      style={{
+                        fontSize: 11, color: 'rgba(255,255,255,0.9)', fontWeight: 600,
+                        background: 'rgba(255,255,255,0.08)', borderRadius: 6,
+                        padding: '2px 8px', border: '1px solid rgba(255,255,255,0.25)',
+                        ['--marquee-dist' as string]: `-${overflowPx}px`,
+                      }}
+                    >
+                      <span className="username-text">{username}</span>
+                    </span>
+                  );
+                })()}
               </div>
               <div style={{ display: 'flex', gap: 6, position: 'relative', zIndex: 2 }}>
                 {/* Color picker button */}

@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { setTokens, loadTokens, clearTokens, setOnAuthError, getAccessToken } from '../api/client';
+import { apiFetch, setTokens, loadTokens, clearTokens, setOnAuthError, getAccessToken } from '../api/client';
 import {
   loginWithWebApp,
   loginWithWidget,
@@ -56,12 +56,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokens(data.access_token, data.refresh_token);
     setClient(data.client);
     setIsAuthenticated(true);
+    try { localStorage.setItem('client_info', JSON.stringify(data.client)); } catch {}
   }, []);
 
   const logout = useCallback(() => {
     clearTokens();
     setClient(null);
     setIsAuthenticated(false);
+    try { localStorage.removeItem('client_info'); } catch {}
   }, []);
 
   // Auto-login for Telegram Mini App
@@ -84,8 +86,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
       } else if (getAccessToken()) {
-        // Standalone mode with existing token
+        // Standalone mode with existing token — restore client from localStorage or API
         setIsAuthenticated(true);
+        try {
+          const stored = localStorage.getItem('client_info');
+          if (stored) {
+            setClient(JSON.parse(stored));
+          } else {
+            // Fallback: fetch profile from API
+            const profile = await apiFetch<{ name: string; telegram_username: string | null; email?: string | null }>('/profile');
+            const clientInfo = { id: '', name: profile.name, telegram_username: profile.telegram_username, email: profile.email };
+            setClient(clientInfo);
+            localStorage.setItem('client_info', JSON.stringify(clientInfo));
+          }
+        } catch {}
       }
       setIsLoading(false);
     };

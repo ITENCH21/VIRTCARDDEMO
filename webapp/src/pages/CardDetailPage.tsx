@@ -11,14 +11,10 @@ import Spinner from '../components/Spinner';
 import { EyeIcon, EyeOffIcon, CopyIcon, LockIcon, UnlockIcon, XIcon } from '../components/icons';
 import { formatAmount, formatCardNumber } from '../lib/format';
 import { hapticFeedback } from '../lib/telegram';
-
-const ACTION_LABELS: Record<string, { pending: string; done: string }> = {
-  block:   { pending: 'Блокировка карты...', done: 'Карта заблокирована' },
-  restore: { pending: 'Восстановление карты...', done: 'Карта восстановлена' },
-  close:   { pending: 'Закрытие карты...', done: 'Карта закрыта' },
-};
+import { useLang } from '../contexts/LangContext';
 
 export default function CardDetailPage() {
+  const { t } = useLang();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { card, loading, error, refresh } = useCard(id!);
@@ -35,6 +31,12 @@ export default function CardDetailPage() {
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
+  const ACTION_LABELS: Record<string, { pending: string; done: string }> = {
+    block:   { pending: t('card_blocking'), done: t('card_blocked_done') },
+    restore: { pending: t('card_restoring'), done: t('card_restored_done') },
+    close:   { pending: t('card_closing_op'), done: t('card_closed_done') },
+  };
+
   const handleReveal = async () => {
     if (showSensitive) {
       setShowSensitive(false);
@@ -46,7 +48,7 @@ export default function CardDetailPage() {
       setSensitive(data);
       setShowSensitive(true);
     } catch {
-      setActionError('Ошибка загрузки реквизитов');
+      setActionError(t('card_err_load'));
     } finally {
       setLoadingSensitive(false);
     }
@@ -75,7 +77,7 @@ export default function CardDetailPage() {
       setOperationId(res.operation_id);
       setConfirmAction(null);
     } catch (e: unknown) {
-      setActionError(e instanceof Error ? e.message : 'Ошибка операции');
+      setActionError(e instanceof Error ? e.message : t('card_err_op'));
       hapticFeedback('notification');
     } finally {
       setActionLoading(false);
@@ -127,21 +129,21 @@ export default function CardDetailPage() {
           <div style={{ textAlign: 'center' }}>
             <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--success)', marginTop: 8 }}>{labels.done}</p>
             <button className="btn btn-primary" style={{ marginTop: 24 }} onClick={handleDone}>
-              Вернуться к карте
+              {t('return_to_card')}
             </button>
           </div>
         )}
         {isFailed && (
           <div style={{ textAlign: 'center' }}>
             <button className="btn btn-primary" style={{ marginTop: 24 }} onClick={handleDone}>
-              Вернуться к карте
+              {t('return_to_card')}
             </button>
           </div>
         )}
         {timedOut && (
           <div style={{ textAlign: 'center' }}>
             <button className="btn btn-secondary" style={{ marginTop: 16 }} onClick={handleDone}>
-              Вернуться к карте
+              {t('return_to_card')}
             </button>
           </div>
         )}
@@ -150,7 +152,7 @@ export default function CardDetailPage() {
   }
 
   if (loading) return <div className="page"><Spinner /></div>;
-  if (error || !card) return <div className="page"><p className="error-text">{error || 'Карта не найдена'}</p></div>;
+  if (error || !card) return <div className="page"><p className="error-text">{error || t('card_not_found')}</p></div>;
 
   const isActive  = card.status === 'A' || card.status === 'R';
   const isBlocked = card.status === 'L';
@@ -172,13 +174,13 @@ export default function CardDetailPage() {
 
       {/* Статус */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-        <StatusBadge status={card.status} label={isClosing ? 'Закрывается' : undefined} />
+        <StatusBadge status={card.status} label={isClosing ? t('card_closing_status') : undefined} />
       </div>
 
       {/* Реквизиты */}
       <div className="glass-card" style={{ padding: 20, marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showSensitive ? 16 : 0 }}>
-          <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>Реквизиты карты</span>
+          <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>{t('card_credentials')}</span>
           <button
             onClick={handleReveal}
             disabled={loadingSensitive}
@@ -194,8 +196,8 @@ export default function CardDetailPage() {
             {loadingSensitive
               ? '...'
               : showSensitive
-                ? <><EyeOffIcon size={15} /> Скрыть</>
-                : <><EyeIcon size={15} /> Показать</>
+                ? <><EyeOffIcon size={15} /> {t('btn_hide')}</>
+                : <><EyeIcon size={15} /> {t('btn_show')}</>
             }
           </button>
         </div>
@@ -209,7 +211,7 @@ export default function CardDetailPage() {
               border: '1px solid var(--border-glass)',
             }}>
               <div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8 }}>Номер карты</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8 }}>{t('card_number_label')}</div>
                 <div style={{ fontSize: 16, fontWeight: 700, fontFamily: "'SF Mono','Menlo','Consolas',monospace", color: 'var(--text-primary)', marginTop: 4, letterSpacing: 1 }}>
                   {formatCardNumber(sensitive.card_number)}
                 </div>
@@ -228,7 +230,7 @@ export default function CardDetailPage() {
                 flex: 1, padding: '12px 16px', background: 'var(--bg-glass)', borderRadius: 'var(--radius-md)',
                 border: '1px solid var(--border-glass)',
               }}>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8 }}>Срок действия</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8 }}>{t('expiry_label')}</div>
                 <div style={{ fontSize: 16, fontWeight: 700, fontFamily: "'SF Mono','Menlo','Consolas',monospace", color: 'var(--text-primary)', marginTop: 4 }}>
                   {sensitive.expiry_month}/{sensitive.expiry_year}
                 </div>
@@ -260,14 +262,14 @@ export default function CardDetailPage() {
         {isActive && (
           <>
             <button className="btn btn-primary" onClick={() => navigate(`/cards/${id}/topup`)}>
-              Пополнить карту
+              {t('topup_card')}
             </button>
             <button
               className="btn btn-secondary"
               onClick={() => setConfirmAction('block')}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             >
-              <LockIcon size={18} /> Заблокировать карту
+              <LockIcon size={18} /> {t('block_card')}
             </button>
           </>
         )}
@@ -277,7 +279,7 @@ export default function CardDetailPage() {
             onClick={() => setConfirmAction('restore')}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           >
-            <UnlockIcon size={18} /> Разблокировать карту
+            <UnlockIcon size={18} /> {t('unblock_card')}
           </button>
         )}
         {!isClosed && !isClosing && (
@@ -286,7 +288,7 @@ export default function CardDetailPage() {
             onClick={() => setConfirmAction('close')}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           >
-            <XIcon size={18} /> Закрыть карту
+            <XIcon size={18} /> {t('close_card')}
           </button>
         )}
       </div>
@@ -296,20 +298,20 @@ export default function CardDetailPage() {
       <ConfirmDialog
         open={!!confirmAction}
         title={
-          confirmAction === 'block'   ? 'Заблокировать карту' :
-          confirmAction === 'restore' ? 'Разблокировать карту' :
-          'Закрыть карту'
+          confirmAction === 'block'   ? t('block_card') :
+          confirmAction === 'restore' ? t('unblock_card') :
+          t('close_card')
         }
-        confirmLabel={confirmAction === 'close' ? 'Закрыть карту' : 'Подтвердить'}
+        confirmLabel={confirmAction === 'close' ? t('confirm_label_close') : t('confirm_label_ok')}
         danger={confirmAction === 'close'}
         onConfirm={handleAction}
         onCancel={() => setConfirmAction(null)}
         loading={actionLoading}
       >
         <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-          {confirmAction === 'block'   && 'Вы уверены, что хотите заблокировать карту? Вы сможете разблокировать её позже.'}
-          {confirmAction === 'restore' && 'Вы уверены, что хотите разблокировать карту?'}
-          {confirmAction === 'close'   && 'Вы уверены, что хотите закрыть карту? Остаток средств будет возвращён на счёт.'}
+          {confirmAction === 'block'   && t('confirm_block_text')}
+          {confirmAction === 'restore' && t('confirm_restore_text')}
+          {confirmAction === 'close'   && t('confirm_close_text')}
         </p>
       </ConfirmDialog>
     </div>

@@ -17,6 +17,8 @@ import NotificationsPage from './pages/NotificationsPage';
 import SupportPage from './pages/SupportPage';
 import ExchangePage from './pages/ExchangePage';
 import TariffsPage from './pages/TariffsPage';
+import ServicesPage from './pages/ServicesPage';
+import FAQPage from './pages/FAQPage';
 import Spinner from './components/Spinner';
 
 function App() {
@@ -66,6 +68,8 @@ function App() {
           <Route path="/support" element={<SupportPage />} />
           <Route path="/exchange" element={<ExchangePage />} />
           <Route path="/tariffs" element={<TariffsPage />} />
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/faq" element={<FAQPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
