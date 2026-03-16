@@ -6,6 +6,7 @@ import {
   loginWithEmail,
   registerWithEmail,
   loginWithPin,
+  loginWithMagicLink,
   devLogin,
   AuthResponse,
 } from '../api/auth';
@@ -28,6 +29,7 @@ interface AuthContextType {
   loginEmail: (email: string, password: string) => Promise<void>;
   registerEmail: (email: string, password: string, name: string) => Promise<void>;
   loginPin: (pin: string) => Promise<void>;
+  loginMagicLink: (token: string) => Promise<void>;
   loginDev: (telegramId: number) => Promise<void>;
   logout: () => void;
 }
@@ -40,6 +42,7 @@ export const AuthContext = createContext<AuthContextType>({
   loginEmail: async () => {},
   registerEmail: async () => {},
   loginPin: async () => {},
+  loginMagicLink: async () => {},
   loginDev: async () => {},
   logout: () => {},
 });
@@ -122,6 +125,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [handleAuthResponse]
   );
 
+  const loginMagicLinkFn = useCallback(
+    async (token: string) => {
+      const res = await loginWithMagicLink(token);
+      handleAuthResponse(res);
+    },
+    [handleAuthResponse]
+  );
+
   const loginDevFn = useCallback(
     async (telegramId: number) => {
       const res = await devLogin(telegramId);
@@ -140,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginEmail: loginEmailFn,
         registerEmail: registerEmailFn,
         loginPin: loginPinFn,
+        loginMagicLink: loginMagicLinkFn,
         loginDev: loginDevFn,
         logout,
       }}

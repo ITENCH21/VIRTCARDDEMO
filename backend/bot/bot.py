@@ -32,6 +32,7 @@ from .handlers.cards import (
     get_topup_card_conversation,
 )
 from .handlers.history import show_history, history_page_callback
+from .handlers.lk_login import handle_lk_login
 
 # Keyboard constants
 from .keyboards import (
@@ -50,6 +51,7 @@ from .keyboards import (
     CB_CARD_CLOSE_CONFIRM,
     CB_HISTORY_PREV,
     CB_HISTORY_NEXT,
+    CB_LK_LOGIN,
     main_menu_keyboard,
 )
 
@@ -112,6 +114,11 @@ def main() -> None:
     # ── Главное меню ──────────────────────────────────────
     app.add_handler(
         CallbackQueryHandler(back_to_menu_callback, pattern=f"^{CB_BACK_MENU}$")
+    )
+
+    # ── Вход в ЛК ──────────────────────────────────────────
+    app.add_handler(
+        CallbackQueryHandler(handle_lk_login, pattern=f"^{CB_LK_LOGIN}$")
     )
 
     # ── Баланс ────────────────────────────────────────────

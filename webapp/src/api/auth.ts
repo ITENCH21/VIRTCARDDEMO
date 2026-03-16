@@ -97,6 +97,15 @@ export function completeWebAuthnLogin(credential: unknown): Promise<AuthResponse
   });
 }
 
+// ── Magic Link Auth ─────────────────────────────────────
+
+export function loginWithMagicLink(token: string): Promise<AuthResponse> {
+  return apiFetch('/auth/magic-link', {
+    method: 'POST',
+    body: JSON.stringify({ token }),
+  });
+}
+
 // ── Dev Login ────────────────────────────────────────────
 
 export function devLogin(telegramId: number): Promise<AuthResponse> {

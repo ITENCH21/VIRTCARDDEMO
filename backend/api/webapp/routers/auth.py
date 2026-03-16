@@ -32,6 +32,7 @@ from api.webapp.schemas import (
     EmailRegisterRequest,
     PinLoginRequest,
     PinSetupRequest,
+    MagicLinkRequest,
     SuccessResponse,
 )
 from bot.register import get_or_create_client
@@ -263,6 +264,52 @@ async def login_email(body: EmailLoginRequest):
             name=client.name or "",
             telegram_username=client.telegram_username,
             email=client.email,
+        ),
+    )
+
+
+# ── Magic Link Auth ──────────────────────────────────────
+
+
+@router.post("/magic-link", response_model=AuthResponse)
+async def auth_magic_link(body: MagicLinkRequest):
+    """Authenticate via one-time magic link token."""
+    from models.models import Client
+
+    r = await get_redis()
+    redis_key = f"magic_link:{body.token}"
+    client_id = await r.get(redis_key)
+
+    if not client_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired link",
+        )
+
+    # One-time use: delete immediately
+    await r.delete(redis_key)
+
+    try:
+        client = await Client.get(pk=client_id)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Client not found",
+        )
+
+    tg_id = client.telegram_id or 0
+    access_token = create_access_token(str(client.pk), tg_id)
+    refresh_token, jti = create_refresh_token(str(client.pk), tg_id)
+    await store_refresh_token(jti, str(client.pk))
+
+    return AuthResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        client=ClientInfo(
+            id=str(client.pk),
+            name=client.name or "",
+            telegram_username=client.telegram_username,
+            email=getattr(client, "email", None),
         ),
     )
 

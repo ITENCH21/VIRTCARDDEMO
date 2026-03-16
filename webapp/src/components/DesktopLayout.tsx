@@ -1,0 +1,524 @@
+import { ReactNode, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../contexts/ThemeContext';
+import { useNotifications } from '../hooks/useNotifications';
+import Toast from './Toast';
+import {
+  HomeIcon,
+  CreditCardIcon,
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ArrowsUpDownIcon,
+  ClockIcon,
+  UsersIcon,
+  TrendingUpIcon,
+  MessageIcon,
+  UserIcon,
+  LogOutIcon,
+  SunIcon,
+  MoonIcon,
+} from './icons';
+
+interface Props {
+  children: ReactNode;
+}
+
+const navItems = [
+  { path: '/', label: 'Главная', Icon: HomeIcon },
+  { path: '/cards', label: 'Карты', Icon: CreditCardIcon },
+  { path: '/deposit', label: 'Пополнить', Icon: ArrowDownIcon },
+  { path: '/withdraw', label: 'Вывести', Icon: ArrowUpIcon },
+  { path: '/exchange', label: 'Обмен', Icon: ArrowsUpDownIcon },
+  { path: '/history', label: 'История', Icon: ClockIcon },
+  { path: '/referral', label: 'Рефералы', Icon: UsersIcon },
+  { path: '/tariffs', label: 'Тарифы', Icon: TrendingUpIcon },
+  { path: '/support', label: 'Поддержка', Icon: MessageIcon },
+];
+
+const routeTitles: Record<string, string> = {
+  '/': 'Главная',
+  '/cards': 'Мои карты',
+  '/cards/issue': 'Новая карта',
+  '/deposit': 'Пополнение',
+  '/withdraw': 'Вывод',
+  '/history': 'История',
+  '/profile': 'Профиль',
+  '/referral': 'Реферальная программа',
+  '/security': 'Безопасность',
+  '/notifications': 'Уведомления',
+  '/support': 'Поддержка',
+  '/exchange': 'Обмен валют',
+  '/tariffs': 'Тарифы и лимиты',
+};
+
+function getTitle(pathname: string): string {
+  if (routeTitles[pathname]) return routeTitles[pathname];
+  if (/^\/cards\/[^/]+\/topup$/.test(pathname)) return 'Пополнить карту';
+  if (/^\/cards\/[^/]+$/.test(pathname)) return 'Детали карты';
+  return 'VirtCardPay';
+}
+
+export default function DesktopLayout({ children }: Props) {
+  const { client, logout } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
+  const { notifications, dismiss } = useNotifications();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const title = getTitle(location.pathname);
+
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
+
+  const handleNav = (path: string) => {
+    navigate(path);
+    setSidebarOpen(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setSidebarOpen(false);
+  };
+
+  return (
+    <div className="lk-shell">
+      {notifications.map((n) => (
+        <Toast
+          key={n.id}
+          message={n.message}
+          type={n.type}
+          onClose={() => dismiss(n.id)}
+        />
+      ))}
+
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div className="lk-sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`lk-sidebar ${sidebarOpen ? 'open' : ''}`}>
+        {/* Brand */}
+        <div className="lk-sidebar-brand" onClick={() => handleNav('/')}>
+          <div className="lk-sidebar-logo">
+            <svg viewBox="0 0 512 512" width="32" height="32">
+              <defs>
+                <linearGradient id="lkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#3B82F6" />
+                  <stop offset="100%" stopColor="#1D4ED8" />
+                </linearGradient>
+              </defs>
+              <rect width="512" height="512" rx="96" fill="url(#lkGrad)" />
+              <text
+                x="256"
+                y="380"
+                fontFamily="Inter, -apple-system, sans-serif"
+                fontSize="360"
+                fontWeight="900"
+                fill="white"
+                textAnchor="middle"
+              >
+                V
+              </text>
+            </svg>
+          </div>
+          <span className="lk-sidebar-brand-text">
+            Virt<span>Card</span>Pay
+          </span>
+        </div>
+
+        {/* Navigation */}
+        <nav className="lk-sidebar-nav">
+          {navItems.map((item) => (
+            <button
+              key={item.path}
+              className={`lk-sidebar-item ${isActive(item.path) ? 'active' : ''}`}
+              onClick={() => handleNav(item.path)}
+            >
+              <item.Icon size={20} />
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        {/* Bottom section */}
+        <div className="lk-sidebar-bottom">
+          <button
+            className={`lk-sidebar-item ${isActive('/profile') ? 'active' : ''}`}
+            onClick={() => handleNav('/profile')}
+          >
+            <UserIcon size={20} />
+            <span>Настройки</span>
+          </button>
+          <button className="lk-sidebar-item lk-sidebar-logout" onClick={handleLogout}>
+            <LogOutIcon size={20} />
+            <span>Выйти</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Main area */}
+      <div className="lk-main">
+        {/* Top bar */}
+        <header className="lk-topbar">
+          <div className="lk-topbar-left">
+            <button
+              className="lk-hamburger"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label="Меню"
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+            <h1 className="lk-topbar-title">{title}</h1>
+          </div>
+
+          <div className="lk-topbar-right">
+            <button
+              className="lk-topbar-btn"
+              onClick={toggleTheme}
+              aria-label="Переключить тему"
+            >
+              {isDark ? <MoonIcon size={18} /> : <SunIcon size={18} />}
+            </button>
+            {client && (
+              <div
+                className="lk-topbar-user"
+                onClick={() => navigate('/profile')}
+              >
+                <div className="lk-topbar-avatar">
+                  {(client.name || 'U').charAt(0).toUpperCase()}
+                </div>
+                <span className="lk-topbar-username">{client.name}</span>
+              </div>
+            )}
+          </div>
+        </header>
+
+        {/* Page content */}
+        <main className="lk-content">{children}</main>
+      </div>
+
+      <style>{`
+        /* ═══════════════════════════════════════════
+           DESKTOP LAYOUT — LK Shell
+           ═══════════════════════════════════════════ */
+        .lk-shell {
+          display: flex;
+          min-height: 100vh;
+          position: relative;
+          z-index: 1;
+        }
+
+        /* ─── Sidebar ────────────────────────────── */
+        .lk-sidebar {
+          width: 260px;
+          flex-shrink: 0;
+          display: flex;
+          flex-direction: column;
+          background: var(--bg-glass);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          border-right: 1px solid var(--border-glass);
+          padding: 24px 12px;
+          position: sticky;
+          top: 0;
+          height: 100vh;
+          overflow-y: auto;
+          transition: background 0.3s ease, border-color 0.3s ease;
+          z-index: 300;
+        }
+
+        .lk-sidebar-brand {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 4px 12px 24px;
+          cursor: pointer;
+          user-select: none;
+        }
+
+        .lk-sidebar-logo {
+          width: 32px;
+          height: 32px;
+          flex-shrink: 0;
+        }
+
+        .lk-sidebar-brand-text {
+          font-size: 18px;
+          font-weight: 800;
+          color: var(--text-primary);
+          letter-spacing: -0.3px;
+        }
+        .lk-sidebar-brand-text span {
+          color: #3B82F6;
+        }
+
+        /* Nav items */
+        .lk-sidebar-nav {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .lk-sidebar-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          width: 100%;
+          padding: 11px 16px;
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--text-secondary);
+          background: transparent;
+          border: none;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-align: left;
+        }
+        .lk-sidebar-item:hover {
+          background: var(--bg-glass-hover);
+          color: var(--text-primary);
+        }
+        .lk-sidebar-item.active {
+          background: var(--accent-gradient);
+          color: #fff;
+          box-shadow: 0 4px 16px rgba(59,130,246,0.25);
+        }
+        .lk-sidebar-item.active svg {
+          color: #fff;
+        }
+
+        .lk-sidebar-bottom {
+          border-top: 1px solid var(--border-glass);
+          padding-top: 12px;
+          margin-top: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .lk-sidebar-logout {
+          color: var(--danger);
+        }
+        .lk-sidebar-logout:hover {
+          background: rgba(239,68,68,0.1);
+          color: var(--danger);
+        }
+
+        /* Overlay for mobile */
+        .lk-sidebar-overlay {
+          display: none;
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.5);
+          z-index: 250;
+          animation: fadeIn 0.2s ease;
+        }
+
+        /* ─── Main Area ──────────────────────────── */
+        .lk-main {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+          min-height: 100vh;
+        }
+
+        /* Top bar */
+        .lk-topbar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px 32px;
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          background: var(--header-bg);
+          border-bottom: 1px solid var(--border-glass);
+          transition: background 0.3s ease;
+        }
+
+        .lk-topbar-left {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+
+        .lk-topbar-title {
+          font-size: 20px;
+          font-weight: 700;
+          color: var(--text-primary);
+          letter-spacing: -0.3px;
+        }
+
+        .lk-topbar-right {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .lk-topbar-btn {
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          background: var(--bg-glass);
+          border: 1px solid var(--border-glass);
+          color: var(--text-secondary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .lk-topbar-btn:hover {
+          background: var(--bg-glass-hover);
+          border-color: var(--border-glass-active);
+          color: var(--text-primary);
+        }
+
+        .lk-topbar-user {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 6px 14px 6px 6px;
+          background: var(--bg-glass);
+          border: 1px solid var(--border-glass);
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .lk-topbar-user:hover {
+          background: var(--bg-glass-hover);
+          border-color: var(--border-glass-active);
+        }
+
+        .lk-topbar-avatar {
+          width: 32px;
+          height: 32px;
+          border-radius: 10px;
+          background: var(--accent-gradient);
+          color: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          font-weight: 700;
+          flex-shrink: 0;
+        }
+
+        .lk-topbar-username {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 150px;
+        }
+
+        /* Hamburger — hidden on desktop */
+        .lk-hamburger {
+          display: none;
+          flex-direction: column;
+          gap: 5px;
+          padding: 8px;
+          background: none;
+          border: none;
+          cursor: pointer;
+        }
+        .lk-hamburger span {
+          display: block;
+          width: 22px;
+          height: 2px;
+          background: var(--text-primary);
+          border-radius: 2px;
+          transition: all 0.25s ease;
+        }
+
+        /* Content */
+        .lk-content {
+          flex: 1;
+          padding: 32px;
+          max-width: 1200px;
+          width: 100%;
+          margin: 0 auto;
+          animation: fadeSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Override .page padding for desktop */
+        .lk-content .page {
+          padding: 0;
+          max-width: none;
+        }
+
+        /* ─── Mobile ─────────────────────────────── */
+        @media (max-width: 768px) {
+          .lk-sidebar {
+            position: fixed;
+            left: -280px;
+            top: 0;
+            height: 100vh;
+            z-index: 300;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                        background 0.3s ease;
+            background: var(--bg-secondary);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+          }
+          .lk-sidebar.open {
+            left: 0;
+          }
+
+          .lk-sidebar-overlay {
+            display: block;
+          }
+
+          .lk-hamburger {
+            display: flex;
+          }
+
+          .lk-topbar {
+            padding: 12px 16px;
+          }
+
+          .lk-topbar-title {
+            font-size: 17px;
+          }
+
+          .lk-topbar-username {
+            display: none;
+          }
+
+          .lk-topbar-user {
+            padding: 6px;
+          }
+
+          .lk-content {
+            padding: 16px;
+          }
+        }
+
+        /* ─── Tablet ─────────────────────────────── */
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .lk-sidebar {
+            width: 220px;
+            padding: 20px 8px;
+          }
+          .lk-content {
+            padding: 24px;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}

@@ -53,6 +53,10 @@ class PinSetupRequest(BaseModel):
     pin: str
 
 
+class MagicLinkRequest(BaseModel):
+    token: str
+
+
 class ClientInfo(BaseModel):
     id: str
     name: str

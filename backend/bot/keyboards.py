@@ -15,6 +15,7 @@ CB_DEPOSIT = "menu:deposit"
 CB_ISSUE_CARD = "menu:issue_card"
 CB_MY_CARDS = "menu:my_cards"
 CB_HISTORY = "menu:history"
+CB_LK_LOGIN = "menu:lk_login"
 CB_BACK_MENU = "menu:back"
 
 # Баланс
@@ -50,6 +51,9 @@ WEBAPP_URL = os.getenv("TELEGRAM_WEBAPP_URL", "").strip()
 def main_menu_keyboard() -> InlineKeyboardMarkup:
     """Главное меню бота."""
     buttons = []
+    buttons.append(
+        [InlineKeyboardButton("🖥 Войти в ЛК", callback_data=CB_LK_LOGIN)]
+    )
     if WEBAPP_URL:
         buttons.append(
             [InlineKeyboardButton("📱 Открыть приложение", web_app=WebAppInfo(WEBAPP_URL))]
