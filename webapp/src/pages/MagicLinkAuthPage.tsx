@@ -9,10 +9,19 @@ const TELEGRAM_BOT_USERNAME =
 export default function MagicLinkAuthPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { loginMagicLink } = useAuth();
+  const { loginMagicLink, isAuthenticated, isLoading } = useAuth();
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Wait for AuthContext to finish loading (check existing JWT)
+    if (isLoading) return;
+
+    // If already authenticated (JWT in localStorage), skip token check → go to dashboard
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+      return;
+    }
+
     const token = searchParams.get('token');
     if (!token) {
       setError('Ссылка недействительна или истекла');
@@ -37,7 +46,7 @@ export default function MagicLinkAuthPage() {
     return () => {
       cancelled = true;
     };
-  }, [searchParams, loginMagicLink, navigate]);
+  }, [searchParams, loginMagicLink, navigate, isAuthenticated, isLoading]);
 
   return (
     <div className="magic-link-page">
