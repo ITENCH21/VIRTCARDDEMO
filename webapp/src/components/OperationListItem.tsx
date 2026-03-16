@@ -2,14 +2,7 @@ import { OperationResponse } from '../api/operations';
 import StatusBadge from './StatusBadge';
 import { ArrowDownIcon, ArrowUpIcon, CreditCardIcon, LockIcon, PlusIcon, XIcon } from './icons';
 import { formatAmount, formatDate } from '../lib/format';
-
-const OP_STATUS: Record<string, string> = {
-  P: 'Pending',
-  O: 'Processing',
-  C: 'Complete',
-  F: 'Failed',
-  U: 'Unknown',
-};
+import { useLang } from '../contexts/LangContext';
 
 function getIconConfig(kind: string) {
   const k = kind.toLowerCase();
@@ -31,8 +24,15 @@ interface Props {
 }
 
 export default function OperationListItem({ operation, borderless }: Props) {
+  const { t } = useLang();
   const { Icon, bg, color } = getIconConfig(operation.kind);
   const positive = isPositive(operation.kind);
+  const statusKey = `status_${operation.status}` as Parameters<typeof t>[0];
+  const statusLabel = t(statusKey);
+  const kindKey = `kind_${operation.kind}` as Parameters<typeof t>[0];
+  const kindLabel = kindKey in { kind_DE: 1, kind_WI: 1, kind_CO: 1, kind_CT: 1, kind_CB: 1, kind_CR: 1, kind_CC: 1 }
+    ? t(kindKey)
+    : operation.kind_label;
 
   return (
     <div
@@ -66,7 +66,7 @@ export default function OperationListItem({ operation, borderless }: Props) {
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>
-          {operation.kind_label}
+          {kindLabel}
         </div>
         <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
           {formatDate(operation.created_at)}
@@ -83,7 +83,7 @@ export default function OperationListItem({ operation, borderless }: Props) {
           {positive ? '+' : ''}{formatAmount(operation.amount, operation.currency_symbol)}
         </div>
         <div style={{ marginTop: 3 }}>
-          <StatusBadge status={operation.status} label={OP_STATUS[operation.status]} />
+          <StatusBadge status={operation.status} label={statusLabel} />
         </div>
       </div>
     </div>

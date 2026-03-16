@@ -167,7 +167,7 @@ export default function CardDetailPage() {
           last4={card.last4}
           balance={formatAmount(card.balance, card.currency_symbol)}
           currencySymbol=""
-          variant={parseInt(id || '0', 10)}
+          currencyCode={card.currency_code}
         />
       </div>
 

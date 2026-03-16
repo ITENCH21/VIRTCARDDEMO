@@ -4,6 +4,7 @@ import BottomNav from './BottomNav';
 import Toast from './Toast';
 import { useNotifications } from '../hooks/useNotifications';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLang } from '../contexts/LangContext';
 import { ChevronLeftIcon, SunIcon, MoonIcon } from './icons';
 
 interface Props {
@@ -38,6 +39,7 @@ const rootPaths = ['/', '/cards', '/history', '/profile'];
 export default function Layout({ children }: Props) {
   const { notifications, dismiss } = useNotifications();
   const { isDark, toggleTheme } = useTheme();
+  const { lang, toggleLang } = useLang();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -109,6 +111,27 @@ export default function Layout({ children }: Props) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
+            onClick={toggleLang}
+            style={{
+              height: 36,
+              padding: '0 10px',
+              borderRadius: 10,
+              background: 'var(--bg-glass)',
+              border: '1px solid var(--border-glass)',
+              color: 'var(--text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: 0.5,
+              transition: 'var(--transition-fast)',
+            }}
+          >
+            {lang === 'ru' ? 'RU' : 'EN'}
+          </button>
+          <button
             onClick={toggleTheme}
             style={{
               width: 36,
@@ -124,7 +147,7 @@ export default function Layout({ children }: Props) {
               transition: 'var(--transition-fast)',
             }}
           >
-            {isDark ? <MoonIcon size={18} /> : <SunIcon size={18} />}
+            {isDark ? <SunIcon size={18} /> : <MoonIcon size={18} />}
           </button>
         </div>
       </header>

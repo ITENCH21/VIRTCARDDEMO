@@ -76,25 +76,24 @@
 }
 
 /* ═══════════════════════════════════════════
-   LIGHT THEME (matching landing light theme)
+   LIGHT THEME
    ═══════════════════════════════════════════ */
 :root.light {
-  --bg-primary: #F4F7FF;
+  --bg-primary: linear-gradient(145deg, #eef2ff 0%, #f0fdf9 40%, #fdf4ff 70%, #eff6ff 100%);
   --bg-secondary: #ffffff;
-  --bg-card: rgba(0,0,0,0.02);
-  --bg-glass: rgba(255,255,255,0.65);
-  --bg-glass-hover: rgba(255,255,255,0.85);
-  --border-glass: rgba(0,0,0,0.06);
-  --border-glass-active: rgba(0,0,0,0.12);
-  --header-bg: rgba(244,247,255,0.8);
-  --tabbar-bg: rgba(255,255,255,0.88);
+  --bg-card: rgba(255,255,255,0.75);
+  --bg-glass: rgba(255,255,255,0.72);
+  --bg-glass-hover: rgba(255,255,255,0.92);
+  --border-glass: rgba(99,102,241,0.1);
+  --border-glass-active: rgba(99,102,241,0.22);
+  --header-bg: rgba(238,242,255,0.82);
+  --tabbar-bg: rgba(255,255,255,0.90);
   --modal-bg: #ffffff;
 
   --text-primary: #0F172A;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
 
-  /* VirtCardPay blue palette (matching landing) */
   --accent-1: #3B82F6;
   --accent-2: #1D4ED8;
   --accent-3: #06b6d4;
@@ -105,23 +104,23 @@
   --danger: #dc2626;
   --info: #2563eb;
 
-  --balance-text-gradient: linear-gradient(135deg, #0F172A, #1D4ED8);
-  --balance-hero-bg: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(29,78,216,0.07), rgba(6,182,212,0.05));
-  --balance-hero-border: rgba(59,130,246,0.15);
-  --balance-hero-orb1: rgba(59,130,246,0.08);
-  --balance-hero-orb2: rgba(6,182,212,0.06);
+  --balance-text-gradient: linear-gradient(135deg, #1D4ED8, #0891b2);
+  --balance-hero-bg: linear-gradient(135deg, rgba(59,130,246,0.18) 0%, rgba(139,92,246,0.12) 50%, rgba(6,182,212,0.14) 100%);
+  --balance-hero-border: rgba(99,102,241,0.2);
+  --balance-hero-orb1: rgba(99,102,241,0.18);
+  --balance-hero-orb2: rgba(6,182,212,0.14);
 
-  --mesh-c1: rgba(59,130,246,0.06);
-  --mesh-c2: rgba(29,78,216,0.04);
-  --mesh-c3: rgba(6,182,212,0.03);
+  --mesh-c1: rgba(99,102,241,0.18);
+  --mesh-c2: rgba(16,185,129,0.13);
+  --mesh-c3: rgba(245,158,11,0.10);
 
-  --tx-border: rgba(0,0,0,0.04);
+  --tx-border: rgba(0,0,0,0.05);
   --qr-shadow: 0 8px 40px rgba(0,0,0,0.1);
 
-  --shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
-  --shadow-lg: 0 8px 40px rgba(0,0,0,0.1);
-  --shadow-glow: 0 0 30px rgba(59,130,246,0.08);
+  --shadow-sm: 0 2px 12px rgba(99,102,241,0.08);
+  --shadow-md: 0 4px 24px rgba(99,102,241,0.12);
+  --shadow-lg: 0 8px 40px rgba(99,102,241,0.16);
+  --shadow-glow: 0 0 40px rgba(99,102,241,0.18);
 
   /* Backward compat */
   --bg-color: var(--bg-primary);

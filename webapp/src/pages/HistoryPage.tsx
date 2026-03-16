@@ -3,34 +3,34 @@ import OperationListItem from '../components/OperationListItem';
 import FilterChips from '../components/FilterChips';
 import Spinner from '../components/Spinner';
 import { ChevronLeftIcon, ChevronRightIcon } from '../components/icons';
-
-const KIND_OPTIONS = [
-  { value: 'DE', label: 'Deposit' },
-  { value: 'WI', label: 'Withdrawal' },
-  { value: 'CO', label: 'Card Issue' },
-  { value: 'CT', label: 'Card Topup' },
-  { value: 'CB', label: 'Card Block' },
-  { value: 'CR', label: 'Card Restore' },
-  { value: 'CC', label: 'Card Close' },
-];
-
-const STATUS_OPTIONS = [
-  { value: 'P', label: 'Pending' },
-  { value: 'O', label: 'Processing' },
-  { value: 'C', label: 'Complete' },
-  { value: 'F', label: 'Failed' },
-];
+import { useLang } from '../contexts/LangContext';
 
 export default function HistoryPage() {
   const { items, total, loading, error, filters, hasNext, hasPrev, nextPage, prevPage, applyFilters } = useOperations();
+  const { t } = useLang();
+
+  const KIND_OPTIONS = [
+    { value: 'DE', label: t('kind_DE') },
+    { value: 'WI', label: t('kind_WI') },
+    { value: 'CO', label: t('kind_CO') },
+    { value: 'CT', label: t('kind_CT') },
+    { value: 'CB', label: t('kind_CB') },
+    { value: 'CR', label: t('kind_CR') },
+    { value: 'CC', label: t('kind_CC') },
+  ];
+
+  const STATUS_OPTIONS = [
+    { value: 'P', label: t('status_P') },
+    { value: 'O', label: t('status_O') },
+    { value: 'C', label: t('status_C') },
+    { value: 'F', label: t('status_F') },
+  ];
 
   return (
     <div className="page">
-      <h1 className="page-title">History</h1>
-
       {/* Type Filter */}
       <div style={{ marginBottom: 10 }}>
-        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>Type</div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>{t('filter_type')}</div>
         <FilterChips
           options={KIND_OPTIONS}
           value={filters.kind || ''}
@@ -40,7 +40,7 @@ export default function HistoryPage() {
 
       {/* Status Filter */}
       <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>Status</div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>{t('filter_status')}</div>
         <FilterChips
           options={STATUS_OPTIONS}
           value={filters.status || ''}
@@ -53,7 +53,7 @@ export default function HistoryPage() {
 
       {!loading && items.length === 0 && (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: 15 }}>No operations yet</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 15 }}>{t('no_ops')}</p>
         </div>
       )}
 
@@ -83,9 +83,9 @@ export default function HistoryPage() {
               opacity: hasPrev ? 1 : 0.4,
             }}
           >
-            <ChevronLeftIcon size={16} /> Prev
+            <ChevronLeftIcon size={16} /> {t('prev')}
           </button>
-          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{total} total</span>
+          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{total} {t('total')}</span>
           <button
             onClick={nextPage}
             disabled={!hasNext}
@@ -100,7 +100,7 @@ export default function HistoryPage() {
               opacity: hasNext ? 1 : 0.4,
             }}
           >
-            Next <ChevronRightIcon size={16} />
+            {t('next')} <ChevronRightIcon size={16} />
           </button>
         </div>
       )}

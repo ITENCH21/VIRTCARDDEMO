@@ -2,6 +2,7 @@ import { ReactNode, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLang } from '../contexts/LangContext';
 import { useNotifications } from '../hooks/useNotifications';
 import Toast from './Toast';
 import {
@@ -29,7 +30,6 @@ const navItems = [
   { path: '/cards', label: 'Карты', Icon: CreditCardIcon },
   { path: '/deposit', label: 'Пополнить', Icon: ArrowDownIcon },
   { path: '/withdraw', label: 'Вывести', Icon: ArrowUpIcon },
-  { path: '/exchange', label: 'Обмен', Icon: ArrowsUpDownIcon },
   { path: '/history', label: 'История', Icon: ClockIcon },
   { path: '/referral', label: 'Рефералы', Icon: UsersIcon },
   { path: '/tariffs', label: 'Тарифы', Icon: TrendingUpIcon },
@@ -62,6 +62,7 @@ function getTitle(pathname: string): string {
 export default function DesktopLayout({ children }: Props) {
   const { client, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const { lang, toggleLang } = useLang();
   const { notifications, dismiss } = useNotifications();
   const location = useLocation();
   const navigate = useNavigate();
@@ -104,30 +105,10 @@ export default function DesktopLayout({ children }: Props) {
       <aside className={`lk-sidebar ${sidebarOpen ? 'open' : ''}`}>
         {/* Brand */}
         <div className="lk-sidebar-brand" onClick={() => handleNav('/')}>
-          <div className="lk-sidebar-logo">
-            <svg viewBox="0 0 512 512" width="32" height="32">
-              <defs>
-                <linearGradient id="lkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#3B82F6" />
-                  <stop offset="100%" stopColor="#1D4ED8" />
-                </linearGradient>
-              </defs>
-              <rect width="512" height="512" rx="96" fill="url(#lkGrad)" />
-              <text
-                x="256"
-                y="380"
-                fontFamily="Inter, -apple-system, sans-serif"
-                fontSize="360"
-                fontWeight="900"
-                fill="white"
-                textAnchor="middle"
-              >
-                V
-              </text>
-            </svg>
-          </div>
           <span className="lk-sidebar-brand-text">
-            Virt<span>Card</span>Pay
+            <span style={{ color: '#10b981' }}>Virt</span>
+            <span style={{ color: '#3B82F6' }}>Card</span>
+            <span style={{ color: '#F59E0B' }}>Pay</span>
           </span>
         </div>
 
@@ -165,7 +146,7 @@ export default function DesktopLayout({ children }: Props) {
       <div className="lk-main">
         {/* Top bar */}
         <header className="lk-topbar">
-          <div className="lk-topbar-left">
+          <div className="lk-topbar-left" style={location.pathname === '/' ? { gap: 2 } : undefined}>
             <button
               className="lk-hamburger"
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -175,21 +156,39 @@ export default function DesktopLayout({ children }: Props) {
               <span />
               <span />
             </button>
-            <h1 className="lk-topbar-title">{title}</h1>
+            {location.pathname === '/' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>
+                <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
+                  <path d="M19 9H3M3 9L8 3M3 9L8 15" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Меню
+              </div>
+            ) : (
+              <h1 className="lk-topbar-title">{title}</h1>
+            )}
           </div>
 
           <div className="lk-topbar-right">
             <button
               className="lk-topbar-btn"
+              onClick={toggleLang}
+              style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.5, width: 'auto', padding: '0 12px', boxShadow: '0 0 10px rgba(16,185,129,0.35)', borderColor: 'rgba(16,185,129,0.3)', color: '#10b981' }}
+            >
+              {lang === 'ru' ? 'RU' : 'EN'}
+            </button>
+            <button
+              className="lk-topbar-btn"
               onClick={toggleTheme}
               aria-label="Переключить тему"
+              style={{ boxShadow: '0 0 10px rgba(59,130,246,0.35)', borderColor: 'rgba(59,130,246,0.3)', color: '#3b82f6' }}
             >
-              {isDark ? <MoonIcon size={18} /> : <SunIcon size={18} />}
+              {isDark ? <SunIcon size={18} /> : <MoonIcon size={18} />}
             </button>
             {client && (
               <div
                 className="lk-topbar-user"
                 onClick={() => navigate('/profile')}
+                style={{ boxShadow: '0 0 10px rgba(245,158,11,0.35)', borderColor: 'rgba(245,158,11,0.3)' }}
               >
                 <div className="lk-topbar-avatar">
                   {(client.name || 'U').charAt(0).toUpperCase()}
@@ -250,13 +249,9 @@ export default function DesktopLayout({ children }: Props) {
         }
 
         .lk-sidebar-brand-text {
-          font-size: 18px;
+          font-size: 22px;
           font-weight: 800;
-          color: var(--text-primary);
           letter-spacing: -0.3px;
-        }
-        .lk-sidebar-brand-text span {
-          color: #3B82F6;
         }
 
         /* Nav items */
