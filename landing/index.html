@@ -72,16 +72,16 @@
       --transition:    .25s ease;
     }
     [data-theme="dark"] {
-      --bg-primary:    #0F172A;
-      --bg-secondary:  #1E293B;
+      --bg-primary:    #0B1120;
+      --bg-secondary:  #111827;
       --bg-card:       #1E293B;
       --text-primary:  #F1F5F9;
       --text-secondary:#94A3B8;
       --text-muted:    #64748B;
       --border:        #334155;
       --blue-light:    #1E3A5F;
-      --shadow:        0 1px 3px rgba(0,0,0,.3);
-      --shadow-lg:     0 10px 30px rgba(0,0,0,.4);
+      --shadow:        0 1px 3px rgba(0,0,0,.4);
+      --shadow-lg:     0 10px 30px rgba(0,0,0,.5);
     }
 
     /* =========================================================
@@ -217,7 +217,7 @@
       padding: 80px 24px 64px; text-align: center; position: relative; overflow: visible;
     }
     [data-theme="dark"] .hero {
-      background: linear-gradient(160deg, #0F172A 0%, #0D1E3F 45%, #0F172A 100%);
+      background: linear-gradient(160deg, #080e1a 0%, #0D1E3F 35%, #0a1628 65%, #080e1a 100%);
     }
     .hero::before {
       content: ''; position: absolute; inset: 0;
@@ -355,10 +355,12 @@
       position: absolute; z-index: 5; pointer-events: none;
       width: 0; height: 0;
     }
+    /* Body rotates so "right" always points AWAY from target (tail direction) */
     .comet__body {
       position: absolute;
       width: 28px; height: 28px;
       margin: -14px 0 0 -14px;
+      transform: rotate(var(--tail-angle, 0deg));
     }
     .comet__head {
       width: 28px; height: 28px; border-radius: 50%;
@@ -368,35 +370,26 @@
       box-shadow: 0 0 14px rgba(38,161,123,.8), 0 0 40px rgba(38,161,123,.35);
       position: relative; z-index: 2;
     }
-    /* Tail — tapers from thick+bright at head to thin+transparent */
+    /* keep ₮ symbol upright regardless of body rotation */
+    .comet__head span {
+      display: block;
+      transform: rotate(calc(-1 * var(--tail-angle, 0deg)));
+    }
+    /* Tail — always extends to the right of body (which is rotated to face away from target) */
     .comet__tail {
-      position: absolute; top: 50%; left: 50%;
-      width: 90px; height: 0;
-      margin-left: -14px;
-      border-left: 0 solid transparent;
-      border-right: 90px solid transparent;
-      border-top: 5px solid rgba(38,161,123,.85);
-      border-bottom: 5px solid rgba(38,161,123,.85);
-      border-image: linear-gradient(to right, rgba(38,161,123,.85), rgba(80,227,164,.2) 60%, transparent) 1;
-      transform-origin: 14px center;
-      transform: translateY(-5px) rotate(var(--tail-angle, 0deg));
-      background: none;
-      /* use clip-path for tapering shape */
-      clip-path: polygon(0 20%, 100% 45%, 100% 55%, 0 80%);
-      border: none;
+      position: absolute; top: 50%; left: 100%;
       width: 100px; height: 14px;
-      margin-top: -7px;
-      background: linear-gradient(to right, rgba(38,161,123,.9), rgba(80,227,164,.35) 50%, rgba(80,227,164,.05) 80%, transparent);
+      margin-top: -7px; margin-left: -4px;
+      clip-path: polygon(0 15%, 100% 45%, 100% 55%, 0 85%);
+      background: linear-gradient(to right, rgba(38,161,123,.9), rgba(80,227,164,.35) 45%, rgba(80,227,164,.05) 80%, transparent);
       filter: blur(1px);
     }
     .comet__tail2 {
-      position: absolute; top: 50%; left: 50%;
-      width: 140px; height: 20px;
-      margin-top: -10px; margin-left: -14px;
-      clip-path: polygon(0 25%, 100% 46%, 100% 54%, 0 75%);
+      position: absolute; top: 50%; left: 100%;
+      width: 140px; height: 22px;
+      margin-top: -11px; margin-left: -4px;
+      clip-path: polygon(0 20%, 100% 45%, 100% 55%, 0 80%);
       background: linear-gradient(to right, rgba(38,161,123,.4), rgba(80,227,164,.1) 50%, transparent);
-      transform-origin: 14px center;
-      transform: rotate(var(--tail-angle, 0deg));
       filter: blur(4px);
     }
     /* Glow around head */
@@ -648,6 +641,16 @@
     ========================================================= */
     .section { padding: 80px 24px; }
     .section--grey { background: var(--bg-secondary); }
+    [data-theme="dark"] .section--grey {
+      background: linear-gradient(180deg, #0d1525 0%, #111827 50%, #0d1525 100%);
+    }
+    [data-theme="dark"] .section {
+      position: relative;
+    }
+    [data-theme="dark"] .section::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(59,130,246,.04) 0%, transparent 70%);
+    }
     .section__inner { max-width: 1200px; margin: 0 auto; }
     .section__head { text-align: center; margin-bottom: 48px; }
     .section__title {
@@ -680,13 +683,17 @@
       transform: translateY(-4px);
     }
     [data-theme="dark"] .feature-card {
-      background: #151e28;
-      box-shadow: 0 2px 10px rgba(0,0,0,.3),
-                  0 8px 24px rgba(0,0,0,.2);
+      background: linear-gradient(145deg, #1a2435, #131c2a);
+      border: 1px solid rgba(59,130,246,.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,.4),
+                  0 8px 32px rgba(0,0,0,.3),
+                  inset 0 1px 0 rgba(255,255,255,.04);
     }
     [data-theme="dark"] .feature-card:hover {
-      box-shadow: 0 4px 18px rgba(59,130,246,.2),
-                  0 8px 28px rgba(0,0,0,.3);
+      border-color: rgba(59,130,246,.15);
+      box-shadow: 0 4px 16px rgba(59,130,246,.15),
+                  0 12px 40px rgba(0,0,0,.4),
+                  inset 0 1px 0 rgba(255,255,255,.06);
     }
     .feature-card__num {
       position: absolute; top: 16px; right: 20px;
@@ -742,14 +749,15 @@
     .step-card:nth-child(5) { background: #d8f0da; box-shadow: 8px 8px 20px rgba(130,190,140,.35), -8px -8px 20px rgba(255,255,255,.92); }
     .step-card:nth-child(5):hover { box-shadow: 6px 6px 14px rgba(60,180,80,.35), -6px -6px 14px rgba(255,255,255,.95); }
     /* dark theme steps */
-    [data-theme="dark"] .step-card:nth-child(1) { background: #1f1518; box-shadow: 0 2px 10px rgba(0,0,0,.3), 0 8px 24px rgba(180,80,70,.1); }
-    [data-theme="dark"] .step-card:nth-child(2) { background: #1f1a14; box-shadow: 0 2px 10px rgba(0,0,0,.3), 0 8px 24px rgba(180,130,50,.1); }
-    [data-theme="dark"] .step-card:nth-child(3) { background: #1e1d13; box-shadow: 0 2px 10px rgba(0,0,0,.3), 0 8px 24px rgba(180,170,40,.1); }
-    [data-theme="dark"] .step-card:nth-child(4) { background: #171f14; box-shadow: 0 2px 10px rgba(0,0,0,.3), 0 8px 24px rgba(90,160,50,.1); }
-    [data-theme="dark"] .step-card:nth-child(5) { background: #141f16; box-shadow: 0 2px 10px rgba(0,0,0,.3), 0 8px 24px rgba(50,160,70,.1); }
+    [data-theme="dark"] .step-card:nth-child(1) { background: linear-gradient(145deg, #231418, #1a0f12); border: 1px solid rgba(220,80,70,.08); box-shadow: 0 2px 8px rgba(0,0,0,.4), 0 8px 32px rgba(180,80,70,.12), inset 0 1px 0 rgba(220,100,90,.06); }
+    [data-theme="dark"] .step-card:nth-child(2) { background: linear-gradient(145deg, #231c14, #1a150f); border: 1px solid rgba(220,150,50,.08); box-shadow: 0 2px 8px rgba(0,0,0,.4), 0 8px 32px rgba(180,130,50,.12), inset 0 1px 0 rgba(220,160,60,.06); }
+    [data-theme="dark"] .step-card:nth-child(3) { background: linear-gradient(145deg, #221f13, #1a180e); border: 1px solid rgba(210,185,50,.08); box-shadow: 0 2px 8px rgba(0,0,0,.4), 0 8px 32px rgba(180,170,40,.12), inset 0 1px 0 rgba(210,190,50,.06); }
+    [data-theme="dark"] .step-card:nth-child(4) { background: linear-gradient(145deg, #172314, #10190e); border: 1px solid rgba(90,180,50,.08); box-shadow: 0 2px 8px rgba(0,0,0,.4), 0 8px 32px rgba(90,160,50,.12), inset 0 1px 0 rgba(100,180,60,.06); }
+    [data-theme="dark"] .step-card:nth-child(5) { background: linear-gradient(145deg, #142318, #0e1910); border: 1px solid rgba(50,180,70,.08); box-shadow: 0 2px 8px rgba(0,0,0,.4), 0 8px 32px rgba(50,160,70,.12), inset 0 1px 0 rgba(60,180,80,.06); }
     [data-theme="dark"] .step-card:hover {
-      box-shadow: 0 4px 18px rgba(59,130,246,.15),
-                  0 8px 28px rgba(0,0,0,.3);
+      box-shadow: 0 4px 16px rgba(59,130,246,.15),
+                  0 12px 40px rgba(0,0,0,.4),
+                  inset 0 1px 0 rgba(255,255,255,.06);
     }
     /* icon tints per step */
     .step-card:nth-child(1) .step-phone { background: #f0cbc9; box-shadow: inset 4px 4px 10px rgba(180,110,105,.45), inset -4px -4px 10px rgba(255,240,238,.9); }
@@ -858,13 +866,17 @@
       transform: translateY(-4px);
     }
     [data-theme="dark"] .pay-card {
-      background: #151e28;
-      box-shadow: 0 2px 10px rgba(0,0,0,.3),
-                  0 8px 24px rgba(0,0,0,.2);
+      background: linear-gradient(145deg, #1a2435, #131c2a);
+      border: 1px solid rgba(59,130,246,.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,.4),
+                  0 8px 32px rgba(0,0,0,.3),
+                  inset 0 1px 0 rgba(255,255,255,.04);
     }
     [data-theme="dark"] .pay-card:hover {
-      box-shadow: 0 4px 18px rgba(59,130,246,.2),
-                  0 8px 28px rgba(0,0,0,.3);
+      border-color: rgba(59,130,246,.15);
+      box-shadow: 0 4px 16px rgba(59,130,246,.15),
+                  0 12px 40px rgba(0,0,0,.4),
+                  inset 0 1px 0 rgba(255,255,255,.06);
     }
     .pay-card__icon {
       width: 54px; height: 54px; border-radius: 16px;
@@ -1020,13 +1032,17 @@
       transform: translateY(-4px);
     }
     [data-theme="dark"] .adv-card {
-      background: #151e28;
-      box-shadow: 0 2px 10px rgba(0,0,0,.3),
-                  0 8px 24px rgba(0,0,0,.2);
+      background: linear-gradient(145deg, #1a2435, #131c2a);
+      border: 1px solid rgba(59,130,246,.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,.4),
+                  0 8px 32px rgba(0,0,0,.3),
+                  inset 0 1px 0 rgba(255,255,255,.04);
     }
     [data-theme="dark"] .adv-card:hover {
-      box-shadow: 0 4px 18px rgba(59,130,246,.2),
-                  0 8px 28px rgba(0,0,0,.3);
+      border-color: rgba(59,130,246,.15);
+      box-shadow: 0 4px 16px rgba(59,130,246,.15),
+                  0 12px 40px rgba(0,0,0,.4),
+                  inset 0 1px 0 rgba(255,255,255,.06);
     }
     .adv-card--featured {
       background: linear-gradient(135deg,#1D4ED8,#3B82F6);
@@ -1074,13 +1090,17 @@
                   -6px -6px 14px rgba(255,255,255,.95);
     }
     [data-theme="dark"] .ach-card {
-      background: #151e28;
-      box-shadow: 0 2px 10px rgba(0,0,0,.3),
-                  0 8px 24px rgba(0,0,0,.2);
+      background: linear-gradient(145deg, #1a2435, #131c2a);
+      border: 1px solid rgba(59,130,246,.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,.4),
+                  0 8px 32px rgba(0,0,0,.3),
+                  inset 0 1px 0 rgba(255,255,255,.04);
     }
     [data-theme="dark"] .ach-card:hover {
-      box-shadow: 0 4px 18px rgba(59,130,246,.2),
-                  0 8px 28px rgba(0,0,0,.3);
+      border-color: rgba(59,130,246,.15);
+      box-shadow: 0 4px 16px rgba(59,130,246,.15),
+                  0 12px 40px rgba(0,0,0,.4),
+                  inset 0 1px 0 rgba(255,255,255,.06);
     }
     .ach-icon {
       width: 52px; height: 52px; border-radius: 16px;
@@ -1119,13 +1139,17 @@
       transform: translateY(-4px);
     }
     [data-theme="dark"] .review-card {
-      background: #151e28;
-      box-shadow: 0 2px 10px rgba(0,0,0,.3),
-                  0 8px 24px rgba(0,0,0,.2);
+      background: linear-gradient(145deg, #1a2435, #131c2a);
+      border: 1px solid rgba(59,130,246,.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,.4),
+                  0 8px 32px rgba(0,0,0,.3),
+                  inset 0 1px 0 rgba(255,255,255,.04);
     }
     [data-theme="dark"] .review-card:hover {
-      box-shadow: 0 4px 18px rgba(59,130,246,.2),
-                  0 8px 28px rgba(0,0,0,.3);
+      border-color: rgba(59,130,246,.15);
+      box-shadow: 0 4px 16px rgba(59,130,246,.15),
+                  0 12px 40px rgba(0,0,0,.4),
+                  inset 0 1px 0 rgba(255,255,255,.06);
     }
     .review-stars { font-size: 14px; color: var(--yellow); margin-bottom: 12px; }
     .review-text { font-size: 14px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 16px; }
@@ -1157,13 +1181,17 @@
       transform: translateY(-4px);
     }
     [data-theme="dark"] .ref-card {
-      background: #151e28;
-      box-shadow: 0 2px 10px rgba(0,0,0,.3),
-                  0 8px 24px rgba(0,0,0,.2);
+      background: linear-gradient(145deg, #1a2435, #131c2a);
+      border: 1px solid rgba(59,130,246,.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,.4),
+                  0 8px 32px rgba(0,0,0,.3),
+                  inset 0 1px 0 rgba(255,255,255,.04);
     }
     [data-theme="dark"] .ref-card:hover {
-      box-shadow: 0 4px 18px rgba(59,130,246,.2),
-                  0 8px 28px rgba(0,0,0,.3);
+      border-color: rgba(59,130,246,.15);
+      box-shadow: 0 4px 16px rgba(59,130,246,.15),
+                  0 12px 40px rgba(0,0,0,.4),
+                  inset 0 1px 0 rgba(255,255,255,.06);
     }
     .ref-num { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
     .ref-icon {
@@ -3003,12 +3031,13 @@ function vcpUpdateBal(amount, color) {
     comet.style.left = sx + 'px';
     comet.style.top = sy + 'px';
     // tail points AWAY from target (opposite of flight direction)
+    // tail-angle rotates entire body so tail (right side) points away from target
     var tailAngle = angle + 180;
     comet.innerHTML =
-      '<div class="comet__body">' +
-        '<div class="comet__head">₮</div>' +
-        '<div class="comet__tail" style="--tail-angle:' + tailAngle + 'deg"></div>' +
-        '<div class="comet__tail2" style="--tail-angle:' + tailAngle + 'deg"></div>' +
+      '<div class="comet__body" style="--tail-angle:' + tailAngle + 'deg">' +
+        '<div class="comet__head"><span>₮</span></div>' +
+        '<div class="comet__tail"></div>' +
+        '<div class="comet__tail2"></div>' +
       '</div>';
     wrap.appendChild(comet);
 
