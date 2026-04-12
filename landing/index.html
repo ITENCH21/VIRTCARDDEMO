@@ -539,6 +539,37 @@
       text-align: center;
     }
 
+    /* Phone transaction feed */
+    .phone__txfeed {
+      margin-top: 8px;
+      display: flex; flex-direction: column; gap: 4px;
+      overflow: hidden;
+      max-height: 100px;
+    }
+    .phone__tx {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 5px 8px; border-radius: 8px;
+      background: rgba(255,255,255,.06);
+      font-size: 8px; color: rgba(255,255,255,.7);
+      animation: txSlideIn .4s ease-out;
+      flex-shrink: 0;
+    }
+    .phone__tx-left { display: flex; align-items: center; gap: 5px; }
+    .phone__tx-dot {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+    }
+    .phone__tx-dot--green { background: #10B981; box-shadow: 0 0 4px rgba(16,185,129,.5); }
+    .phone__tx-dot--red { background: #EF4444; box-shadow: 0 0 4px rgba(239,68,68,.5); }
+    .phone__tx-name { font-weight: 600; color: rgba(255,255,255,.85); }
+    .phone__tx-time { color: rgba(255,255,255,.35); }
+    .phone__tx-amount { font-weight: 700; }
+    .phone__tx-amount--green { color: #34D399; }
+    .phone__tx-amount--red { color: #F87171; }
+    @keyframes txSlideIn {
+      0% { opacity: 0; transform: translateY(-12px); max-height: 0; padding: 0 8px; }
+      100% { opacity: 1; transform: translateY(0); max-height: 30px; padding: 5px 8px; }
+    }
+
     /* Floating badges around phone */
     .float-badge {
       position: absolute; background: var(--bg-card); border: 1px solid var(--border);
@@ -1631,6 +1662,8 @@
             <div class="phone__action-btn" data-i18n="phone.transfer">Перевод</div>
             <div class="phone__action-btn" data-i18n="phone.history">История</div>
           </div>
+          <!-- Live transaction feed -->
+          <div class="phone__txfeed" id="phoneTxFeed"></div>
         </div>
       </div>
       </div><!-- /orbit-wrap -->
@@ -2890,6 +2923,36 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ── Shared balance state with wave control ── */
 var vcpBalance = 847.20;
 var vcpBalEl = document.querySelector('.phone__balance');
+var vcpTxFeed = document.getElementById('phoneTxFeed');
+var vcpMaxTx = 4; // max visible transactions
+
+function vcpAddTx(name, amount, type) {
+  if (!vcpTxFeed) return;
+  var isGreen = type === 'income';
+  var dotClass = isGreen ? 'phone__tx-dot--green' : 'phone__tx-dot--red';
+  var amtClass = isGreen ? 'phone__tx-amount--green' : 'phone__tx-amount--red';
+  var sign = isGreen ? '+' : '−';
+  var now = new Date();
+  var time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+
+  var tx = document.createElement('div');
+  tx.className = 'phone__tx';
+  tx.innerHTML =
+    '<div class="phone__tx-left">' +
+      '<div class="phone__tx-dot ' + dotClass + '"></div>' +
+      '<span class="phone__tx-name">' + name + '</span>' +
+      '<span class="phone__tx-time">' + time + '</span>' +
+    '</div>' +
+    '<span class="phone__tx-amount ' + amtClass + '">' + sign + '$' + Math.abs(amount).toFixed(2) + '</span>';
+
+  // insert at top
+  vcpTxFeed.insertBefore(tx, vcpTxFeed.firstChild);
+
+  // remove excess
+  while (vcpTxFeed.children.length > vcpMaxTx) {
+    vcpTxFeed.removeChild(vcpTxFeed.lastChild);
+  }
+}
 var vcpStart = Date.now();
 var vcpMin = 549, vcpMax = 1953, vcpMid = (549 + 1953) / 2; // 1251
 var vcpCycle = 10 * 60 * 1000; // 10 min full cycle
@@ -2986,6 +3049,7 @@ function vcpUpdateBal(amount, color) {
       '<div class="pay-fly__sum">' + p.name + ' — ' + sum + '</div></div>';
     zone.appendChild(el);
     vcpUpdateBal(-deduct, 'red');
+    vcpAddTx(p.name, deduct, 'spend');
     setTimeout(function() { el.remove(); }, 3800);
   }
   setTimeout(function() {
@@ -3064,6 +3128,7 @@ function vcpUpdateBal(amount, color) {
 
       // bump balance up
       vcpUpdateBal(amt, 'green');
+      vcpAddTx('USDT', amt, 'income');
     }, dur - 50);
   }
 
