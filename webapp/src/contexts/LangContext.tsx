@@ -78,6 +78,8 @@ const T = {
     card_status_closed: 'Карта закрыта',
     card_hide: 'Скрыть',
     card_tap_to_flip: 'Нажмите, чтобы перевернуть',
+    copy_number: 'Копировать номер',
+    copied: 'Скопировано!',
     // CardsPage
     filter_active: 'Активные',
     filter_frozen: 'Замороженные',
@@ -333,6 +335,8 @@ const T = {
     card_status_closed: 'Closed',
     card_hide: 'Hide',
     card_tap_to_flip: 'Tap to flip',
+    copy_number: 'Copy number',
+    copied: 'Copied!',
     // CardsPage
     filter_active: 'Active',
     filter_frozen: 'Frozen',

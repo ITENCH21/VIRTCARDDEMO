@@ -257,7 +257,13 @@ export default function VirtualCard({ name, last4, balance, currencySymbol, curr
           zIndex: 10,
         }}>
           <div style={{ width: 28, height: 28, border: '3px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <style>{`
+            @keyframes spin { to { transform: rotate(360deg); } }
+            .card-copy-btn:active {
+              transform: scale(0.93);
+              background: rgba(255,255,255,0.25) !important;
+            }
+          `}</style>
         </div>
       )}
     </div>
@@ -294,31 +300,18 @@ export default function VirtualCard({ name, last4, balance, currencySymbol, curr
         pointerEvents: 'none',
       }} />
 
-      {/* Card details — clicks here do NOT flip the card */}
-      <div onClick={(e) => e.stopPropagation()} style={{ marginTop: 56, position: 'relative', zIndex: 1 }}>
+      {/* Card details */}
+      <div style={{ marginTop: 56, position: 'relative', zIndex: 1 }}>
         {/* Card number */}
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 10, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: 1, marginBottom: 4 }}>
             {t('card_number_label')}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              fontSize: 17, fontWeight: 600, color: '#fff',
-              letterSpacing: 2.5, fontFamily: "'SF Mono','Menlo',monospace",
-            }}>
-              {sensitive ? formatCardNumber(sensitive.card_number) : ''}
-            </div>
-            {sensitive && (
-              <button
-                onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleCopy(sensitive.card_number, 'number'); }}
-                style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', padding: 8, borderRadius: 8, display: 'flex' }}
-              >
-                {copied === 'number'
-                  ? <CheckIcon size={14} style={{ color: '#10b981' }} />
-                  : <CopyIcon size={14} style={{ color: 'rgba(255,255,255,0.6)' }} />
-                }
-              </button>
-            )}
+          <div style={{
+            fontSize: 17, fontWeight: 600, color: '#fff',
+            letterSpacing: 2.5, fontFamily: "'SF Mono','Menlo',monospace",
+          }}>
+            {sensitive ? formatCardNumber(sensitive.card_number) : ''}
           </div>
         </div>
 
@@ -336,31 +329,42 @@ export default function VirtualCard({ name, last4, balance, currencySymbol, curr
             <div style={{ fontSize: 10, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: 1, marginBottom: 4 }}>
               CVV
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', fontFamily: "'SF Mono','Menlo',monospace" }}>
-                {sensitive?.cvv || ''}
-              </div>
-              {sensitive && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleCopy(sensitive.cvv, 'cvv'); }}
-                  style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', padding: 8, borderRadius: 8, display: 'flex' }}
-                >
-                  {copied === 'cvv'
-                    ? <CheckIcon size={14} style={{ color: '#10b981' }} />
-                    : <CopyIcon size={14} style={{ color: 'rgba(255,255,255,0.6)' }} />
-                  }
-                </button>
-              )}
+            <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', fontFamily: "'SF Mono','Menlo',monospace" }}>
+              {sensitive?.cvv || ''}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom hint */}
-      <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
-        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: 0.5 }}>
-          {t('card_tap_to_flip') || 'Tap to flip'}
-        </div>
+      {/* Copy button — stops propagation, doesn't flip */}
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center' }}>
+        {sensitive && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              handleCopy(sensitive.card_number, 'number');
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            className="card-copy-btn"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              padding: '8px 20px', borderRadius: 10,
+              background: 'rgba(255,255,255,0.15)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              color: '#fff', fontSize: 12, fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            {copied === 'number'
+              ? <><CheckIcon size={14} style={{ color: '#10b981' }} /> {t('copied') || 'Copied!'}</>
+              : <><CopyIcon size={14} /> {t('copy_number') || 'Copy number'}</>
+            }
+          </button>
+        )}
       </div>
     </div>
   );
