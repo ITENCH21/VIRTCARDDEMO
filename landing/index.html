@@ -1316,26 +1316,75 @@
     /* =========================================================
        FAQ
     ========================================================= */
-    .faq-list { display: flex; flex-direction: column; gap: 8px; }
+    .faq-list { display: flex; flex-direction: column; gap: 12px; counter-reset: faq-counter; }
     .faq-item {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 12px; overflow: hidden;
+      background: #e8ecf1;
+      border: none; border-radius: 18px; overflow: hidden;
+      box-shadow: 6px 6px 16px rgba(163,177,198,.45),
+                  -6px -6px 16px rgba(255,255,255,.85);
+      transition: all var(--transition);
+      counter-increment: faq-counter;
+    }
+    .faq-item:hover {
+      box-shadow: 4px 4px 12px rgba(59,130,246,.15),
+                  -4px -4px 12px rgba(255,255,255,.9);
+    }
+    .faq-item.open {
+      border-left: 3px solid var(--blue);
+      box-shadow: 6px 6px 20px rgba(59,130,246,.12),
+                  -4px -4px 14px rgba(255,255,255,.85);
+    }
+    [data-theme="dark"] .faq-item {
+      background: linear-gradient(145deg, #1a2435, #131c2a);
+      border: 1px solid rgba(59,130,246,.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,.4),
+                  0 8px 32px rgba(0,0,0,.3),
+                  inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    [data-theme="dark"] .faq-item:hover {
+      border-color: rgba(59,130,246,.15);
+      box-shadow: 0 4px 16px rgba(59,130,246,.12),
+                  0 8px 32px rgba(0,0,0,.3);
+    }
+    [data-theme="dark"] .faq-item.open {
+      border-left: 3px solid var(--blue);
     }
     .faq-q {
-      width: 100%; padding: 20px 24px;
-      display: flex; justify-content: space-between; align-items: center; gap: 16px;
+      width: 100%; padding: 22px 24px;
+      display: flex; align-items: center; gap: 16px;
       background: none; border: none; color: var(--text-primary);
-      font-size: 15px; font-weight: 600; text-align: left; cursor: pointer;
-      transition: background var(--transition);
+      font-size: 15px; font-weight: 700; text-align: left; cursor: pointer;
+      transition: all var(--transition);
     }
-    .faq-q:hover { background: var(--bg-secondary); }
-    .faq-arrow { font-size: 18px; color: var(--text-muted); flex-shrink: 0; transition: transform .3s ease; }
-    .faq-item.open .faq-arrow { transform: rotate(180deg); }
-    .faq-a { max-height: 0; overflow: hidden; transition: max-height .35s ease; }
+    .faq-q::before {
+      content: counter(faq-counter, decimal-leading-zero);
+      font-size: 12px; font-weight: 800; color: var(--blue);
+      background: rgba(59,130,246,.1);
+      padding: 4px 10px; border-radius: 8px; flex-shrink: 0;
+      min-width: 32px; text-align: center;
+    }
+    [data-theme="dark"] .faq-q::before {
+      background: rgba(59,130,246,.15);
+    }
+    .faq-q:hover { opacity: .85; }
+    .faq-arrow {
+      font-size: 12px; color: var(--blue); flex-shrink: 0;
+      margin-left: auto;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(59,130,246,.08);
+      display: flex; align-items: center; justify-content: center;
+      transition: all .3s ease;
+    }
+    [data-theme="dark"] .faq-arrow { background: rgba(59,130,246,.15); }
+    .faq-item.open .faq-arrow {
+      transform: rotate(180deg);
+      background: var(--blue); color: white;
+    }
+    .faq-a { max-height: 0; overflow: hidden; transition: max-height .4s cubic-bezier(.4,0,.2,1); }
     .faq-item.open .faq-a { max-height: 400px; }
     .faq-a-inner {
-      padding: 0 24px 20px;
-      font-size: 14px; color: var(--text-secondary); line-height: 1.75;
+      padding: 0 24px 22px 70px;
+      font-size: 14px; color: var(--text-secondary); line-height: 1.8;
     }
 
     /* =========================================================
@@ -2455,7 +2504,7 @@
       <div class="faq-item">
         <button class="faq-q">
           <span data-i18n="faq1.q">Как пополнить карту через USDT?</span>
-          <span class="faq-arrow">▼</span>
+          <span class="faq-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
         </button>
         <div class="faq-a"><div class="faq-a-inner" data-i18n="faq1.a">
           В боте @VirtCardPay_bot перейдите в раздел «Пополнить» и выберите «USDT». Вы получите персональный адрес кошелька (TRC-20 или ERC-20). Отправьте USDT на этот адрес — средства зачислятся на баланс карты в течение 1–5 минут после подтверждения в сети.
@@ -2465,7 +2514,7 @@
       <div class="faq-item">
         <button class="faq-q">
           <span data-i18n="faq2.q">Когда появится пополнение рублями?</span>
-          <span class="faq-arrow">▼</span>
+          <span class="faq-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
         </button>
         <div class="faq-a"><div class="faq-a-inner" data-i18n="faq2.a">
           Пополнение рублями через банковский перевод находится в разработке и появится в ближайшее время. Следите за обновлениями в нашем Telegram-канале. Подпишитесь, чтобы не пропустить анонс.
@@ -2475,7 +2524,7 @@
       <div class="faq-item">
         <button class="faq-q">
           <span data-i18n="faq3.q">Карта настоящая или виртуальная?</span>
-          <span class="faq-arrow">▼</span>
+          <span class="faq-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
         </button>
         <div class="faq-a"><div class="faq-a-inner" data-i18n="faq3.a">
           VirtCardPay выпускает виртуальные карты Visa и Mastercard с полными реквизитами: номер, CVV, срок действия. Карту можно привязать к Apple Pay и Google Pay для бесконтактной оплаты. Физическую карту не выдаём.
@@ -2485,7 +2534,7 @@
       <div class="faq-item">
         <button class="faq-q">
           <span data-i18n="faq4.q">Безопасно ли это?</span>
-          <span class="faq-arrow">▼</span>
+          <span class="faq-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
         </button>
         <div class="faq-a"><div class="faq-a-inner" data-i18n="faq4.a">
           Да. Все транзакции защищены протоколом 3D Secure. Реквизиты карты хранятся в зашифрованном виде. Мы не передаём данные третьим лицам и работаем в соответствии с PCI DSS стандартами безопасности.
@@ -2495,7 +2544,7 @@
       <div class="faq-item">
         <button class="faq-q">
           <span data-i18n="faq5.q">Где работает карта?</span>
-          <span class="faq-arrow">▼</span>
+          <span class="faq-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
         </button>
         <div class="faq-a"><div class="faq-a-inner" data-i18n="faq5.a">
           Карты VirtCardPay принимаются в более чем 200 странах на всех сайтах и платформах, поддерживающих Visa или Mastercard. Netflix, Spotify, ChatGPT, Amazon, Booking, Airbnb — всё доступно без ограничений.
@@ -2505,7 +2554,7 @@
       <div class="faq-item">
         <button class="faq-q">
           <span data-i18n="faq6.q">Какая минимальная сумма пополнения?</span>
-          <span class="faq-arrow">▼</span>
+          <span class="faq-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
         </button>
         <div class="faq-a"><div class="faq-a-inner" data-i18n="faq6.a">
           Минимальная сумма пополнения через USDT — $10. Максимальная сумма зависит от тарифного плана: Subscription — до $1,000 в месяц, Travel — до $5,000, Premium — до $20,000.
@@ -2515,7 +2564,7 @@
       <div class="faq-item">
         <button class="faq-q">
           <span data-i18n="faq7.q">Как связаться с поддержкой?</span>
-          <span class="faq-arrow">▼</span>
+          <span class="faq-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
         </button>
         <div class="faq-a"><div class="faq-a-inner" data-i18n="faq7.a">
           Напишите нам прямо в Telegram: @virtcardpay_support. Поддержка работает 24/7. Среднее время ответа — до 5 минут. Для держателей Apple/Google Pay карт — приоритетная поддержка.
@@ -2525,7 +2574,7 @@
       <div class="faq-item">
         <button class="faq-q">
           <span data-i18n="faq8.q">Для чего подходит карта Стандарт?</span>
-          <span class="faq-arrow">▼</span>
+          <span class="faq-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
         </button>
         <div class="faq-a"><div class="faq-a-inner" data-i18n="faq8.a">
           USD-карта Стандарт подходит для оплаты онлайн-сервисов: рекламы, доменов, хостинга, подписок и игр. EUR-карта без ограничений — включая такси и интернет-магазины с физическими товарами.
@@ -2535,7 +2584,7 @@
       <div class="faq-item">
         <button class="faq-q">
           <span data-i18n="faq9.q">Чем Apple/Google Pay карта отличается от Стандарт?</span>
-          <span class="faq-arrow">▼</span>
+          <span class="faq-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
         </button>
         <div class="faq-a"><div class="faq-a-inner" data-i18n="faq9.a">
           Apple/Google Pay карта поддерживает бесконтактную оплату в офлайн-магазинах через Apple Wallet и Google Wallet. Минимальный порог пополнения ниже ($50 против $100), стоимость открытия выше ($15 против $6). Подходит для повседневного использования.
@@ -2545,7 +2594,7 @@
       <div class="faq-item">
         <button class="faq-q">
           <span data-i18n="faq10.q">Какие BIN используются для карт?</span>
-          <span class="faq-arrow">▼</span>
+          <span class="faq-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
         </button>
         <div class="faq-a"><div class="faq-a-inner" data-i18n="faq10.a">
           USD VISA (Стандарт): BIN 474362 — UK. EUR Mastercard: BIN 519759 — UK. Apple/Google Pay: Mastercard BIN 519759 — UK. Все карты выпущены на базе UK-эмитента и принимаются по всему миру.
