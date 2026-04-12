@@ -73,6 +73,7 @@ input, select {
 .bg-mesh {
   position: fixed; inset: 0; z-index: 0;
   pointer-events: none; overflow: hidden;
+  background: var(--bg-primary);
 }
 .bg-mesh::before {
   content: '';
@@ -112,6 +113,139 @@ input, select {
   animation: fadeSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Desktop: remove mobile constraint inside LK shell */
+.lk-content .page {
+  max-width: none;
+  padding: 0 0 40px;
+}
+
+/* Mobile TG app: force narrow layout, hide desktop-only elements */
+.app-shell .page {
+  max-width: 520px;
+  padding: 0 20px 100px;
+}
+.app-shell .page-narrow,
+.app-shell .page-wide {
+  max-width: none;
+}
+.app-shell .desktop-ops-table,
+.app-shell .history-desktop-table,
+.app-shell .desktop-table { display: none; }
+.app-shell .mobile-ops-list,
+.app-shell .history-mobile-list { display: block !important; }
+.app-shell .cards-grid {
+  grid-template-columns: 1fr;
+}
+.app-shell .profile-grid,
+.app-shell .card-detail-grid,
+.app-shell .issue-cards-grid,
+.app-shell .tariffs-grid,
+.app-shell .support-grid,
+.app-shell .faq-grid {
+  grid-template-columns: 1fr !important;
+  flex-direction: column !important;
+}
+
+/* ═══════════════════════════════════════════
+   DESKTOP LAYOUT UTILITIES
+   ═══════════════════════════════════════════ */
+.desktop-grid {
+  display: grid;
+  gap: 24px;
+}
+.desktop-grid-2 { grid-template-columns: 1fr 1fr; }
+.desktop-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+.desktop-grid-4 { grid-template-columns: repeat(4, 1fr); }
+.desktop-grid-sidebar { grid-template-columns: 1fr 360px; }
+
+@media (max-width: 768px) {
+  .desktop-grid-2,
+  .desktop-grid-3,
+  .desktop-grid-4,
+  .desktop-grid-sidebar { grid-template-columns: 1fr; }
+}
+
+/* Desktop table */
+.desktop-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.desktop-table thead th {
+  padding: 14px 18px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+}
+.desktop-table tbody td {
+  padding: 16px 18px;
+  font-size: 13px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--tx-border);
+  transition: background 0.15s ease;
+}
+.desktop-table tbody tr:last-child td { border-bottom: none; }
+.desktop-table tbody tr:hover td { background: var(--bg-card-hover); }
+
+/* Stat widget */
+.stat-widget {
+  background: var(--bg-input);
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-inset);
+  transition: var(--transition-normal);
+}
+.stat-widget:hover { box-shadow: var(--shadow-inset); }
+.stat-widget-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.stat-widget-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+.stat-widget-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* Desktop card grid for VirtualCards */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+}
+@media (max-width: 768px) {
+  .cards-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Page width constraints ── */
+.page-narrow { max-width: 640px; margin: 0 auto; }
+.page-wide { max-width: 960px; margin: 0 auto; }
+
+/* Legacy aliases */
+.desktop-form { max-width: 640px; }
+.desktop-form-wide { max-width: 720px; }
+.desktop-form-centered { max-width: 640px; margin: 0 auto; }
+
 .page-title {
   font-size: 24px;
   font-weight: 700;
@@ -125,25 +259,25 @@ input, select {
 }
 
 /* ═══════════════════════════════════════════
-   GLASSMORPHISM CARDS
+   NEUMORPHIC CARDS
    ═══════════════════════════════════════════ */
 .glass-card {
-  background: var(--bg-glass);
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-glass);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg); padding: 20px;
+  box-shadow: var(--shadow-card);
   transition: var(--transition-normal);
 }
-.glass-card:hover { background: var(--bg-glass-hover); border-color: var(--border-glass-active); }
+.glass-card:hover { box-shadow: var(--shadow-card-hover); border-color: var(--border-active); }
 
 /* Legacy .card alias */
 .card {
-  background: var(--bg-glass);
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-glass);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 16px;
   margin-bottom: 12px;
+  box-shadow: var(--shadow-card);
 }
 
 /* ═══════════════════════════════════════════
@@ -168,9 +302,9 @@ input, select {
 .btn-primary:hover { box-shadow: 0 6px 24px rgba(59,130,246,0.4); }
 
 .btn-secondary {
-  background: var(--bg-glass); border: 1px solid var(--border-glass);
+  background: var(--bg-card); border: 1px solid var(--border);
   color: var(--text-primary);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-danger {
@@ -207,14 +341,14 @@ input, select {
 .input-group input,
 .form-input {
   width: 100%; padding: 14px 16px;
-  background: var(--bg-glass); border: 1px solid var(--border-glass);
+  background: var(--bg-input); border: none;
   border-radius: var(--radius-md); color: var(--text-primary);
   font-size: 15px; outline: none; transition: var(--transition-fast);
+  box-shadow: var(--shadow-inset);
 }
 .input-group input:focus,
 .form-input:focus {
-  border-color: var(--accent-1);
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+  box-shadow: var(--shadow-inset), 0 0 0 2px rgba(59,130,246,0.15);
 }
 .input-group input::placeholder,
 .form-input::placeholder { color: var(--text-muted); }
@@ -223,14 +357,15 @@ input, select {
 
 .form-select {
   width: 100%; padding: 14px 16px;
-  background: var(--bg-glass); border: 1px solid var(--border-glass);
+  background: var(--bg-input); border: none;
   border-radius: var(--radius-md); color: var(--text-primary);
   font-size: 15px; outline: none; appearance: none; -webkit-appearance: none;
+  box-shadow: var(--shadow-inset);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 14px center;
   cursor: pointer; transition: var(--transition-fast);
 }
-.form-select:focus { border-color: var(--accent-1); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.form-select:focus { box-shadow: var(--shadow-inset), 0 0 0 2px rgba(59,130,246,0.15); }
 .form-select option { background: var(--bg-secondary); color: var(--text-primary); }
 
 /* ═══════════════════════════════════════════
@@ -329,10 +464,4 @@ input, select {
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
-/* ═══════════════════════════════════════════
-   BACKDROP-FILTER FALLBACK
-   ═══════════════════════════════════════════ */
-@supports not (backdrop-filter: blur(1px)) {
-  .glass-card, .card { background: var(--bg-secondary); }
-  .btn-secondary { background: var(--bg-secondary); }
-}
+/* chipSheen defined inline in VirtualCard.tsx (uses transform) */

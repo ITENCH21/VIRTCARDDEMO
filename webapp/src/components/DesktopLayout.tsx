@@ -34,14 +34,14 @@ export default function DesktopLayout({ children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navItems = [
-    { path: '/', label: t('nav_home'), Icon: HomeIcon },
-    { path: '/cards', label: t('nav_cards'), Icon: CreditCardIcon },
-    { path: '/deposit', label: t('action_deposit'), Icon: ArrowDownIcon },
-    { path: '/withdraw', label: t('action_withdraw'), Icon: ArrowUpIcon },
-    { path: '/history', label: t('nav_history'), Icon: ClockIcon },
-    { path: '/services', label: t('nav_services'), Icon: GridIcon },
-    { path: '/tariffs', label: t('title_tariffs'), Icon: TrendingUpIcon },
-    { path: '/support', label: t('title_support'), Icon: MessageIcon },
+    { path: '/', label: t('nav_home'), Icon: HomeIcon, color: '#3b82f6' },
+    { path: '/cards', label: t('nav_cards'), Icon: CreditCardIcon, color: '#06b6d4' },
+    { path: '/deposit', label: t('action_deposit'), Icon: ArrowDownIcon, color: '#10b981' },
+    { path: '/withdraw', label: t('action_withdraw'), Icon: ArrowUpIcon, color: '#ef4444' },
+    { path: '/history', label: t('nav_history'), Icon: ClockIcon, color: '#f59e0b' },
+    { path: '/services', label: t('nav_services'), Icon: GridIcon, color: '#8b5cf6' },
+    { path: '/tariffs', label: t('title_tariffs'), Icon: TrendingUpIcon, color: '#6366f1' },
+    { path: '/support', label: t('title_support'), Icon: MessageIcon, color: '#2AABEE' },
   ];
 
   const routeKeys: Record<string, Parameters<typeof t>[0]> = {
@@ -115,16 +115,25 @@ export default function DesktopLayout({ children }: Props) {
 
         {/* Navigation */}
         <nav className="lk-sidebar-nav">
-          {navItems.map((item) => (
-            <button
-              key={item.path}
-              className={`lk-sidebar-item ${isActive(item.path) ? 'active' : ''}`}
-              onClick={() => handleNav(item.path)}
-            >
-              <item.Icon size={20} />
-              <span>{item.label}</span>
-            </button>
-          ))}
+          {navItems.map((item) => {
+            const active = isActive(item.path);
+            return (
+              <button
+                key={item.path}
+                className={`lk-sidebar-item ${active ? 'active' : ''}`}
+                onClick={() => handleNav(item.path)}
+                style={active ? {
+                  background: `linear-gradient(135deg, ${item.color}, ${item.color}dd)`,
+                  boxShadow: `0 4px 16px ${item.color}40`,
+                } : undefined}
+              >
+                <span className="lk-sidebar-icon-wrap" style={{ background: active ? 'rgba(255,255,255,0.2)' : `${item.color}18` }}>
+                  <item.Icon size={18} style={{ color: active ? '#fff' : item.color }} />
+                </span>
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
         </nav>
 
         {/* Bottom section */}
@@ -132,12 +141,20 @@ export default function DesktopLayout({ children }: Props) {
           <button
             className={`lk-sidebar-item ${isActive('/profile') ? 'active' : ''}`}
             onClick={() => handleNav('/profile')}
+            style={isActive('/profile') ? {
+              background: 'linear-gradient(135deg, #64748b, #64748bdd)',
+              boxShadow: '0 4px 16px rgba(100,116,139,0.25)',
+            } : undefined}
           >
-            <UserIcon size={20} />
+            <span className="lk-sidebar-icon-wrap" style={{ background: isActive('/profile') ? 'rgba(255,255,255,0.2)' : 'rgba(100,116,139,0.1)' }}>
+              <UserIcon size={18} style={{ color: isActive('/profile') ? '#fff' : '#64748b' }} />
+            </span>
             <span>{lang === 'ru' ? 'Настройки' : 'Settings'}</span>
           </button>
           <button className="lk-sidebar-item lk-sidebar-logout" onClick={handleLogout}>
-            <LogOutIcon size={20} />
+            <span className="lk-sidebar-icon-wrap" style={{ background: 'rgba(239,68,68,0.1)' }}>
+              <LogOutIcon size={18} style={{ color: '#ef4444' }} />
+            </span>
             <span>{t('logout')}</span>
           </button>
         </div>
@@ -147,7 +164,7 @@ export default function DesktopLayout({ children }: Props) {
       <div className="lk-main">
         {/* Top bar */}
         <header className="lk-topbar">
-          <div className="lk-topbar-left" style={location.pathname === '/' ? { gap: 2 } : undefined}>
+          <div className="lk-topbar-left">
             <button
               className="lk-hamburger"
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -157,16 +174,7 @@ export default function DesktopLayout({ children }: Props) {
               <span />
               <span />
             </button>
-            {location.pathname === '/' ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>
-                <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
-                  <path d="M19 9H3M3 9L8 3M3 9L8 15" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                {lang === 'ru' ? 'Меню' : 'Menu'}
-              </div>
-            ) : (
-              <h1 className="lk-topbar-title">{title}</h1>
-            )}
+            <h1 className="lk-topbar-title">{title}</h1>
           </div>
 
           <div className="lk-topbar-right">
@@ -210,7 +218,8 @@ export default function DesktopLayout({ children }: Props) {
            ═══════════════════════════════════════════ */
         .lk-shell {
           display: flex;
-          min-height: 100vh;
+          height: 100vh;
+          overflow: hidden;
           position: relative;
           z-index: 1;
         }
@@ -221,16 +230,15 @@ export default function DesktopLayout({ children }: Props) {
           flex-shrink: 0;
           display: flex;
           flex-direction: column;
-          background: var(--bg-glass);
-          backdrop-filter: blur(24px);
-          -webkit-backdrop-filter: blur(24px);
-          border-right: 1px solid var(--border-glass);
-          padding: 24px 12px;
-          position: sticky;
-          top: 0;
-          height: 100vh;
+          background: var(--bg-card);
+          border-right: none;
+          padding: 16px 12px;
+          margin: 16px 0 16px 16px;
+          border-radius: var(--radius-xl);
+          box-shadow: var(--shadow-card);
+          height: calc(100vh - 32px);
           overflow-y: auto;
-          transition: background 0.3s ease, border-color 0.3s ease;
+          transition: background 0.3s ease, box-shadow 0.3s ease;
           z-index: 300;
         }
 
@@ -260,7 +268,7 @@ export default function DesktopLayout({ children }: Props) {
           flex: 1;
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          gap: 6px;
         }
 
         .lk-sidebar-item {
@@ -272,33 +280,42 @@ export default function DesktopLayout({ children }: Props) {
           font-size: 14px;
           font-weight: 500;
           color: var(--text-secondary);
-          background: transparent;
+          background: var(--bg-input);
           border: none;
           border-radius: 12px;
           cursor: pointer;
           transition: all 0.2s ease;
           text-align: left;
+          box-shadow: var(--shadow-inset);
         }
         .lk-sidebar-item:hover {
-          background: var(--bg-glass-hover);
           color: var(--text-primary);
         }
         .lk-sidebar-item.active {
-          background: var(--accent-gradient);
           color: #fff;
-          box-shadow: 0 4px 16px rgba(59,130,246,0.25);
         }
         .lk-sidebar-item.active svg {
           color: #fff;
         }
 
+        .lk-sidebar-icon-wrap {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: background 0.2s ease;
+        }
+
         .lk-sidebar-bottom {
-          border-top: 1px solid var(--border-glass);
+          border-top: 1px solid var(--border);
           padding-top: 12px;
           margin-top: 12px;
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          gap: 6px;
         }
 
         .lk-sidebar-logout {
@@ -325,7 +342,8 @@ export default function DesktopLayout({ children }: Props) {
           display: flex;
           flex-direction: column;
           min-width: 0;
-          min-height: 100vh;
+          height: 100vh;
+          overflow-y: auto;
         }
 
         /* Top bar */
@@ -337,10 +355,8 @@ export default function DesktopLayout({ children }: Props) {
           position: sticky;
           top: 0;
           z-index: 100;
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
           background: var(--header-bg);
-          border-bottom: 1px solid var(--border-glass);
+          border-bottom: 1px solid var(--border);
           transition: background 0.3s ease;
         }
 
@@ -367,19 +383,19 @@ export default function DesktopLayout({ children }: Props) {
           width: 40px;
           height: 40px;
           border-radius: 12px;
-          background: var(--bg-glass);
-          border: 1px solid var(--border-glass);
+          background: var(--bg-card);
+          border: none;
           color: var(--text-secondary);
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
           transition: all 0.2s ease;
+          box-shadow: var(--shadow-sm);
         }
         .lk-topbar-btn:hover {
-          background: var(--bg-glass-hover);
-          border-color: var(--border-glass-active);
-          color: var(--text-primary);
+          box-shadow: var(--shadow-md);
+          color: var(--accent-1);
         }
 
         .lk-topbar-user {
@@ -387,15 +403,15 @@ export default function DesktopLayout({ children }: Props) {
           align-items: center;
           gap: 10px;
           padding: 6px 14px 6px 6px;
-          background: var(--bg-glass);
-          border: 1px solid var(--border-glass);
+          background: var(--bg-card);
+          border: none;
           border-radius: 12px;
           cursor: pointer;
           transition: all 0.2s ease;
+          box-shadow: var(--shadow-sm);
         }
         .lk-topbar-user:hover {
-          background: var(--bg-glass-hover);
-          border-color: var(--border-glass-active);
+          box-shadow: var(--shadow-md);
         }
 
         .lk-topbar-avatar {
@@ -451,25 +467,30 @@ export default function DesktopLayout({ children }: Props) {
           animation: fadeSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Override .page padding for desktop */
-        .lk-content .page {
-          padding: 0;
-          max-width: none;
-        }
+        /* .page override moved to globals.css */
 
         /* ─── Mobile ─────────────────────────────── */
         @media (max-width: 768px) {
+          .lk-shell {
+            height: auto;
+            overflow: visible;
+          }
+          .lk-main {
+            height: auto;
+            overflow-y: visible;
+          }
           .lk-sidebar {
             position: fixed;
             left: -280px;
             top: 0;
             height: 100vh;
+            margin: 0;
+            border-radius: 0;
             z-index: 300;
             transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
                         background 0.3s ease;
-            background: var(--bg-secondary);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
+            background: var(--bg-card);
+            box-shadow: 8px 0 24px rgba(0,0,0,0.15);
           }
           .lk-sidebar.open {
             left: 0;

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { clearTokens, setTokens } from '../api/client';
 import Spinner from '../components/Spinner';
 
 const TELEGRAM_BOT_USERNAME =
@@ -9,18 +9,12 @@ const TELEGRAM_BOT_USERNAME =
 export default function MagicLinkAuthPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { loginMagicLink, isAuthenticated, isLoading } = useAuth();
   const [error, setError] = useState('');
+  const started = useRef(false);
 
   useEffect(() => {
-    // Wait for AuthContext to finish loading (check existing JWT)
-    if (isLoading) return;
-
-    // If already authenticated (JWT in localStorage), skip token check → go to dashboard
-    if (isAuthenticated) {
-      navigate('/', { replace: true });
-      return;
-    }
+    if (started.current) return;
+    started.current = true;
 
     const token = searchParams.get('token');
     if (!token) {
@@ -28,25 +22,30 @@ export default function MagicLinkAuthPage() {
       return;
     }
 
-    let cancelled = false;
+    // Force clear any existing session immediately
+    clearTokens();
+    try { localStorage.removeItem('client_info'); } catch {}
 
+    // Direct fetch — bypass apiFetch to avoid auth interceptor issues
     (async () => {
       try {
-        await loginMagicLink(token);
-        if (!cancelled) {
-          navigate('/', { replace: true });
+        const res = await fetch('/api/v1/auth/magic-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        setTokens(data.access_token, data.refresh_token);
+        if (data.client) {
+          localStorage.setItem('client_info', JSON.stringify(data.client));
         }
+        window.location.href = '/lk/';
       } catch {
-        if (!cancelled) {
-          setError('Ссылка недействительна или истекла');
-        }
+        setError('Ссылка недействительна или истекла');
       }
     })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [searchParams, loginMagicLink, navigate, isAuthenticated, isLoading]);
+  }, []);
 
   return (
     <div className="magic-link-page">

@@ -97,6 +97,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="page">
+      <div className="page-narrow">
       <h1 className="page-title">Уведомления</h1>
 
       {/* Notification Settings */}
@@ -339,6 +340,7 @@ export default function NotificationsPage() {
           </p>
         </div>
       )}
+      </div>
     </div>
   );
 }

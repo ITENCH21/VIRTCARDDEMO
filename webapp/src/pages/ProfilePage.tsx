@@ -137,142 +137,160 @@ export default function ProfilePage() {
 
   return (
     <div className="page">
-      {/* Avatar */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 28 }}>
-        <div style={{
-          width: 80, height: 80, borderRadius: '50%',
-          background: 'var(--accent-gradient)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 28, fontWeight: 700, color: '#fff',
-          boxShadow: '0 0 0 4px var(--bg-primary), 0 0 0 6px rgba(99,102,241,0.3)',
-        }}>
-          {initials}
-        </div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginTop: 14 }}>
-          {profile?.name || 'User'}
-        </div>
-        {profile?.telegram_username && (
-          <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 2 }}>
-            @{profile.telegram_username}
-          </div>
-        )}
-      </div>
-
-      {/* Editable Fields */}
-      <div className="glass-card" style={{ padding: 20, marginBottom: 16 }}>
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>
-            <UserIcon size={16} /> {t('profile_name_label')}
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => { setName(e.target.value); setDirty(true); }}
-            className="form-input"
-          />
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>
-            <MailIcon size={16} /> Email
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => { setEmail(e.target.value); setDirty(true); }}
-            placeholder="your@email.com"
-            className="form-input"
-          />
-        </div>
-
+      {/* Two-column layout on desktop */}
+      <div className="page-wide profile-grid" style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 400px) minmax(0, 1fr)',
+        gap: 32,
+      }}>
+        {/* Left: Profile info */}
         <div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>
-            <PhoneIcon size={16} /> {t('profile_phone_label')}
-          </label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => { setPhone(e.target.value); setDirty(true); }}
-            placeholder="+7 (999) 123-45-67"
-            className="form-input"
-          />
-        </div>
-      </div>
+          {/* Avatar + name */}
+          <div className="glass-card" style={{
+            padding: 24, textAlign: 'center', marginBottom: 20,
+          }}>
+            <div style={{
+              width: 80, height: 80, borderRadius: '50%',
+              background: 'var(--accent-gradient)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 28, fontWeight: 700, color: '#fff',
+              margin: '0 auto 16px',
+              boxShadow: '0 4px 20px rgba(59,130,246,0.3)',
+            }}>
+              {initials}
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
+              {profile?.name || 'User'}
+            </div>
+            {profile?.telegram_username && (
+              <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>
+                @{profile.telegram_username}
+              </div>
+            )}
+          </div>
 
-      {/* Telegram Info */}
-      {profile?.telegram_username && (
-        <div className="glass-card" style={{ padding: '14px 20px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <MessageIcon size={18} style={{ color: 'var(--accent-1)' }} />
-          <div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Telegram</div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>@{profile.telegram_username}</div>
+          {/* Editable Fields */}
+          <div className="glass-card" style={{ padding: 20, marginBottom: 20 }}>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>
+                <UserIcon size={16} /> {t('profile_name_label')}
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => { setName(e.target.value); setDirty(true); }}
+                className="form-input"
+              />
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>
+                <MailIcon size={16} /> Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setDirty(true); }}
+                placeholder="your@email.com"
+                className="form-input"
+              />
+            </div>
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>
+                <PhoneIcon size={16} /> {t('profile_phone_label')}
+              </label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => { setPhone(e.target.value); setDirty(true); }}
+                placeholder="+7 (999) 123-45-67"
+                className="form-input"
+              />
+            </div>
+          </div>
+
+          {/* Telegram Info */}
+          {profile?.telegram_username && (
+            <div className="glass-card" style={{ padding: '14px 20px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <MessageIcon size={18} style={{ color: 'var(--accent-1)' }} />
+              <div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Telegram</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>@{profile.telegram_username}</div>
+              </div>
+            </div>
+          )}
+
+          {error && <p className="error-text">{error}</p>}
+
+          {dirty && (
+            <button
+              className="btn btn-primary"
+              onClick={handleSave}
+              disabled={saving}
+              style={{ marginBottom: 16 }}
+            >
+              {saving ? t('profile_saving') : t('profile_save')}
+            </button>
+          )}
+
+          {/* Logout */}
+          <button
+            className="btn btn-danger"
+            onClick={logout}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+          >
+            <LogOutIcon size={18} /> {t('logout')}
+          </button>
+        </div>
+
+        {/* Right: Menu Items */}
+        <div>
+          <div className="section-title" style={{ marginBottom: 12 }}>{t('profile_section_title')}</div>
+          <div style={{ display: 'grid', gap: 12 }}>
+            {menuItems.map((item) => (
+              <div
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className="glass-card"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  padding: '16px 20px',
+                  cursor: 'pointer',
+                  transition: 'var(--transition-normal)',
+                }}
+              >
+                <div style={{
+                  width: 44, height: 44, borderRadius: 12,
+                  background: `${item.color}15`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: item.color, flexShrink: 0,
+                }}>
+                  {item.icon}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {item.label}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                    {item.desc}
+                  </div>
+                </div>
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" width="16" height="16" style={{ flexShrink: 0 }}>
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </div>
+            ))}
           </div>
         </div>
-      )}
-
-      {error && <p className="error-text">{error}</p>}
-
-      {dirty && (
-        <button
-          className="btn btn-primary"
-          onClick={handleSave}
-          disabled={saving}
-          style={{ marginBottom: 16 }}
-        >
-          {saving ? t('profile_saving') : t('profile_save')}
-        </button>
-      )}
-
-      {/* Menu Items */}
-      <div style={{ marginTop: dirty ? 0 : 8, marginBottom: 16 }}>
-        <div className="section-title" style={{ marginBottom: 12 }}>{t('profile_section_title')}</div>
-        <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
-          {menuItems.map((item, idx) => (
-            <div
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                padding: '14px 18px',
-                cursor: 'pointer',
-                borderBottom: idx < menuItems.length - 1 ? '1px solid var(--border-glass)' : 'none',
-                transition: 'background 0.15s ease',
-              }}
-            >
-              <div style={{
-                width: 40, height: 40, borderRadius: 12,
-                background: `${item.color}15`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: item.color, flexShrink: 0,
-              }}>
-                {item.icon}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
-                  {item.label}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                  {item.desc}
-                </div>
-              </div>
-              <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" width="16" height="16" style={{ flexShrink: 0 }}>
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </div>
-          ))}
-        </div>
       </div>
 
-      {/* Logout */}
-      <button
-        className="btn btn-danger"
-        onClick={logout}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-      >
-        <LogOutIcon size={18} /> {t('logout')}
-      </button>
+      {/* Mobile: collapse to single column */}
+      <style>{`
+        @media (max-width: 768px) {
+          .profile-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

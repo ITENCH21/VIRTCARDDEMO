@@ -87,171 +87,136 @@ export default function TariffsPage() {
   ];
 
   const FAQ = lang === 'ru' ? [
-    {
-      q: 'Как пополнить карту?',
-      a: 'Пополнение производится через USDT (TRC-20). Перейдите в раздел «Пополнить», скопируйте адрес кошелька и отправьте USDT. После подтверждения транзакции средства автоматически конвертируются и зачислятся на карту.',
-    },
-    {
-      q: 'Сколько времени занимает зачисление?',
-      a: 'Обычно 5–15 минут после подтверждения транзакции в сети TRON. Иногда до 1 часа при высокой нагрузке сети.',
-    },
-    {
-      q: 'Где можно использовать карту?',
-      a: 'Карту Стандарт принимают все онлайн-магазины, поддерживающие VISA/Mastercard. Карта Apple/Google Pay дополнительно работает в офлайн-магазинах через бесконтактную оплату.',
-    },
-    {
-      q: 'Можно ли вывести остаток при закрытии карты?',
-      a: 'Да. При закрытии карты остаток средств автоматически возвращается на ваш основной счёт USDT в течение 1–3 рабочих дней.',
-    },
-    {
-      q: 'Безопасно ли хранить деньги на карте?',
-      a: 'Карта предназначена для онлайн-платежей, не для хранения крупных сумм. Рекомендуем держать на ней только необходимый для покупок баланс.',
-    },
-    {
-      q: 'Как заблокировать карту если она потеряна?',
-      a: 'Мгновенно заблокируйте карту в разделе «Мои карты» → нажмите на карту → «Заблокировать». Карту можно разблокировать в любой момент.',
-    },
+    { q: 'Как пополнить карту?', a: 'Пополнение производится через USDT (TRC-20). Перейдите в раздел «Пополнить», скопируйте адрес кошелька и отправьте USDT. После подтверждения транзакции средства автоматически конвертируются и зачислятся на карту.' },
+    { q: 'Сколько времени занимает зачисление?', a: 'Обычно 5–15 минут после подтверждения транзакции в сети TRON. Иногда до 1 часа при высокой нагрузке сети.' },
+    { q: 'Где можно использовать карту?', a: 'Карту Стандарт принимают все онлайн-магазины, поддерживающие VISA/Mastercard. Карта Apple/Google Pay дополнительно работает в офлайн-магазинах через бесконтактную оплату.' },
+    { q: 'Можно ли вывести остаток при закрытии карты?', a: 'Да. При закрытии карты остаток средств автоматически возвращается на ваш основной счёт USDT в течение 1–3 рабочих дней.' },
+    { q: 'Безопасно ли хранить деньги на карте?', a: 'Карта предназначена для онлайн-платежей, не для хранения крупных сумм. Рекомендуем держать на ней только необходимый для покупок баланс.' },
+    { q: 'Как заблокировать карту если она потеряна?', a: 'Мгновенно заблокируйте карту в разделе «Мои карты» → нажмите на карту → «Заблокировать». Карту можно разблокировать в любой момент.' },
   ] : [
-    {
-      q: 'How do I top up the card?',
-      a: 'Top-up is done via USDT (TRC-20). Go to the "Deposit" section, copy the wallet address and send USDT. After the transaction is confirmed, funds are automatically converted and credited to the card.',
-    },
-    {
-      q: 'How long does crediting take?',
-      a: 'Usually 5–15 minutes after TRON network confirmation. Sometimes up to 1 hour during high network load.',
-    },
-    {
-      q: 'Where can I use the card?',
-      a: 'The Standard card is accepted by all online stores supporting VISA/Mastercard. The Apple/Google Pay card also works in offline stores via contactless payment.',
-    },
-    {
-      q: 'Can I withdraw the balance when closing the card?',
-      a: 'Yes. When closing the card, the remaining balance is automatically returned to your main USDT account within 1–3 business days.',
-    },
-    {
-      q: 'Is it safe to keep money on the card?',
-      a: 'The card is designed for online payments, not for storing large amounts. We recommend keeping only the balance needed for purchases.',
-    },
-    {
-      q: 'How to block the card if it is lost?',
-      a: 'Instantly block the card in "My Cards" → tap on the card → "Block card". You can unblock it at any time.',
-    },
+    { q: 'How do I top up the card?', a: 'Top-up is done via USDT (TRC-20). Go to the "Deposit" section, copy the wallet address and send USDT. After the transaction is confirmed, funds are automatically converted and credited to the card.' },
+    { q: 'How long does crediting take?', a: 'Usually 5–15 minutes after TRON network confirmation. Sometimes up to 1 hour during high network load.' },
+    { q: 'Where can I use the card?', a: 'The Standard card is accepted by all online stores supporting VISA/Mastercard. The Apple/Google Pay card also works in offline stores via contactless payment.' },
+    { q: 'Can I withdraw the balance when closing the card?', a: 'Yes. When closing the card, the remaining balance is automatically returned to your main USDT account within 1–3 business days.' },
+    { q: 'Is it safe to keep money on the card?', a: 'The card is designed for online payments, not for storing large amounts. We recommend keeping only the balance needed for purchases.' },
+    { q: 'How to block the card if it is lost?', a: 'Instantly block the card in "My Cards" → tap on the card → "Block card". You can unblock it at any time.' },
   ];
+
+  const renderPlanCard = (plan: Plan) => (
+    <div
+      key={plan.title}
+      className="glass-card"
+      style={{
+        padding: 0, overflow: 'hidden', flex: 1,
+        border: plan.popular
+          ? '1.5px solid rgba(99,102,241,0.45)'
+          : '1px solid var(--border)',
+        boxShadow: plan.popular ? '0 8px 32px rgba(99,102,241,0.15)' : undefined,
+      }}
+    >
+      {/* Header */}
+      <div style={{ padding: '18px 20px 14px', position: 'relative' }}>
+        {plan.popular && (
+          <div style={{
+            position: 'absolute', top: 0, right: 20,
+            background: 'var(--accent-gradient)',
+            color: '#fff', fontSize: 10, fontWeight: 700,
+            padding: '3px 10px', borderRadius: '0 0 8px 8px',
+            letterSpacing: 0.5, textTransform: 'uppercase',
+          }}>
+            {t('tariffs_popular')}
+          </div>
+        )}
+        <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4 }}>
+          {plan.title}
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 14 }}>
+          {plan.subtitle}
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {plan.networks.map((n) => (
+            <span key={n.label} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '4px 10px', borderRadius: 20,
+              background: 'var(--bg-card)', border: '1px solid var(--border)',
+              fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)',
+            }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: n.color, display: 'inline-block', flexShrink: 0 }} />
+              {n.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Rows */}
+      <div style={{ borderTop: '1px solid var(--border)' }}>
+        {plan.rows.map((row, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '11px 20px',
+            borderBottom: i < plan.rows.length - 1 ? '1px solid var(--tx-border)' : 'none',
+          }}>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{row.label}</span>
+            {row.bool !== undefined ? (
+              <span>{row.bool ? CHECK : CROSS}</span>
+            ) : (
+              <span style={{
+                fontSize: 13, fontWeight: row.bold ? 700 : 500,
+                color: row.highlight ? '#ef4444' : 'var(--text-primary)',
+              }}>
+                {row.value}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Total + button */}
+      <div style={{ padding: '14px 20px 18px', borderTop: '1px solid var(--border)' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 14px', borderRadius: 10,
+          background: 'var(--bg-input)', marginBottom: 12,
+        }}>
+          <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t('tariffs_total_label')}:</span>
+          <span style={{ fontSize: 15, fontWeight: 800, color: '#6366f1' }}>{plan.total}</span>
+        </div>
+        <button
+          onClick={() => navigate('/cards/issue')}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            width: '100%', padding: '13px 0', borderRadius: 12,
+            background: plan.popular
+              ? 'linear-gradient(135deg, #2563eb, #4f46e5)'
+              : 'var(--bg-card)',
+            color: plan.popular ? '#fff' : 'var(--text-primary)',
+            fontSize: 14, fontWeight: 700,
+            border: plan.popular ? 'none' : '1px solid var(--border)',
+            cursor: 'pointer',
+            boxShadow: plan.popular ? '0 4px 16px rgba(79,70,229,0.35)' : 'var(--shadow-sm)',
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+            <rect x="1" y="4" width="22" height="16" rx="2" />
+            <line x1="1" y1="10" x2="23" y2="10" />
+          </svg>
+          {t('tariffs_open_card')}
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="page">
-
+      <div className="page-wide">
       {/* Subtitle */}
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
         <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t('tariffs_subtitle')}</div>
       </div>
 
-      {/* Plan cards */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 32 }}>
-        {PLANS.map((plan) => (
-          <div
-            key={plan.title}
-            className="glass-card"
-            style={{
-              padding: 0, overflow: 'hidden',
-              border: plan.popular
-                ? '1.5px solid rgba(99,102,241,0.45)'
-                : '1px solid var(--border-glass)',
-              boxShadow: plan.popular ? '0 8px 32px rgba(99,102,241,0.15)' : undefined,
-            }}
-          >
-            {/* Header */}
-            <div style={{ padding: '18px 20px 14px', position: 'relative' }}>
-              {plan.popular && (
-                <div style={{
-                  position: 'absolute', top: 0, right: 20,
-                  background: 'var(--accent-gradient)',
-                  color: '#fff', fontSize: 10, fontWeight: 700,
-                  padding: '3px 10px', borderRadius: '0 0 8px 8px',
-                  letterSpacing: 0.5, textTransform: 'uppercase',
-                }}>
-                  {t('tariffs_popular')}
-                </div>
-              )}
-              <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4 }}>
-                {plan.title}
-              </div>
-              <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 14 }}>
-                {plan.subtitle}
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {plan.networks.map((n) => (
-                  <span key={n.label} style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 5,
-                    padding: '4px 10px', borderRadius: 20,
-                    background: 'var(--bg-glass)', border: '1px solid var(--border-glass)',
-                    fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)',
-                  }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: n.color, display: 'inline-block', flexShrink: 0 }} />
-                    {n.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Rows */}
-            <div style={{ borderTop: '1px solid var(--border-glass)' }}>
-              {plan.rows.map((row, i) => (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '11px 20px',
-                  borderBottom: i < plan.rows.length - 1 ? '1px solid var(--border-glass)' : 'none',
-                }}>
-                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{row.label}</span>
-                  {row.bool !== undefined ? (
-                    <span>{row.bool ? CHECK : CROSS}</span>
-                  ) : (
-                    <span style={{
-                      fontSize: 13, fontWeight: row.bold ? 700 : 500,
-                      color: row.highlight ? '#ef4444' : 'var(--text-primary)',
-                    }}>
-                      {row.value}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Total + button */}
-            <div style={{ padding: '14px 20px 18px', borderTop: '1px solid var(--border-glass)' }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 14px', borderRadius: 10,
-                background: 'var(--bg-glass)', border: '1px solid var(--border-glass)',
-                marginBottom: 12,
-              }}>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t('tariffs_total_label')}:</span>
-                <span style={{ fontSize: 15, fontWeight: 800, color: '#6366f1' }}>{plan.total}</span>
-              </div>
-              <button
-                onClick={() => navigate('/cards/issue')}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  width: '100%', padding: '13px 0', borderRadius: 12,
-                  background: plan.popular
-                    ? 'linear-gradient(135deg, #2563eb, #4f46e5)'
-                    : 'var(--bg-glass)',
-                  color: plan.popular ? '#fff' : 'var(--text-primary)',
-                  fontSize: 14, fontWeight: 700,
-                  border: plan.popular ? 'none' : '1px solid var(--border-glass)',
-                  cursor: 'pointer',
-                  boxShadow: plan.popular ? '0 4px 16px rgba(79,70,229,0.35)' : 'none',
-                }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-                  <rect x="1" y="4" width="22" height="16" rx="2" />
-                  <line x1="1" y1="10" x2="23" y2="10" />
-                </svg>
-                {t('tariffs_open_card')}
-              </button>
-            </div>
-          </div>
-        ))}
+      {/* Plan cards — 2 columns on desktop */}
+      <div className="tariffs-grid" style={{ display: 'flex', gap: 20, marginBottom: 32, alignItems: 'stretch' }}>
+        {PLANS.map(renderPlanCard)}
       </div>
 
       {/* FAQ */}
@@ -263,7 +228,7 @@ export default function TariffsPage() {
           {t('tariffs_faq_subtitle')}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 10 }}>
           {FAQ.map((item, i) => (
             <div
               key={i}
@@ -289,11 +254,10 @@ export default function TariffsPage() {
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </div>
-
               {openFaq === i && (
                 <div style={{
                   padding: '0 18px 16px',
-                  borderTop: '1px solid var(--border-glass)',
+                  borderTop: '1px solid var(--border)',
                   paddingTop: 14,
                 }}>
                   <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0 }}>
@@ -307,15 +271,24 @@ export default function TariffsPage() {
       </div>
 
       {/* Footnote */}
-      <div style={{
-        marginTop: 20, padding: '12px 16px', borderRadius: 'var(--radius-md)',
-        background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)',
+      <div className="glass-card" style={{
+        marginTop: 20, padding: '12px 16px',
         borderLeft: '3px solid #3b82f6',
       }}>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
           {t('tariffs_footnote')}
         </p>
       </div>
+
+      </div>{/* end page-wide */}
+
+      <style>{`
+        @media (max-width: 768px) {
+          .tariffs-grid {
+            flex-direction: column !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

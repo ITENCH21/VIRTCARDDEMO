@@ -1,9 +1,12 @@
 import importlib
 import json
+import os
+import secrets
 import uuid
 import logging
 from decimal import Decimal
 
+import redis as _redis
 from django.contrib import admin, messages
 from django.urls import reverse
 from django.utils.html import format_html
@@ -12,6 +15,22 @@ from django.utils.safestring import mark_safe
 from .models import Account, Client, ClientGroup
 
 logger = logging.getLogger(__name__)
+
+
+def _generate_login_as_link(client_id: str) -> str:
+    """Generate a one-time magic link token for Login As feature.
+    Stores token in Redis DB=1 (same as backend JWT store)."""
+    token = secrets.token_urlsafe(32)
+    r = _redis.Redis(
+        host=os.environ.get("REDIS_HOST", "redis"),
+        port=int(os.environ.get("REDIS_PORT", "6379")),
+        password=os.environ.get("REDIS_PASSWORD", "") or None,
+        db=1,
+        decode_responses=True,
+    )
+    r.setex(f"magic_link:{token}", 900, str(client_id))  # 15 min TTL
+    r.close()
+    return token
 
 CRYPTO_CURRENCY_CODE = "USDT-TRC20"
 
@@ -221,6 +240,7 @@ class ClientAdmin(admin.ModelAdmin):
         "telegram_",
         "accounts_count",
         "created_at",
+        "login_as_btn",
     )
     search_fields = (
         "name",
@@ -279,6 +299,24 @@ class ClientAdmin(admin.ModelAdmin):
         return format_html(
             '<a href="{}?client__id__exact={}">{}</a>', url, obj.pk, count
         )
+
+    @admin.display(description="Login As")
+    def login_as_btn(self, obj):
+        try:
+            token = _generate_login_as_link(str(obj.pk))
+            url = f"/lk/auth?token={token}"
+            return format_html(
+                '<a href="{}" target="_blank" style="'
+                'background:linear-gradient(135deg,#3B82F6,#1D4ED8);'
+                'color:white;padding:4px 12px;border-radius:6px;'
+                'font-size:11px;font-weight:700;text-decoration:none;'
+                'white-space:nowrap;'
+                '">Login</a>',
+                url,
+            )
+        except Exception:
+            logger.exception("Failed to generate login-as link for client %s", obj.pk)
+            return "—"
 
     # ── Queryset ───────────────────────────────────────────
 

@@ -219,7 +219,7 @@ export default function FAQPage() {
           {t('faq_no_results')}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="faq-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 10 }}>
           {filtered.map((item, i) => {
             const globalIdx = FAQ.indexOf(item);
             const isOpen = openItem === globalIdx;

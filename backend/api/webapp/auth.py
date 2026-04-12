@@ -184,19 +184,140 @@ def decode_token(token: str) -> Optional[dict]:
         return None
 
 
-async def store_refresh_token(jti: str, client_id: str) -> None:
+def parse_user_agent(ua: str) -> str:
+    """Extract readable device name from user-agent string."""
+    if not ua:
+        return "Unknown"
+    ua_lower = ua.lower()
+    # Device
+    device = "Desktop"
+    if "iphone" in ua_lower:
+        device = "iPhone"
+    elif "ipad" in ua_lower:
+        device = "iPad"
+    elif "android" in ua_lower:
+        device = "Android"
+    elif "macintosh" in ua_lower:
+        device = "Mac"
+    elif "windows" in ua_lower:
+        device = "Windows"
+    elif "linux" in ua_lower:
+        device = "Linux"
+    # Browser
+    browser = ""
+    if "edg/" in ua_lower:
+        browser = "Edge"
+    elif "chrome" in ua_lower and "safari" in ua_lower:
+        browser = "Chrome"
+    elif "firefox" in ua_lower:
+        browser = "Firefox"
+    elif "safari" in ua_lower:
+        browser = "Safari"
+    elif "telegram" in ua_lower or "tg" in ua_lower:
+        browser = "Telegram"
+    return f"{device} / {browser}" if browser else device
+
+
+async def store_refresh_token(
+    jti: str, client_id: str, device: str = "", ip: str = ""
+) -> None:
+    import json, time
     r = await get_redis()
     ttl = JWT_REFRESH_EXPIRE_DAYS * 86400
-    await r.setex(f"refresh:{jti}", ttl, client_id)
+    session_data = json.dumps({
+        "client_id": client_id,
+        "device": device or "Unknown",
+        "ip": ip or "0.0.0.0",
+        "created_at": int(time.time()),
+        "last_active": int(time.time()),
+    })
+    await r.setex(f"refresh:{jti}", ttl, session_data)
+    # Track all sessions for this client
+    await r.sadd(f"sessions:{client_id}", jti)
+    await r.expire(f"sessions:{client_id}", ttl)
 
 
 async def verify_refresh_token(jti: str) -> Optional[str]:
     """Returns client_id if refresh token is valid, None otherwise."""
+    import json
     r = await get_redis()
-    client_id = await r.get(f"refresh:{jti}")
-    return client_id
+    raw = await r.get(f"refresh:{jti}")
+    if not raw:
+        return None
+    # Backward compatible: old tokens store plain client_id
+    try:
+        data = json.loads(raw)
+        return data.get("client_id")
+    except (json.JSONDecodeError, TypeError):
+        return raw  # plain client_id string
+
+
+async def update_session_activity(jti: str) -> None:
+    """Update last_active timestamp for a session."""
+    import json, time
+    r = await get_redis()
+    raw = await r.get(f"refresh:{jti}")
+    if not raw:
+        return
+    try:
+        data = json.loads(raw)
+        data["last_active"] = int(time.time())
+        ttl = await r.ttl(f"refresh:{jti}")
+        if ttl > 0:
+            await r.setex(f"refresh:{jti}", ttl, json.dumps(data))
+    except (json.JSONDecodeError, TypeError):
+        pass
 
 
 async def revoke_refresh_token(jti: str) -> None:
+    import json
     r = await get_redis()
+    # Get client_id to clean sessions set
+    raw = await r.get(f"refresh:{jti}")
+    client_id = None
+    if raw:
+        try:
+            data = json.loads(raw)
+            client_id = data.get("client_id")
+        except (json.JSONDecodeError, TypeError):
+            client_id = raw
     await r.delete(f"refresh:{jti}")
+    if client_id:
+        await r.srem(f"sessions:{client_id}", jti)
+
+
+async def get_client_sessions(client_id: str) -> list:
+    """Get all active sessions for a client."""
+    import json
+    r = await get_redis()
+    jtis = await r.smembers(f"sessions:{client_id}")
+    sessions = []
+    for jti in jtis:
+        raw = await r.get(f"refresh:{jti}")
+        if not raw:
+            # Expired token, clean up
+            await r.srem(f"sessions:{client_id}", jti)
+            continue
+        try:
+            data = json.loads(raw)
+            data["jti"] = jti
+            sessions.append(data)
+        except (json.JSONDecodeError, TypeError):
+            pass
+    # Sort by last_active descending
+    sessions.sort(key=lambda s: s.get("last_active", 0), reverse=True)
+    return sessions
+
+
+async def revoke_all_sessions(client_id: str, except_jti: str = "") -> int:
+    """Revoke all sessions for a client, optionally keeping one."""
+    r = await get_redis()
+    jtis = await r.smembers(f"sessions:{client_id}")
+    count = 0
+    for jti in jtis:
+        if jti == except_jti:
+            continue
+        await r.delete(f"refresh:{jti}")
+        await r.srem(f"sessions:{client_id}", jti)
+        count += 1
+    return count

@@ -35,6 +35,7 @@ export default function ReferralPage() {
 
   return (
     <div className="page">
+      <div className="page-narrow">
       <h1 className="page-title">Реферальная программа</h1>
 
       {/* Stats Cards */}
@@ -187,6 +188,7 @@ export default function ReferralPage() {
         <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           💡 <strong>Совет:</strong> Чем больше активных рефералов, тем больше пассивного дохода! Не забывайте делиться ссылкой в социальных сетях и мессенджерах.
         </p>
+      </div>
       </div>
     </div>
   );

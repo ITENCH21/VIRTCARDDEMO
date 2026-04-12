@@ -11,8 +11,16 @@ import { useLang } from '../contexts/LangContext';
 const PRESETS = [50, 100, 150, 200, 300, 500];
 
 const CHECK_ICON = (
-  <svg viewBox="0 0 20 20" fill="none" width="12" height="12">
-    <polyline points="4,10 8,14 16,6" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+  <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+    <circle cx="10" cy="10" r="10" fill="rgba(16,185,129,0.15)" />
+    <polyline points="5,10 8.5,13.5 15,7" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+const CROSS_ICON = (
+  <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+    <circle cx="10" cy="10" r="10" fill="rgba(239,68,68,0.12)" />
+    <line x1="7" y1="7" x2="13" y2="13" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+    <line x1="13" y1="7" x2="7" y2="13" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
   </svg>
 );
 
@@ -151,59 +159,65 @@ export default function CardIssuePage() {
     );
   }
 
-  /* ── Card type data ── */
-  const CARD_TYPES: { type: CardType; title: string; subtitle: string; specs: string[]; popular?: boolean }[] = [
+  /* ── Card info specs ── */
+  const CARD_INFO = [
     {
-      type: 'standard',
+      type: 'standard' as CardType,
       title: t('issue_standard'),
       subtitle: 'VISA & Mastercard · USD, EUR',
       specs: [
-        `${t('tr_open_cost')}: $6 / €6`,
-        `${t('tr_topup_fee')}: 6%`,
-        `${t('tr_min_open')}: $100 / €100`,
-        t('tr_3ds'),
+        { label: t('tr_open_cost'), value: '$6 / €6' },
+        { label: t('tr_topup_fee'), value: '6%' },
+        { label: t('tr_min_open'), value: '$100 / €100' },
+        { label: t('tr_3ds'), bool: true },
+        { label: t('tr_apple'), bool: false },
+        { label: t('tr_google'), bool: false },
       ],
     },
     {
-      type: 'wallet',
+      type: 'wallet' as CardType,
       title: 'Apple / Google Pay',
       subtitle: 'Mastercard · USD, EUR',
-      specs: [
-        `${t('tr_open_cost')}: $15 / €15`,
-        `${t('tr_topup_fee')}: 5%`,
-        `${t('tr_min_open')}: $50 / €50`,
-        t('tr_offline'),
-      ],
       popular: true,
+      specs: [
+        { label: t('tr_open_cost'), value: '$15 / €15' },
+        { label: t('tr_topup_fee'), value: '5%' },
+        { label: t('tr_min_open'), value: '$50 / €50' },
+        { label: t('tr_3ds'), bool: false },
+        { label: t('tr_apple'), bool: true },
+        { label: t('tr_google'), bool: true },
+        { label: t('tr_offline'), bool: true },
+      ],
     },
   ];
 
-  /* ── Main form ── */
   return (
     <div className="page">
-
-      {/* Card type selector */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
-        {CARD_TYPES.map((ct) => {
-          const selected = cardType === ct.type;
+      {/* ── Card type comparison — 2 columns ── */}
+      <div className="page-wide issue-cards-grid" style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 16,
+        marginBottom: 28,
+      }}>
+        {CARD_INFO.map((info) => {
+          const selected = cardType === info.type;
           return (
             <div
-              key={ct.type}
-              onClick={() => handleTypeChange(ct.type)}
+              key={info.type}
+              onClick={() => handleTypeChange(info.type)}
+              className="glass-card"
               style={{
-                cursor: 'pointer',
-                borderRadius: 16,
-                padding: '16px 18px',
-                border: selected ? '2px solid rgba(99,102,241,0.55)' : '1px solid var(--border-glass)',
-                background: selected
-                  ? 'linear-gradient(135deg, rgba(37,99,235,0.1), rgba(99,102,241,0.07))'
-                  : 'var(--bg-glass)',
-                boxShadow: selected ? '0 4px 24px rgba(99,102,241,0.15)' : 'none',
+                padding: 0, overflow: 'hidden', cursor: 'pointer',
+                border: selected
+                  ? '2px solid rgba(99,102,241,0.55)'
+                  : '1px solid var(--border)',
+                boxShadow: selected ? '0 4px 24px rgba(99,102,241,0.15)' : undefined,
                 transition: 'all 0.2s ease',
                 position: 'relative',
               }}
             >
-              {ct.popular && (
+              {info.popular && (
                 <div style={{
                   position: 'absolute', top: 0, right: 16,
                   background: 'var(--accent-gradient)',
@@ -215,208 +229,209 @@ export default function CardIssuePage() {
                 </div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 2 }}>
-                    {ct.title}
+              {/* Header */}
+              <div style={{ padding: '16px 18px 12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)' }}>
+                    {info.title}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10 }}>
-                    {ct.subtitle}
-                  </div>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {ct.specs.map((s) => (
-                      <span key={s} style={{
-                        fontSize: 11, padding: '3px 9px', borderRadius: 12,
-                        background: selected ? 'rgba(99,102,241,0.1)' : 'var(--bg-glass)',
-                        border: selected ? '1px solid rgba(99,102,241,0.25)' : '1px solid var(--border-glass)',
-                        color: selected ? '#818cf8' : 'var(--text-muted)',
-                        fontWeight: 500,
-                      }}>
-                        {s}
-                      </span>
-                    ))}
+                  <div style={{
+                    width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                    background: selected ? 'linear-gradient(135deg, #2563eb, #4f46e5)' : 'var(--bg-input)',
+                    border: selected ? 'none' : '1.5px solid var(--border)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: selected ? '0 2px 8px rgba(79,70,229,0.4)' : 'none',
+                  }}>
+                    {selected && <svg viewBox="0 0 20 20" fill="none" width="12" height="12"><polyline points="4,10 8,14 16,6" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
                   </div>
                 </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{info.subtitle}</div>
+              </div>
 
-                {/* Radio circle */}
-                <div style={{
-                  width: 22, height: 22, borderRadius: '50%', flexShrink: 0, marginTop: 2,
-                  background: selected ? 'linear-gradient(135deg, #2563eb, #4f46e5)' : 'var(--bg-glass)',
-                  border: selected ? 'none' : '1.5px solid var(--border-glass)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: selected ? '0 2px 8px rgba(79,70,229,0.4)' : 'none',
-                  transition: 'all 0.2s ease',
-                }}>
-                  {selected && CHECK_ICON}
-                </div>
+              {/* Specs rows */}
+              <div style={{ borderTop: '1px solid var(--tx-border)' }}>
+                {info.specs.map((row, i) => (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '9px 18px',
+                    borderBottom: i < info.specs.length - 1 ? '1px solid var(--tx-border)' : 'none',
+                  }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{row.label}</span>
+                    {row.bool !== undefined ? (
+                      <span>{row.bool ? CHECK_ICON : CROSS_ICON}</span>
+                    ) : (
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>{row.value}</span>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Form block */}
-      <div className="glass-card" style={{ padding: '20px 20px', marginBottom: 16 }}>
-
-        {/* Currency toggle */}
-        <div style={{ marginBottom: 18 }}>
-          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 }}>
-            {t('issue_currency_label')}
-          </label>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {(['USD', 'EUR'] as CardCurrency[]).map((cur) => (
-              <button
-                key={cur}
-                onClick={() => handleCurrencyChange(cur)}
-                style={{
-                  flex: 1, padding: '10px 0', borderRadius: 10,
-                  fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                  background: cardCurrency === cur ? 'var(--accent-gradient)' : 'var(--bg-glass)',
-                  border: cardCurrency === cur ? '1px solid transparent' : '1px solid var(--border-glass)',
-                  color: cardCurrency === cur ? '#fff' : 'var(--text-secondary)',
-                  transition: 'var(--transition-fast)',
-                  boxShadow: cardCurrency === cur ? '0 2px 12px rgba(79,70,229,0.3)' : 'none',
-                }}
-              >
-                {cur}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div style={{ height: 1, background: 'var(--border-glass)', marginBottom: 18 }} />
-
-        {/* Card name */}
-        <div style={{ marginBottom: 18 }}>
-          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 }}>
-            {t('issue_name_label')}
-          </label>
-          <input
-            type="text"
-            value={cardName}
-            onChange={(e) => setCardName(e.target.value)}
-            placeholder={t('issue_name_placeholder')}
-            className="form-input"
-            style={{ fontSize: 14 }}
-          />
-        </div>
-
-        {/* Divider */}
-        <div style={{ height: 1, background: 'var(--border-glass)', marginBottom: 18 }} />
-
-        {/* Amount */}
-        <div style={{ marginBottom: estimate ? 18 : 0 }}>
-          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 }}>
-            {t('issue_amount_label')}
-          </label>
-          <input
-            type="number"
-            inputMode="decimal"
-            value={amount}
-            onChange={(e) => handleAmountChange(e.target.value)}
-            placeholder="0.00"
-            className="form-input"
-            style={{
-              fontSize: 20, fontWeight: 700, textAlign: 'center',
-              borderColor: isAmountInvalid ? 'var(--danger)' : undefined,
-            }}
-          />
-          {limitsHint && (
-            <div style={{ marginTop: 6, fontSize: 12, color: isAmountInvalid ? 'var(--danger)' : 'var(--text-muted)', textAlign: 'center' }}>
-              {limitsHint}
+      {/* ── Issue Form — centered below ── */}
+      <div className="desktop-form-centered">
+        <div className="glass-card" style={{ padding: 20, marginBottom: 16 }}>
+          {/* Currency toggle */}
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 }}>
+              {t('issue_currency_label')}
+            </label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {(['USD', 'EUR'] as CardCurrency[]).map((cur) => (
+                <button
+                  key={cur}
+                  onClick={() => handleCurrencyChange(cur)}
+                  style={{
+                    flex: 1, padding: '10px 0', borderRadius: 10,
+                    fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                    background: cardCurrency === cur ? 'var(--accent-gradient)' : 'var(--bg-card)',
+                    border: cardCurrency === cur ? '1px solid transparent' : '1px solid var(--border)',
+                    color: cardCurrency === cur ? '#fff' : 'var(--text-secondary)',
+                    transition: 'var(--transition-fast)',
+                    boxShadow: cardCurrency === cur ? '0 2px 12px rgba(79,70,229,0.3)' : 'var(--shadow-sm)',
+                  }}
+                >
+                  {cur}
+                </button>
+              ))}
             </div>
+          </div>
+
+          <div style={{ height: 1, background: 'var(--border)', marginBottom: 18 }} />
+
+          {/* Card name */}
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 }}>
+              {t('issue_name_label')}
+            </label>
+            <input
+              type="text"
+              value={cardName}
+              onChange={(e) => setCardName(e.target.value)}
+              placeholder={t('issue_name_placeholder')}
+              className="form-input"
+              style={{ fontSize: 14 }}
+            />
+          </div>
+
+          <div style={{ height: 1, background: 'var(--border)', marginBottom: 18 }} />
+
+          {/* Amount */}
+          <div style={{ marginBottom: estimate ? 18 : 0 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 }}>
+              {t('issue_amount_label')}
+            </label>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => handleAmountChange(e.target.value)}
+              placeholder="0.00"
+              className="form-input"
+              style={{
+                fontSize: 20, fontWeight: 700, textAlign: 'center',
+                borderColor: isAmountInvalid ? 'var(--danger)' : undefined,
+              }}
+            />
+            {limitsHint && (
+              <div style={{ marginTop: 6, fontSize: 12, color: isAmountInvalid ? 'var(--danger)' : 'var(--text-muted)', textAlign: 'center' }}>
+                {limitsHint}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+              {PRESETS.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => handleAmountChange(String(p))}
+                  style={{
+                    flex: 1, minWidth: 44, padding: '6px 4px', borderRadius: 10,
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    background: amount === String(p) ? 'var(--accent-gradient)' : 'var(--bg-card)',
+                    border: amount === String(p) ? '1px solid transparent' : '1px solid var(--border)',
+                    color: amount === String(p) ? '#fff' : 'var(--text-secondary)',
+                    boxShadow: amount === String(p) ? '0 2px 12px rgba(79,70,229,0.3)' : 'var(--shadow-sm)',
+                    transition: 'var(--transition-fast)',
+                  }}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Fee breakdown */}
+          {estimate && (
+            <>
+              <div style={{ height: 1, background: 'var(--border)', marginBottom: 14 }} />
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12 }}>
+                {t('fee_calc_title')}
+              </div>
+              <div className="info-row">
+                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('amount_label')}</span>
+                <span style={{ fontWeight: 600, fontSize: 13 }}>{formatAmount(estimate.amount, estimate.currency_symbol)}</span>
+              </div>
+              <div className="info-row">
+                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('fee_label')}</span>
+                <span style={{ fontWeight: 600, fontSize: 13 }}>{formatAmount(estimate.fee, estimate.currency_symbol)}</span>
+              </div>
+              <div className="info-row" style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 6 }}>
+                <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{t('total_debit')}</span>
+                <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-primary)' }}>
+                  {formatAmount(estimate.total, estimate.currency_symbol)}
+                </span>
+              </div>
+            </>
           )}
-          <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-            {PRESETS.map((p) => (
-              <button
-                key={p}
-                onClick={() => handleAmountChange(String(p))}
-                style={{
-                  flex: 1, minWidth: 44, padding: '6px 4px', borderRadius: 10,
-                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                  background: amount === String(p) ? 'var(--accent-gradient)' : 'var(--bg-glass)',
-                  border: amount === String(p) ? '1px solid transparent' : '1px solid var(--border-glass)',
-                  color: amount === String(p) ? '#fff' : 'var(--text-secondary)',
-                  transition: 'var(--transition-fast)',
-                }}
-              >
-                {p}
-              </button>
-            ))}
+        </div>
+
+        {/* Info note */}
+        <div className="glass-card" style={{
+          padding: '12px 16px', marginBottom: 20,
+          borderLeft: '3px solid #3b82f6',
+        }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" width="16" height="16" style={{ flexShrink: 0, marginTop: 1 }}>
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+              {t('issue_usdt_note')}
+            </p>
           </div>
         </div>
 
-        {/* Fee breakdown — appears inline after estimation */}
-        {estimate && (
-          <>
-            <div style={{ height: 1, background: 'var(--border-glass)', marginBottom: 14 }} />
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12 }}>
-              {t('fee_calc_title')}
-            </div>
-            <div className="info-row">
-              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('amount_label')}</span>
-              <span style={{ fontWeight: 600, fontSize: 13 }}>{formatAmount(estimate.amount, estimate.currency_symbol)}</span>
-            </div>
-            <div className="info-row">
-              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('fee_label')}</span>
-              <span style={{ fontWeight: 600, fontSize: 13 }}>{formatAmount(estimate.fee, estimate.currency_symbol)}</span>
-            </div>
-            <div className="info-row" style={{ borderTop: '1px solid var(--border-glass)', paddingTop: 12, marginTop: 6 }}>
-              <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{t('total_debit')}</span>
-              <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-primary)' }}>
-                {formatAmount(estimate.total, estimate.currency_symbol)}
-              </span>
-            </div>
-          </>
+        {error && (
+          <div style={{
+            marginBottom: 12, padding: '10px 14px', borderRadius: 10,
+            background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+            fontSize: 13, color: 'var(--danger)',
+          }}>
+            {error}
+          </div>
+        )}
+
+        {/* Action button */}
+        {!estimate ? (
+          <button
+            className="btn btn-primary"
+            onClick={handleEstimate}
+            disabled={loading || !amount || parseFloat(amount) <= 0 || isAmountInvalid}
+          >
+            {loading ? t('issue_calculating') : t('issue_calc_fee')}
+          </button>
+        ) : (
+          <button className="btn btn-primary" onClick={() => setShowConfirm(true)} disabled={loading}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16" style={{ marginRight: 8 }}>
+              <rect x="1" y="4" width="22" height="16" rx="2" />
+              <line x1="1" y1="10" x2="23" y2="10" />
+            </svg>
+            {t('issue_do_issue')}
+          </button>
         )}
       </div>
-
-      {/* Info note */}
-      <div style={{
-        display: 'flex', gap: 10, alignItems: 'flex-start',
-        padding: '12px 16px', marginBottom: 20,
-        background: 'rgba(59,130,246,0.06)', borderRadius: 'var(--radius-md)',
-        border: '1px solid rgba(59,130,246,0.15)', borderLeft: '3px solid #3b82f6',
-      }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" width="16" height="16" style={{ flexShrink: 0, marginTop: 1 }}>
-          <circle cx="12" cy="12" r="10" />
-          <line x1="12" y1="8" x2="12" y2="12" />
-          <line x1="12" y1="16" x2="12.01" y2="16" />
-        </svg>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-          {t('issue_usdt_note')}
-        </p>
-      </div>
-
-      {error && (
-        <div style={{
-          marginBottom: 12, padding: '10px 14px', borderRadius: 10,
-          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
-          fontSize: 13, color: 'var(--danger)',
-        }}>
-          {error}
-        </div>
-      )}
-
-      {/* Action button */}
-      {!estimate ? (
-        <button
-          className="btn btn-primary"
-          onClick={handleEstimate}
-          disabled={loading || !amount || parseFloat(amount) <= 0 || isAmountInvalid}
-        >
-          {loading ? t('issue_calculating') : t('issue_calc_fee')}
-        </button>
-      ) : (
-        <button className="btn btn-primary" onClick={() => setShowConfirm(true)} disabled={loading}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16" style={{ marginRight: 8 }}>
-            <rect x="1" y="4" width="22" height="16" rx="2" />
-            <line x1="1" y1="10" x2="23" y2="10" />
-          </svg>
-          {t('issue_do_issue')}
-        </button>
-      )}
 
       {/* Confirm dialog */}
       <ConfirmDialog
@@ -447,13 +462,21 @@ export default function CardIssuePage() {
               <span style={{ color: 'var(--text-secondary)' }}>{t('fee_label')}</span>
               <span style={{ fontWeight: 600 }}>{formatAmount(estimate.fee, estimate.currency_symbol)}</span>
             </div>
-            <div className="info-row" style={{ borderTop: '1px solid var(--border-glass)', paddingTop: 12, marginTop: 4 }}>
+            <div className="info-row" style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4 }}>
               <span style={{ fontWeight: 700 }}>{t('total_label')}</span>
               <span style={{ fontWeight: 700 }}>{formatAmount(estimate.total, estimate.currency_symbol)}</span>
             </div>
           </div>
         )}
       </ConfirmDialog>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .issue-cards-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

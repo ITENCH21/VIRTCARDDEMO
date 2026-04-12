@@ -161,23 +161,66 @@ export default function CardDetailPage() {
 
   return (
     <div className="page">
-      {/* Карта */}
-      <div style={{ marginBottom: 20 }}>
-        <VirtualCard
-          name={card.name}
-          last4={card.last4}
-          balance={formatAmount(card.balance, card.currency_symbol)}
-          currencySymbol=""
-          currencyCode={card.currency_code}
-        />
-      </div>
+      <div className="page-wide card-detail-grid" style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 400px) minmax(0, 1fr)',
+        gap: 32,
+        alignItems: 'start',
+      }}>
+        {/* Left: Card visual + status */}
+        <div>
+          <div style={{ marginBottom: 16 }}>
+            <VirtualCard
+              name={card.name}
+              last4={card.last4}
+              balance={formatAmount(card.balance, card.currency_symbol)}
+              currencySymbol=""
+              currencyCode={card.currency_code}
+            />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+            <StatusBadge status={card.status} label={isClosing ? t('card_closing_status') : undefined} />
+          </div>
 
-      {/* Статус */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-        <StatusBadge status={card.status} label={isClosing ? t('card_closing_status') : undefined} />
-      </div>
+          {/* Actions */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {isActive && (
+              <>
+                <button className="btn btn-primary" onClick={() => navigate(`/cards/${id}/topup`)}>
+                  {t('topup_card')}
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setConfirmAction('block')}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                >
+                  <LockIcon size={18} /> {t('block_card')}
+                </button>
+              </>
+            )}
+            {isBlocked && (
+              <button
+                className="btn btn-primary"
+                onClick={() => setConfirmAction('restore')}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              >
+                <UnlockIcon size={18} /> {t('unblock_card')}
+              </button>
+            )}
+            {!isClosed && !isClosing && (
+              <button
+                className="btn btn-danger"
+                onClick={() => setConfirmAction('close')}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              >
+                <XIcon size={18} /> {t('close_card')}
+              </button>
+            )}
+          </div>
+        </div>
 
-      {/* Реквизиты */}
+        {/* Right: Credentials */}
+        <div>
       <div className="glass-card" style={{ padding: 20, marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showSensitive ? 16 : 0 }}>
           <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>{t('card_credentials')}</span>
@@ -257,43 +300,16 @@ export default function CardDetailPage() {
         )}
       </div>
 
-      {/* Действия */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {isActive && (
-          <>
-            <button className="btn btn-primary" onClick={() => navigate(`/cards/${id}/topup`)}>
-              {t('topup_card')}
-            </button>
-            <button
-              className="btn btn-secondary"
-              onClick={() => setConfirmAction('block')}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-            >
-              <LockIcon size={18} /> {t('block_card')}
-            </button>
-          </>
-        )}
-        {isBlocked && (
-          <button
-            className="btn btn-primary"
-            onClick={() => setConfirmAction('restore')}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-          >
-            <UnlockIcon size={18} /> {t('unblock_card')}
-          </button>
-        )}
-        {!isClosed && !isClosing && (
-          <button
-            className="btn btn-danger"
-            onClick={() => setConfirmAction('close')}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-          >
-            <XIcon size={18} /> {t('close_card')}
-          </button>
-        )}
+        </div>
       </div>
 
       {actionError && <p className="error-text" style={{ marginTop: 12 }}>{actionError}</p>}
+
+      <style>{`
+        @media (max-width: 768px) {
+          .card-detail-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
 
       <ConfirmDialog
         open={!!confirmAction}

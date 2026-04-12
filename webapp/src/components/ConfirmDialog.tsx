@@ -27,6 +27,7 @@ export default function ConfirmDialog({
 
   return (
     <div
+      className="confirm-dialog-overlay"
       style={{
         position: 'fixed',
         inset: 0,
@@ -35,40 +36,27 @@ export default function ConfirmDialog({
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
         display: 'flex',
-        alignItems: 'flex-end',
+        alignItems: 'center',
         justifyContent: 'center',
+        padding: 20,
         animation: 'fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
       onClick={onCancel}
     >
       <div
+        className="confirm-dialog-box"
         style={{
           width: '100%',
-          maxWidth: 430,
+          maxWidth: 440,
           background: 'var(--modal-bg)',
-          border: '1px solid var(--border-glass)',
-          borderTopLeftRadius: 'var(--radius-xl)',
-          borderTopRightRadius: 'var(--radius-xl)',
-          borderBottomLeftRadius: 0,
-          borderBottomRightRadius: 0,
-          padding: '24px 20px',
-          paddingBottom: 'calc(24px + var(--safe-bottom))',
-          animation: 'slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-xl)',
+          padding: '28px 24px',
+          boxShadow: 'var(--shadow-lg)',
+          animation: 'fadeSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Handle */}
-        <div
-          style={{
-            width: 36,
-            height: 4,
-            background: 'var(--text-muted)',
-            opacity: 0.3,
-            borderRadius: 2,
-            margin: '0 auto 20px',
-          }}
-        />
-
         <h3
           style={{
             fontSize: 18,
@@ -105,6 +93,22 @@ export default function ConfirmDialog({
           {cancelLabel}
         </button>
       </div>
+
+      {/* Mobile: bottom sheet style */}
+      <style>{`
+        @media (max-width: 768px) {
+          .confirm-dialog-overlay {
+            align-items: flex-end !important;
+            padding: 0 !important;
+          }
+          .confirm-dialog-box {
+            max-width: 100% !important;
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0 !important;
+            padding-bottom: calc(24px + var(--safe-bottom)) !important;
+            animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

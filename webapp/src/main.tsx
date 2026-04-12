@@ -4,6 +4,8 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { LayoutProvider } from './contexts/LayoutContext';
+import { LangProvider } from './contexts/LangContext';
 import './styles/globals.css';
 import './styles/theme.css';
 
@@ -40,9 +42,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter basename="/app">
       <ThemeProvider>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        <LayoutProvider mode="mobile">
+          <LangProvider>
+            <AuthProvider>
+              <App />
+            </AuthProvider>
+          </LangProvider>
+        </LayoutProvider>
       </ThemeProvider>
     </BrowserRouter>
   </React.StrictMode>

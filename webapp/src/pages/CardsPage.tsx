@@ -13,7 +13,7 @@ const ACTIVE_STATUSES = new Set(['A', 'R']);
 export default function CardsPage() {
   const { cards, loading, error } = useCards();
   const navigate = useNavigate();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [statusFilter, setStatusFilter] = useState('');
 
   const CARD_STATUS_OPTIONS = [
@@ -31,21 +31,36 @@ export default function CardsPage() {
 
   return (
     <div className="page">
-      <div style={{ height: 8 }} />
-
-      {cards.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <FilterChips
-            options={CARD_STATUS_OPTIONS}
-            value={statusFilter}
-            onChange={setStatusFilter}
-          />
+      {/* Header with filter + action */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: 16, marginBottom: 20, flexWrap: 'wrap',
+      }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          {cards.length > 0 && (
+            <FilterChips
+              options={CARD_STATUS_OPTIONS}
+              value={statusFilter}
+              onChange={setStatusFilter}
+            />
+          )}
         </div>
-      )}
+        {cards.length > 0 && (
+          <button
+            className="btn btn-primary"
+            style={{ width: 'auto', padding: '12px 24px' }}
+            onClick={() => navigate('/cards/issue')}
+          >
+            <PlusIcon size={18} />
+            {t('issue_new_card')}
+          </button>
+        )}
+      </div>
 
       {loading && <Spinner />}
       {error && <p className="error-text">{error}</p>}
 
+      {/* Empty state */}
       {!loading && cards.length === 0 && (
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
           <div style={{
@@ -63,24 +78,26 @@ export default function CardsPage() {
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
             {t('no_cards')}
           </div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6, marginBottom: 28, maxWidth: 260, margin: '0 auto 28px' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6, marginBottom: 28, maxWidth: 320, margin: '0 auto 28px' }}>
             {t('no_cards_desc')}
           </p>
-          <button className="btn btn-primary" onClick={() => navigate('/cards/issue')}>
+          <button className="btn btn-primary" style={{ maxWidth: 300, margin: '0 auto' }} onClick={() => navigate('/cards/issue')}>
             <PlusIcon size={18} />
             {t('issue_first_card')}
           </button>
         </div>
       )}
 
+      {/* No results for filter */}
       {!loading && cards.length > 0 && filtered.length === 0 && (
         <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: 15 }}>
           {t('no_cards_status')}
         </div>
       )}
 
+      {/* Cards Grid */}
       {filtered.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="cards-grid">
           {filtered.map((card) => (
             <VirtualCard
               key={card.id}
@@ -95,13 +112,24 @@ export default function CardsPage() {
           ))}
         </div>
       )}
-
+      {/* Whitelist hint */}
       {cards.length > 0 && (
-        <div style={{ marginTop: 24 }}>
-          <button className="btn btn-primary" onClick={() => navigate('/cards/issue')}>
-            <PlusIcon size={18} />
-            {t('issue_new_card')}
-          </button>
+        <div className="glass-card" style={{
+          padding: '14px 18px', marginTop: 24,
+          borderLeft: '3px solid var(--accent-1)',
+        }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-1)" strokeWidth="2" width="16" height="16" style={{ flexShrink: 0, marginTop: 1 }}>
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+              {lang === 'ru'
+                ? 'USD-карты работают по вайт-листу (180+ сервисов). EUR-карты — без ограничений, включая офлайн-магазины и такси.'
+                : 'USD cards work via whitelist (180+ services). EUR cards — no restrictions, including offline stores and taxi.'}
+            </p>
+          </div>
         </div>
       )}
     </div>

@@ -85,6 +85,7 @@ export default function ExchangePage() {
 
   return (
     <div className="page">
+      <div className="page-narrow">
       <h1 className="page-title">Обмен валют</h1>
 
       {/* Exchange Form */}
@@ -285,6 +286,7 @@ export default function ExchangePage() {
             </div>
           ))}
         </div>
+      </div>
       </div>
     </div>
   );

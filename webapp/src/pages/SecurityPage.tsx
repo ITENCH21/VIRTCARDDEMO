@@ -57,6 +57,7 @@ export default function SecurityPage() {
 
   return (
     <div className="page">
+      <div className="page-narrow">
       <h1 className="page-title">Безопасность</h1>
 
       {/* Change Password Section */}
@@ -342,6 +343,7 @@ export default function SecurityPage() {
         <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           🔐 <strong>Совет:</strong> Регулярно проверяйте активные сессии и используйте сильные пароли. Никогда не делитесь кодом 2FA с никем.
         </p>
+      </div>
       </div>
     </div>
   );

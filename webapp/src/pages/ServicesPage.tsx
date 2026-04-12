@@ -131,9 +131,9 @@ function FallbackIcon({ name }: { name: string }) {
   const color = colors[name.charCodeAt(0) % colors.length];
   return (
     <div style={{
-      width: 28, height: 28, borderRadius: 8, background: color,
+      width: 20, height: 20, borderRadius: 5, background: color,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0,
+      fontSize: 10, fontWeight: 700, color: '#fff', flexShrink: 0,
     }}>
       {name[0].toUpperCase()}
     </div>
@@ -150,18 +150,18 @@ function ServiceTile({ name, highlight }: { name: string; highlight?: string }) 
 
   return (
     <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-      padding: '10px 4px', borderRadius: 12,
-      background: 'var(--bg-glass)', border: '1px solid var(--border-glass)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+      padding: '6px 2px', borderRadius: 10,
+      background: 'var(--bg-card)', border: '1px solid var(--border)',
       cursor: 'default', minWidth: 0,
     }}>
       {url && imgOk
-        ? <img src={url} onError={() => setImgOk(false)} width={28} height={28} style={{ borderRadius: 6, objectFit: 'contain' }} alt="" />
+        ? <img src={url} onError={() => setImgOk(false)} width={20} height={20} style={{ borderRadius: 4, objectFit: 'contain' }} alt="" />
         : <FallbackIcon name={name} />
       }
       <span style={{
-        fontSize: 10, color: 'var(--text-secondary)', textAlign: 'center',
-        lineHeight: 1.3, wordBreak: 'break-word', maxHeight: 26, overflow: 'hidden',
+        fontSize: 9, color: 'var(--text-secondary)', textAlign: 'center',
+        lineHeight: 1.2, wordBreak: 'break-word', maxHeight: 22, overflow: 'hidden',
       }}>
         {highlight
           ? label.split('§').map((part, i) =>
@@ -208,7 +208,7 @@ function Section({ title, badge, accent, items, query, defaultOpen = true }: {
       </button>
 
       {open && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+        <div className="services-tile-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 8 }}>
           {items.map(name => (
             <ServiceTile key={name} name={name} highlight={query || undefined} />
           ))}
