@@ -310,8 +310,8 @@ export default function VirtualCard({ name, last4, balance, currencySymbol, curr
             </div>
             {sensitive && (
               <button
-                onClick={(e) => { e.stopPropagation(); handleCopy(sensitive.card_number, 'number'); }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleCopy(sensitive.card_number, 'number'); }}
+                style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', padding: 8, borderRadius: 8, display: 'flex' }}
               >
                 {copied === 'number'
                   ? <CheckIcon size={14} style={{ color: '#10b981' }} />
@@ -342,8 +342,8 @@ export default function VirtualCard({ name, last4, balance, currencySymbol, curr
               </div>
               {sensitive && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); handleCopy(sensitive.cvv, 'cvv'); }}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}
+                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleCopy(sensitive.cvv, 'cvv'); }}
+                  style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', padding: 8, borderRadius: 8, display: 'flex' }}
                 >
                   {copied === 'cvv'
                     ? <CheckIcon size={14} style={{ color: '#10b981' }} />
