@@ -514,9 +514,11 @@
       letter-spacing: 2px; font-family: monospace;
     }
     .vcard__brand {
-      position: absolute; bottom: 10px; right: 12px;
+      position: absolute; bottom: 8px; right: 12px;
+      display: flex; flex-direction: column; align-items: flex-end;
       font-size: 10px; font-weight: 800; color: rgba(255,255,255,.9);
     }
+    .vcard__brand svg { display: block; }
     .vcard__logo {
       position: absolute; top: 10px; right: 12px;
       font-size: 9px; font-weight: 700; color: rgba(255,255,255,.8);
@@ -1640,19 +1642,19 @@
       <div class="phone">
         <div class="phone__notch"></div>
         <div class="phone__screen">
-          <!-- Card 1 -->
+          <!-- Card 1: Visa -->
           <div class="vcard blue">
             <div class="vcard__logo">VirtCardPay</div>
             <div class="vcard__chip"></div>
             <div class="vcard__num">4242 •••• •••• 7891</div>
-            <div class="vcard__brand">VISA</div>
+            <div class="vcard__brand"><svg viewBox="0 0 1000 324" width="36" height="12" fill="white"><path d="M431.4 1.8l-79.2 320.4h-64.4L367 1.8h64.4zm266.6 206.8l33.8-93.2 19.4 93.2h-53.2zm71.8 113.6h59.6L776.4 1.8h-54.8c-12.4 0-22.8 7.2-27.4 18.2l-96.6 302.2h67.6l13.4-37h82.6l7.8 37zm-167.4-104.6c.2-82.2-113.8-86.8-113-123.6.2-11.2 10.8-23 34.2-26 11.6-1.4 43.4-2.6 79.6 13.4l14.2-66.2C600.2 8.2 577.4 1.8 549.4 1.8c-63.6 0-108.4 33.8-108.8 82.2-.4 35.8 32 55.8 56.2 67.6 25 12 33.4 19.8 33.2 30.6-.2 16.4-20 23.8-38.2 24-32.2.4-50.8-8.6-65.6-15.6l-11.6 54.2c14.8 6.8 42.4 12.8 71 13.2 67.6-.2 111.8-33.4 112-86.2zm-266.8-216h-104L162 236.6l-10.6-54.2L122.6 29c-5-19.6-19.4-26.4-37.2-27.2H1.4L.6 6.2c32 7 68 18.2 89.8 30.2 13.4 7.4 17.2 13.8 21 27.8l51.4 198h68l104.2-260.4h.4z"/></svg></div>
           </div>
-          <!-- Card 2 -->
+          <!-- Card 2: Mastercard -->
           <div class="vcard green vcard--sm">
             <div class="vcard__logo">VirtCardPay</div>
             <div class="vcard__chip"></div>
             <div class="vcard__num">5367 •••• •••• 2048</div>
-            <div class="vcard__brand">MC</div>
+            <div class="vcard__brand"><svg viewBox="0 0 131.39 86.93" width="28" height="18"><circle cx="43.47" cy="43.47" r="43.47" fill="#eb001b"/><circle cx="87.92" cy="43.47" r="43.47" fill="#f79e1b"/><path d="M65.7 11.05a43.35 43.35 0 0 0-16.18 32.42 43.35 43.35 0 0 0 16.18 32.41 43.35 43.35 0 0 0 16.17-32.41A43.35 43.35 0 0 0 65.7 11.05z" fill="#ff5f00"/></svg><span style="display:block;font-size:6px;letter-spacing:.5px;color:rgba(255,255,255,.8);margin-top:1px">mastercard</span></div>
           </div>
           <!-- Balance -->
           <div class="phone__label" data-i18n="phone.balance">Баланс карты</div>
