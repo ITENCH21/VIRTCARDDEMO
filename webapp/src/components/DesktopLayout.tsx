@@ -124,7 +124,7 @@ export default function DesktopLayout({ children }: Props) {
                 onClick={() => handleNav(item.path)}
                 style={active ? {
                   background: `linear-gradient(135deg, ${item.color}, ${item.color}dd)`,
-                  boxShadow: `0 4px 16px ${item.color}40`,
+                  boxShadow: `inset 3px 3px 8px rgba(0,0,0,0.3), inset -1px -1px 4px rgba(255,255,255,0.1), 0 4px 16px ${item.color}40`,
                 } : undefined}
               >
                 <item.Icon size={20} style={{ color: active ? '#fff' : item.color }} />
@@ -141,7 +141,7 @@ export default function DesktopLayout({ children }: Props) {
             onClick={() => handleNav('/profile')}
             style={isActive('/profile') ? {
               background: 'linear-gradient(135deg, #64748b, #64748bdd)',
-              boxShadow: '0 4px 16px rgba(100,116,139,0.25)',
+              boxShadow: 'inset 3px 3px 8px rgba(0,0,0,0.3), inset -1px -1px 4px rgba(255,255,255,0.1), 0 4px 16px rgba(100,116,139,0.25)',
             } : undefined}
           >
             <UserIcon size={20} style={{ color: isActive('/profile') ? '#fff' : '#64748b' }} />

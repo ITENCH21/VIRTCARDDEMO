@@ -108,6 +108,7 @@ export default function TariffsPage() {
       className="glass-card"
       style={{
         padding: 0, overflow: 'hidden', flex: 1,
+        display: 'flex', flexDirection: 'column',
         border: plan.popular
           ? '1.5px solid rgba(99,102,241,0.45)'
           : '1px solid var(--border)',
@@ -149,7 +150,7 @@ export default function TariffsPage() {
       </div>
 
       {/* Rows */}
-      <div style={{ borderTop: '1px solid var(--border)' }}>
+      <div style={{ borderTop: '1px solid var(--border)', flex: 1 }}>
         {plan.rows.map((row, i) => (
           <div key={i} style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
