@@ -77,6 +77,7 @@ const T = {
     card_status_frozen: 'Карта заморожена',
     card_status_closed: 'Карта закрыта',
     card_hide: 'Скрыть',
+    card_tap_to_flip: 'Нажмите, чтобы перевернуть',
     // CardsPage
     filter_active: 'Активные',
     filter_frozen: 'Замороженные',
@@ -331,6 +332,7 @@ const T = {
     card_status_frozen: 'Frozen',
     card_status_closed: 'Closed',
     card_hide: 'Hide',
+    card_tap_to_flip: 'Tap to flip',
     // CardsPage
     filter_active: 'Active',
     filter_frozen: 'Frozen',

@@ -136,9 +136,8 @@ function InfiniteCarousel({ items, onNavigate, onHideCard }: {
           <div key={`${card.id}-${i}`} style={{ minWidth: 300, flexShrink: 0 }}>
             <VirtualCard name={card.name} last4={card.last4} balance={card.balance}
               currencySymbol={card.currency_symbol} currencyCode={card.currency_code}
-              status={card.status} noShadow
+              status={card.status} noShadow cardId={card.id} flippable
               onHide={card.status === 'C' ? () => onHideCard(card.id) : undefined}
-              onClick={() => { if (!moved.current) onNavigate(card.id); }}
             />
           </div>
         ))}
@@ -275,7 +274,7 @@ export default function DashboardPage() {
                     <VirtualCard key={card.id} name={card.name} last4={card.last4}
                       balance={formatAmount(card.balance, card.currency_symbol)} currencySymbol=""
                       currencyCode={card.currency_code} status={card.status}
-                      onClick={() => navigate(`/cards/${card.id}`)} />
+                      cardId={card.id} flippable />
                   ))}
                 </div>
               </>
