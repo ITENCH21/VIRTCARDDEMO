@@ -127,9 +127,7 @@ export default function DesktopLayout({ children }: Props) {
                   boxShadow: `0 4px 16px ${item.color}40`,
                 } : undefined}
               >
-                <span className="lk-sidebar-icon-wrap" style={{ background: active ? 'rgba(255,255,255,0.2)' : `${item.color}18` }}>
-                  <item.Icon size={18} style={{ color: active ? '#fff' : item.color }} />
-                </span>
+                <item.Icon size={20} style={{ color: active ? '#fff' : item.color }} />
                 <span>{item.label}</span>
               </button>
             );
@@ -146,15 +144,11 @@ export default function DesktopLayout({ children }: Props) {
               boxShadow: '0 4px 16px rgba(100,116,139,0.25)',
             } : undefined}
           >
-            <span className="lk-sidebar-icon-wrap" style={{ background: isActive('/profile') ? 'rgba(255,255,255,0.2)' : 'rgba(100,116,139,0.1)' }}>
-              <UserIcon size={18} style={{ color: isActive('/profile') ? '#fff' : '#64748b' }} />
-            </span>
+            <UserIcon size={20} style={{ color: isActive('/profile') ? '#fff' : '#64748b' }} />
             <span>{lang === 'ru' ? 'Настройки' : 'Settings'}</span>
           </button>
           <button className="lk-sidebar-item lk-sidebar-logout" onClick={handleLogout}>
-            <span className="lk-sidebar-icon-wrap" style={{ background: 'rgba(239,68,68,0.1)' }}>
-              <LogOutIcon size={18} style={{ color: '#ef4444' }} />
-            </span>
+            <LogOutIcon size={20} style={{ color: '#ef4444' }} />
             <span>{t('logout')}</span>
           </button>
         </div>
@@ -296,17 +290,6 @@ export default function DesktopLayout({ children }: Props) {
         }
         .lk-sidebar-item.active svg {
           color: #fff;
-        }
-
-        .lk-sidebar-icon-wrap {
-          width: 32px;
-          height: 32px;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          transition: background 0.2s ease;
         }
 
         .lk-sidebar-bottom {
