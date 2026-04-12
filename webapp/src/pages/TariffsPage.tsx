@@ -92,14 +92,14 @@ export default function TariffsPage() {
     { q: 'Где можно использовать карту?', a: 'Карту Стандарт принимают все онлайн-магазины, поддерживающие VISA/Mastercard. Карта Apple/Google Pay дополнительно работает в офлайн-магазинах через бесконтактную оплату.' },
     { q: 'Можно ли вывести остаток при закрытии карты?', a: 'Да. При закрытии карты остаток средств автоматически возвращается на ваш основной счёт USDT в течение 1–3 рабочих дней.' },
     { q: 'Безопасно ли хранить деньги на карте?', a: 'Карта предназначена для онлайн-платежей, не для хранения крупных сумм. Рекомендуем держать на ней только необходимый для покупок баланс.' },
-    { q: 'Как заблокировать карту если она потеряна?', a: 'Мгновенно заблокируйте карту в разделе «Мои карты» → нажмите на карту → «Заблокировать». Карту можно разблокировать в любой момент.' },
+    { q: 'Как заморозить карту если она потеряна?', a: 'Мгновенно заморозьте карту в разделе «Мои карты» → нажмите на карту → «Заморозить». Карту можно разморозить в любой момент.' },
   ] : [
     { q: 'How do I top up the card?', a: 'Top-up is done via USDT (TRC-20). Go to the "Deposit" section, copy the wallet address and send USDT. After the transaction is confirmed, funds are automatically converted and credited to the card.' },
     { q: 'How long does crediting take?', a: 'Usually 5–15 minutes after TRON network confirmation. Sometimes up to 1 hour during high network load.' },
     { q: 'Where can I use the card?', a: 'The Standard card is accepted by all online stores supporting VISA/Mastercard. The Apple/Google Pay card also works in offline stores via contactless payment.' },
     { q: 'Can I withdraw the balance when closing the card?', a: 'Yes. When closing the card, the remaining balance is automatically returned to your main USDT account within 1–3 business days.' },
     { q: 'Is it safe to keep money on the card?', a: 'The card is designed for online payments, not for storing large amounts. We recommend keeping only the balance needed for purchases.' },
-    { q: 'How to block the card if it is lost?', a: 'Instantly block the card in "My Cards" → tap on the card → "Block card". You can unblock it at any time.' },
+    { q: 'How to freeze the card if it is lost?', a: 'Instantly freeze the card in "My Cards" → tap on the card → "Freeze card". You can unfreeze it at any time.' },
   ];
 
   const renderPlanCard = (plan: Plan) => (

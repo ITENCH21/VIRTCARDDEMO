@@ -130,13 +130,13 @@ def format_card_close_notification(card_last4: str) -> str:
 
 
 def format_card_block_notification(card_last4: str) -> str:
-    """Форматирует уведомление о блокировке карты."""
-    return f"<b>Карта ****{card_last4} заблокирована</b>"
+    """Форматирует уведомление о заморозке карты."""
+    return f"<b>Карта ****{card_last4} заморожена</b>"
 
 
 def format_card_restore_notification(card_last4: str) -> str:
-    """Форматирует уведомление о разблокировке карты."""
-    return f"<b>Карта ****{card_last4} разблокирована</b>"
+    """Форматирует уведомление о разморозке карты."""
+    return f"<b>Карта ****{card_last4} разморожена</b>"
 
 
 def format_withdraw_notification(operation: Operation, currency_symbol: str) -> str:
@@ -193,8 +193,8 @@ KIND_LABELS = {
     OperationKind.CARD_OPEN: "Выпуск карты",
     OperationKind.CARD_TOPUP: "Пополнение карты",
     OperationKind.CARD_CLOSE: "Закрытие карты",
-    OperationKind.CARD_BLOCK: "Блокировка карты",
-    OperationKind.CARD_RESTORE: "Разблокировка карты",
+    OperationKind.CARD_BLOCK: "Заморозка карты",
+    OperationKind.CARD_RESTORE: "Разморозка карты",
 }
 
 

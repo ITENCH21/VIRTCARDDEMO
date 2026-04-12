@@ -173,7 +173,7 @@ def card_detail_keyboard(card) -> InlineKeyboardMarkup:
         buttons.append(
             [
                 InlineKeyboardButton(
-                    "🔒 Заблокировать", callback_data=f"{CB_CARD_BLOCK}{card.pk}"
+                    "🔒 Заморозить", callback_data=f"{CB_CARD_BLOCK}{card.pk}"
                 ),
             ]
         )
@@ -188,7 +188,7 @@ def card_detail_keyboard(card) -> InlineKeyboardMarkup:
         buttons.append(
             [
                 InlineKeyboardButton(
-                    "🔓 Разблокировать", callback_data=f"{CB_CARD_RESTORE}{card.pk}"
+                    "🔓 Разморозить", callback_data=f"{CB_CARD_RESTORE}{card.pk}"
                 ),
             ]
         )

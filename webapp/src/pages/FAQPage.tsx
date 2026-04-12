@@ -47,9 +47,9 @@ const FAQ_RU: FaqItem[] = [
   { category: 'Вывод', q: 'Куда можно вывести средства?', a: 'Только на USDT-кошелёк в сети TRON (TRC-20). Другие сети и криптовалюты не поддерживаются.' },
 
   // Безопасность карты
-  { category: 'Безопасность', q: 'Как заблокировать карту?', a: 'Раздел «Карты» → выберите карту → «Заблокировать карту». Карта мгновенно перестанет принимать платежи. Разблокировать можно в любой момент там же.' },
+  { category: 'Безопасность', q: 'Как заморозить карту?', a: 'Раздел «Карты» → выберите карту → «Заморозить карту». Карта мгновенно перестанет принимать платежи. Разморозить можно в любой момент там же.' },
   { category: 'Безопасность', q: 'Как закрыть карту?', a: 'Раздел «Карты» → выберите карту → «Закрыть карту». Подтвердите действие. Остаток средств автоматически вернётся на ваш основной счёт.' },
-  { category: 'Безопасность', q: 'Что делать если карта была скомпрометирована?', a: 'Немедленно заблокируйте карту через приложение. Напишите в поддержку — мы поможем закрыть старую карту и выпустить новую. Средства на заблокированной карте в безопасности.' },
+  { category: 'Безопасность', q: 'Что делать если карта была скомпрометирована?', a: 'Немедленно заморозьте карту через приложение. Напишите в поддержку — мы поможем закрыть старую карту и выпустить новую. Средства на замороженной карте в безопасности.' },
   { category: 'Безопасность', q: 'Безопасно ли хранить деньги на карте?', a: 'Карта предназначена для платежей, а не для хранения. Рекомендуем держать на карте только сумму, необходимую для ближайших покупок. Основной баланс хранится на USDT-счёте.' },
 
   // Реквизиты
@@ -59,7 +59,7 @@ const FAQ_RU: FaqItem[] = [
 
   // Сервисы
   { category: 'Сервисы', q: 'Какие сервисы поддерживаются?', a: 'Стандартная карта поддерживает 180+ сервисов из вайт-листа: Google Ads, Meta Ads, OpenAI, GitHub, Adobe, Cloudflare, Netflix, Shopify и сотни других. Карта Apple/Google Pay — 60+ сервисов с акцентом на физические магазины и бесконтактную оплату.' },
-  { category: 'Сервисы', q: 'Почему платёж отклонён на разрешённом сервисе?', a: 'Убедитесь что: 1) на карте достаточно средств, 2) карта не заблокирована, 3) сервис принимает именно эту платёжную систему (VISA/Mastercard). Если всё в порядке — напишите в поддержку с деталями транзакции.' },
+  { category: 'Сервисы', q: 'Почему платёж отклонён на разрешённом сервисе?', a: 'Убедитесь что: 1) на карте достаточно средств, 2) карта не заморожена, 3) сервис принимает именно эту платёжную систему (VISA/Mastercard). Если всё в порядке — напишите в поддержку с деталями транзакции.' },
   { category: 'Сервисы', q: 'Можно ли использовать карту для рекуррентных платежей (подписок)?', a: 'Да. Карта поддерживает автосписания для сервисов из вайт-листа. Убедитесь, что на карте достаточно средств к дате списания.' },
   { category: 'Сервисы', q: 'Работает ли карта с PayPal?', a: 'Да, обе карты (Стандарт и Apple/Google Pay) можно привязать к PayPal-аккаунту.' },
 
@@ -108,9 +108,9 @@ const FAQ_EN: FaqItem[] = [
   { category: 'Withdrawal', q: 'What is the minimum withdrawal amount?', a: 'Minimum withdrawal amount — 50 USDT.' },
   { category: 'Withdrawal', q: 'Where can I withdraw funds to?', a: 'Only to a USDT wallet on the TRON network (TRC-20). Other networks and cryptocurrencies are not supported.' },
   // Security
-  { category: 'Security', q: 'How do I block the card?', a: '"Cards" section → select card → "Block card". The card instantly stops accepting payments. You can unblock it at any time in the same place.' },
+  { category: 'Security', q: 'How do I freeze the card?', a: '"Cards" section → select card → "Freeze card". The card instantly stops accepting payments. You can unfreeze it at any time in the same place.' },
   { category: 'Security', q: 'How do I close the card?', a: '"Cards" section → select card → "Close card". Confirm the action. The remaining balance is automatically returned to your main account.' },
-  { category: 'Security', q: 'What if the card was compromised?', a: 'Immediately block the card via the app. Contact support — we will help close the old card and issue a new one. Funds on the blocked card are safe.' },
+  { category: 'Security', q: 'What if the card was compromised?', a: 'Immediately freeze the card via the app. Contact support — we will help close the old card and issue a new one. Funds on the frozen card are safe.' },
   { category: 'Security', q: 'Is it safe to keep money on the card?', a: 'The card is designed for payments, not storage. We recommend keeping only the amount needed for upcoming purchases on the card. The main balance is held in your USDT account.' },
   // Card Details
   { category: 'Card Details', q: 'Where can I see the card number, CVV and expiry?', a: '"Cards" section → select card → tap "Show details". Data is displayed only after confirmation. You can copy each detail with the icon next to it.' },
@@ -118,7 +118,7 @@ const FAQ_EN: FaqItem[] = [
   { category: 'Card Details', q: 'Does the CVV change over time?', a: 'No. The CVV is static and valid for the entire card lifetime.' },
   // Services
   { category: 'Services', q: 'Which services are supported?', a: 'The Standard card supports 180+ whitelist services: Google Ads, Meta Ads, OpenAI, GitHub, Adobe, Cloudflare, Netflix, Shopify and hundreds more. The Apple/Google Pay card — 60+ services with focus on physical stores and contactless payments.' },
-  { category: 'Services', q: 'Why is a payment declined on an allowed service?', a: 'Make sure: 1) the card has sufficient funds, 2) the card is not blocked, 3) the service accepts this payment system (VISA/Mastercard). If everything is fine — contact support with transaction details.' },
+  { category: 'Services', q: 'Why is a payment declined on an allowed service?', a: 'Make sure: 1) the card has sufficient funds, 2) the card is not frozen, 3) the service accepts this payment system (VISA/Mastercard). If everything is fine — contact support with transaction details.' },
   { category: 'Services', q: 'Can I use the card for recurring payments (subscriptions)?', a: 'Yes. The card supports auto-debits for whitelist services. Make sure the card has sufficient funds by the billing date.' },
   { category: 'Services', q: 'Does the card work with PayPal?', a: 'Yes, both cards (Standard and Apple/Google Pay) can be linked to a PayPal account.' },
   // Limits

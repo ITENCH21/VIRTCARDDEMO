@@ -196,7 +196,7 @@ async def handle_block_card(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     try:
         await block_card(client, card_id)
         await query.edit_message_text(
-            "🔒 Карта заблокирована.\n\nВы можете разблокировать её в списке карт.",
+            "🔒 Карта заморожена.\n\nВы можете разморозить её в списке карт.",
             reply_markup=back_to_menu_keyboard(),
         )
     except CardServiceError as e:
@@ -209,7 +209,7 @@ async def handle_block_card(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 async def handle_restore_card(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
-    """Восстанавливает заблокированную карту."""
+    """Размораживает карту."""
     query = update.callback_query
     await query.answer()
 
@@ -222,7 +222,7 @@ async def handle_restore_card(
     try:
         await restore_card(client, card_id)
         await query.edit_message_text(
-            "🔓 Карта разблокирована.",
+            "🔓 Карта разморожена.",
             reply_markup=back_to_menu_keyboard(),
         )
     except CardServiceError as e:

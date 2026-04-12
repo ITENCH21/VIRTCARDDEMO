@@ -453,10 +453,10 @@ async def topup_card(
 
 
 async def block_card(client: Client, card_account_id: str) -> Operation:
-    """Блокирует карту."""
+    """Замораживает карту."""
     card = await get_card_by_id(client, card_account_id)
     if card.status not in [Account.Status.ACTIVE, Account.Status.RESTORED]:
-        raise InvalidCardStatusError("Карта не активна — нельзя заблокировать")
+        raise InvalidCardStatusError("Карта не активна — нельзя заморозить")
 
     operation = await Operation.create(
         client=client,
@@ -474,10 +474,10 @@ async def block_card(client: Client, card_account_id: str) -> Operation:
 
 
 async def restore_card(client: Client, card_account_id: str) -> Operation:
-    """Восстанавливает заблокированную карту."""
+    """Размораживает карту."""
     card = await get_card_by_id(client, card_account_id)
     if card.status != Account.Status.BLOCKED:
-        raise InvalidCardStatusError("Карта не заблокирована — нельзя восстановить")
+        raise InvalidCardStatusError("Карта не заморожена — нельзя разморозить")
 
     operation = await Operation.create(
         client=client,
