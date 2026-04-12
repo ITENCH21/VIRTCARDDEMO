@@ -294,34 +294,73 @@
       display: flex; align-items: center; justify-content: center;
       gap: 24px; flex-wrap: wrap; position: relative;
     }
-    /* ── Solar system orbits ── */
+    /* ── Solar system orbits — neumorphic grooves ── */
     .orbit-wrap {
       position: relative; width: 700px; height: 700px;
       display: flex; align-items: center; justify-content: center;
     }
-    /* Orbit tracks */
+
+    /* Orbit tracks — inset grooves */
     .orbit {
-      position: absolute; border-radius: 50%;
-      border: 1px solid rgba(59,130,246,.1);
+      position: absolute; border-radius: 50%; border: none;
       animation-timing-function: linear;
       animation-iteration-count: infinite;
     }
-    [data-theme="dark"] .orbit { border-color: rgba(59,130,246,.08); }
-    .orbit--1 { width: 380px; height: 380px; animation: orbitCW 45s linear infinite; border-style: dashed; }
+    /* Light theme: inset channel */
+    .orbit::before {
+      content: ''; position: absolute; inset: 0; border-radius: 50%;
+      box-shadow: inset 3px 3px 6px rgba(163,177,198,.5),
+                  inset -3px -3px 6px rgba(255,255,255,.8);
+      border: 6px solid transparent;
+      background: linear-gradient(145deg, rgba(200,210,225,.25), rgba(240,244,248,.15)) border-box;
+      -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude;
+    }
+    [data-theme="dark"] .orbit::before {
+      box-shadow: inset 3px 3px 8px rgba(0,0,0,.6),
+                  inset -2px -2px 6px rgba(255,255,255,.04);
+      background: linear-gradient(145deg, rgba(10,18,25,.5), rgba(25,37,53,.3)) border-box;
+    }
+
+    .orbit--1 { width: 380px; height: 380px; animation: orbitCW 45s linear infinite; }
     .orbit--2 { width: 540px; height: 540px; animation: orbitCCW 70s linear infinite; }
-    .orbit--3 { width: 700px; height: 700px; animation: orbitCW 100s linear infinite; border-style: dashed; }
+    .orbit--3 { width: 700px; height: 700px; animation: orbitCW 100s linear infinite; }
     @keyframes orbitCW  { to { transform: rotate(360deg); } }
     @keyframes orbitCCW { to { transform: rotate(-360deg); } }
 
-    /* Planet — service icon */
+    /* Planet — billiard ball style, round, various sizes */
     .planet {
-      position: absolute; width: 40px; height: 40px;
-      background: #ffffff; border-radius: 12px; padding: 5px;
-      box-shadow: 0 4px 14px rgba(0,0,0,.12);
+      position: absolute; border-radius: 50%;
+      background: #e2e8f0;
       display: flex; align-items: center; justify-content: center;
+      box-shadow: 4px 4px 10px rgba(163,177,198,.5),
+                  -4px -4px 10px rgba(255,255,255,.8),
+                  inset 2px 2px 4px rgba(255,255,255,.6),
+                  inset -2px -2px 4px rgba(163,177,198,.3);
+      overflow: hidden;
     }
-    [data-theme="dark"] .planet { background: #1e293b; box-shadow: 0 4px 14px rgba(0,0,0,.5); }
-    .planet img { width: 100%; height: 100%; object-fit: contain; border-radius: 4px; }
+    .planet::after {
+      content: ''; position: absolute;
+      top: 15%; left: 20%; width: 30%; height: 20%;
+      border-radius: 50%;
+      background: rgba(255,255,255,.45);
+      filter: blur(2px);
+    }
+    [data-theme="dark"] .planet {
+      background: linear-gradient(145deg, #1e2a3a, #141e2c);
+      box-shadow: 4px 4px 10px rgba(0,0,0,.5),
+                  -2px -2px 8px rgba(255,255,255,.04),
+                  inset 1px 1px 3px rgba(255,255,255,.06),
+                  inset -1px -1px 3px rgba(0,0,0,.3);
+    }
+    [data-theme="dark"] .planet::after { background: rgba(255,255,255,.08); }
+    .planet img { width: 60%; height: 60%; object-fit: contain; border-radius: 0; position: relative; z-index: 1; }
+
+    /* Size variants */
+    .planet--lg { width: 52px; height: 52px; margin: -26px 0 0 -26px; }
+    .planet--md { width: 42px; height: 42px; margin: -21px 0 0 -21px; }
+    .planet--sm { width: 34px; height: 34px; margin: -17px 0 0 -17px; }
+
     /* keep planets upright */
     .orbit--1 .planet { animation: counterCW 45s linear infinite; }
     .orbit--2 .planet { animation: counterCCW 70s linear infinite; }
@@ -329,7 +368,7 @@
     @keyframes counterCW  { to { transform: rotate(-360deg); } }
     @keyframes counterCCW { to { transform: rotate(360deg); } }
 
-    /* Moon — small satellite orbiting a planet */
+    /* Moon — small ball orbiting a planet */
     .moon-ring {
       position: absolute; width: 60px; height: 60px;
       top: 50%; left: 50%; margin: -30px 0 0 -30px;
@@ -337,13 +376,21 @@
       pointer-events: none;
     }
     .moon {
-      position: absolute; width: 18px; height: 18px;
-      background: #f1f5f9; border-radius: 6px; padding: 2px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.1);
+      position: absolute; width: 20px; height: 20px;
+      background: #e2e8f0; border-radius: 50%; padding: 3px;
+      box-shadow: 2px 2px 6px rgba(163,177,198,.5),
+                  -2px -2px 6px rgba(255,255,255,.8),
+                  inset 1px 1px 2px rgba(255,255,255,.5);
       top: 0; left: 50%; transform: translate(-50%, -50%);
+      overflow: hidden;
     }
-    [data-theme="dark"] .moon { background: #0f172a; box-shadow: 0 2px 8px rgba(0,0,0,.5); }
-    .moon img { width: 100%; height: 100%; object-fit: contain; border-radius: 3px; }
+    [data-theme="dark"] .moon {
+      background: linear-gradient(145deg, #141e2c, #1e2a3a);
+      box-shadow: 2px 2px 6px rgba(0,0,0,.5),
+                  -1px -1px 4px rgba(255,255,255,.03),
+                  inset 1px 1px 2px rgba(255,255,255,.04);
+    }
+    .moon img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
     @keyframes moonSpin { to { transform: rotate(360deg); } }
     .moon-ring--rev { animation-direction: reverse; }
     .moon-ring--slow { animation-duration: 8s; }
@@ -1732,86 +1779,74 @@
         <!-- Glow -->
         <div class="orbit-glow"></div>
 
-        <!-- Orbit 1 — inner, 3 planets -->
+        <!-- Orbit 1 — inner, 3 big balls -->
         <div class="orbit orbit--1">
-          <!-- Netflix + moon Hulu -->
-          <div class="planet" style="top:0;left:50%;margin:-20px 0 0 -20px">
+          <div class="planet planet--lg" style="top:0;left:50%">
             <img src="https://www.google.com/s2/favicons?sz=64&domain=netflix.com" alt="Netflix"/>
             <div class="moon-ring moon-ring--fast">
               <div class="moon"><img src="https://www.google.com/s2/favicons?sz=32&domain=hulu.com" alt="Hulu"/></div>
             </div>
           </div>
-          <!-- Spotify + moon Deezer -->
-          <div class="planet" style="bottom:13%;right:0;margin:0 -20px -20px 0">
+          <div class="planet planet--lg" style="bottom:13%;right:0">
             <img src="https://www.google.com/s2/favicons?sz=64&domain=spotify.com" alt="Spotify"/>
             <div class="moon-ring moon-ring--rev">
               <div class="moon"><img src="https://www.google.com/s2/favicons?sz=32&domain=music.apple.com" alt="Apple Music"/></div>
             </div>
           </div>
-          <!-- Telegram -->
-          <div class="planet" style="bottom:13%;left:0;margin:0 0 -20px -20px">
+          <div class="planet planet--md" style="bottom:13%;left:0">
             <img src="https://www.google.com/s2/favicons?sz=64&domain=telegram.org" alt="Telegram"/>
           </div>
         </div>
 
-        <!-- Orbit 2 — middle, 4 planets -->
+        <!-- Orbit 2 — middle, 4 medium balls -->
         <div class="orbit orbit--2">
-          <!-- Amazon + moon eBay -->
-          <div class="planet" style="top:8%;right:3%;margin:-20px -20px 0 0">
+          <div class="planet planet--lg" style="top:8%;right:3%">
             <img src="https://www.google.com/s2/favicons?sz=64&domain=amazon.com" alt="Amazon"/>
             <div class="moon-ring moon-ring--slow">
               <div class="moon"><img src="https://www.google.com/s2/favicons?sz=32&domain=ebay.com" alt="eBay"/></div>
             </div>
           </div>
-          <!-- ChatGPT + moon Claude -->
-          <div class="planet" style="bottom:0;left:50%;margin:0 0 -20px -20px">
+          <div class="planet planet--md" style="bottom:0;left:50%">
             <img src="https://www.google.com/s2/favicons?sz=64&domain=chat.openai.com" alt="ChatGPT"/>
             <div class="moon-ring moon-ring--fast moon-ring--rev">
               <div class="moon"><img src="https://www.google.com/s2/favicons?sz=32&domain=claude.ai" alt="Claude"/></div>
             </div>
           </div>
-          <!-- YouTube -->
-          <div class="planet" style="top:8%;left:3%;margin:-20px 0 0 -20px">
+          <div class="planet planet--md" style="top:8%;left:3%">
             <img src="https://www.google.com/s2/favicons?sz=64&domain=youtube.com" alt="YouTube"/>
             <div class="moon-ring">
               <div class="moon"><img src="https://www.google.com/s2/favicons?sz=32&domain=twitch.tv" alt="Twitch"/></div>
             </div>
           </div>
-          <!-- Booking -->
-          <div class="planet" style="top:50%;right:0;margin:-20px -20px 0 0">
+          <div class="planet planet--sm" style="top:50%;right:0">
             <img src="https://www.google.com/s2/favicons?sz=64&domain=booking.com" alt="Booking"/>
           </div>
         </div>
 
-        <!-- Orbit 3 — outer, 5 planets -->
+        <!-- Orbit 3 — outer, 5 mixed balls -->
         <div class="orbit orbit--3">
-          <!-- Figma -->
-          <div class="planet" style="top:0;left:50%;margin:-20px 0 0 -20px">
+          <div class="planet planet--md" style="top:0;left:50%">
             <img src="https://www.google.com/s2/favicons?sz=64&domain=figma.com" alt="Figma"/>
             <div class="moon-ring moon-ring--rev moon-ring--fast">
               <div class="moon"><img src="https://www.google.com/s2/favicons?sz=32&domain=canva.com" alt="Canva"/></div>
             </div>
           </div>
-          <!-- Adobe -->
-          <div class="planet" style="top:20%;right:0;margin:-20px -20px 0 0">
+          <div class="planet planet--sm" style="top:20%;right:0">
             <img src="https://www.google.com/s2/favicons?sz=64&domain=adobe.com" alt="Adobe"/>
           </div>
-          <!-- GitHub + moon GitLab -->
-          <div class="planet" style="bottom:20%;right:5%;margin:0 -20px -20px 0">
+          <div class="planet planet--lg" style="bottom:20%;right:5%">
             <img src="https://www.google.com/s2/favicons?sz=64&domain=github.com" alt="GitHub"/>
             <div class="moon-ring moon-ring--slow">
               <div class="moon"><img src="https://www.google.com/s2/favicons?sz=32&domain=gitlab.com" alt="GitLab"/></div>
             </div>
           </div>
-          <!-- Steam -->
-          <div class="planet" style="bottom:20%;left:5%;margin:0 0 -20px -20px">
+          <div class="planet planet--md" style="bottom:20%;left:5%">
             <img src="https://www.google.com/s2/favicons?sz=64&domain=store.steampowered.com" alt="Steam"/>
             <div class="moon-ring moon-ring--rev">
               <div class="moon"><img src="https://www.google.com/s2/favicons?sz=32&domain=epicgames.com" alt="Epic"/></div>
             </div>
           </div>
-          <!-- Airbnb -->
-          <div class="planet" style="top:20%;left:0;margin:-20px 0 0 -20px">
+          <div class="planet planet--sm" style="top:20%;left:0">
             <img src="https://www.google.com/s2/favicons?sz=64&domain=airbnb.com" alt="Airbnb"/>
           </div>
         </div>
