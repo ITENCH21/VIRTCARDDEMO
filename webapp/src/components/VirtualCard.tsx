@@ -336,36 +336,43 @@ export default function VirtualCard({ name, last4, balance, currencySymbol, curr
         </div>
       </div>
 
-      {/* Copy button — stops propagation, doesn't flip */}
-      <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center' }}>
-        {sensitive && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              handleCopy(sensitive.card_number, 'number');
-            }}
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
-            className="card-copy-btn"
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              padding: '8px 20px', borderRadius: 10,
-              background: 'rgba(255,255,255,0.15)',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              color: '#fff', fontSize: 12, fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            {copied === 'number'
-              ? <><CheckIcon size={14} style={{ color: '#10b981' }} /> {t('copied') || 'Copied!'}</>
-              : <><CopyIcon size={14} /> {t('copy_number') || 'Copy number'}</>
-            }
-          </button>
-        )}
-      </div>
+      {/* Copy buttons — 3 buttons, stops propagation, doesn't flip */}
+      {sensitive && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 8, justifyContent: 'center' }}
+        >
+          {[
+            { key: 'number', label: t('copy_number'), value: sensitive.card_number },
+            { key: 'expiry', label: t('copy_expiry'), value: `${sensitive.expiry_month}/${sensitive.expiry_year}` },
+            { key: 'cvv', label: t('copy_cvv'), value: sensitive.cvv },
+          ].map((btn) => (
+            <button
+              key={btn.key}
+              onClick={() => handleCopy(btn.value, btn.key)}
+              className="card-copy-btn"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                padding: '7px 14px', borderRadius: 10, flex: 1,
+                background: copied === btn.key ? 'rgba(16,185,129,0.25)' : 'rgba(255,255,255,0.15)',
+                backdropFilter: 'blur(8px)',
+                border: copied === btn.key ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(255,255,255,0.2)',
+                color: '#fff', fontSize: 11, fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              {copied === btn.key
+                ? <CheckIcon size={13} style={{ color: '#10b981' }} />
+                : <CopyIcon size={13} />
+              }
+              {btn.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 
