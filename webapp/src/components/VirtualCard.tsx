@@ -18,23 +18,10 @@ interface Props {
   flippable?: boolean;
 }
 
-function getCardTheme(currencyCode?: string) {
-  const code = (currencyCode || '').toUpperCase();
-  if (code === 'USD')
-    return {
-      gradient: 'linear-gradient(135deg, #1e40af, #2563eb, #3b82f6, #60a5fa)',
-      glow: 'rgba(59,130,246,0.45)',
-      badge: 'rgba(255,255,255,0.18)',
-    };
-  if (code === 'EUR')
-    return {
-      gradient: 'linear-gradient(135deg, #92400e, #d97706, #f59e0b, #fbbf24)',
-      glow: 'rgba(245,158,11,0.45)',
-      badge: 'rgba(255,255,255,0.18)',
-    };
+function getCardTheme() {
   return {
-    gradient: 'linear-gradient(135deg, #4c1d95, #6d28d9, #7c3aed, #8b5cf6)',
-    glow: 'rgba(139,92,246,0.45)',
+    gradient: 'linear-gradient(135deg, #1e40af, #2563eb, #3b82f6, #60a5fa)',
+    glow: 'rgba(59,130,246,0.45)',
     badge: 'rgba(255,255,255,0.18)',
   };
 }
@@ -77,7 +64,7 @@ function PaymentLogo({ network }: { network: 'visa' | 'mastercard' }) {
 export default function VirtualCard({ name, last4, balance, currencySymbol, currencyCode, variant = 0, onClick, noShadow, status, onHide, cardId, flippable }: Props) {
   const { t } = useLang();
   const isClosed = status === 'C';
-  const theme = getCardTheme(currencyCode);
+  const theme = getCardTheme();
   const ribbon = getCornerRibbon(status);
 
   const [isFlipped, setIsFlipped] = useState(false);
