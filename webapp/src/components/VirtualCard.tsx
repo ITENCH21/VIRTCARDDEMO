@@ -100,7 +100,7 @@ export default function VirtualCard({ name, last4, balance, currencySymbol, curr
 
   // Front side content
   const frontSide = (
-    <div style={{
+    <div onClick={handleFlip} style={{
       ...cardFaceStyle,
       padding: 24,
       display: 'flex',
@@ -265,7 +265,7 @@ export default function VirtualCard({ name, last4, balance, currencySymbol, curr
 
   // Back side content
   const backSide = (
-    <div style={{
+    <div onClick={handleFlip} style={{
       ...cardFaceStyle,
       transform: 'rotateY(180deg)',
       padding: 24,
@@ -294,8 +294,8 @@ export default function VirtualCard({ name, last4, balance, currencySymbol, curr
         pointerEvents: 'none',
       }} />
 
-      {/* Card details */}
-      <div style={{ marginTop: 56, position: 'relative', zIndex: 1 }}>
+      {/* Card details — clicks here do NOT flip the card */}
+      <div onClick={(e) => e.stopPropagation()} style={{ marginTop: 56, position: 'relative', zIndex: 1 }}>
         {/* Card number */}
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 10, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: 1, marginBottom: 4 }}>
@@ -373,7 +373,6 @@ export default function VirtualCard({ name, last4, balance, currencySymbol, curr
         perspective: 1000,
         cursor: 'pointer',
       }}
-      onClick={handleFlip}
     >
       <div
         style={{
