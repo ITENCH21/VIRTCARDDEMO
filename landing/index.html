@@ -529,12 +529,16 @@
     .mc-circles {
       position: relative; width: 26px; height: 16px;
     }
-    .mc-red, .mc-yellow {
+    .mc-red, .mc-yellow, .mc-mid {
       width: 16px; height: 16px; border-radius: 50%;
       position: absolute; top: 0;
     }
-    .mc-red { background: #EB001B; left: 0; z-index: 1; mix-blend-mode: multiply; }
-    .mc-yellow { background: #F79E1B; left: 10px; z-index: 0; }
+    .mc-red { background: #EB001B; left: 0; z-index: 1; }
+    .mc-yellow { background: #F79E1B; left: 10px; z-index: 1; }
+    .mc-mid {
+      background: #FF5F00; left: 5px; z-index: 2;
+      clip-path: polygon(35% 0%, 65% 0%, 80% 50%, 65% 100%, 35% 100%, 20% 50%);
+    }
     .vcard__logo {
       position: absolute; top: 10px; right: 12px;
       font-size: 9px; font-weight: 700; color: rgba(255,255,255,.8);
@@ -1671,7 +1675,7 @@
             <div class="vcard__logo">VirtCardPay</div>
             <div class="vcard__chip"></div>
             <div class="vcard__num">5367 •••• •••• 2048</div>
-            <div class="vcard__brand vcard__brand--mc"><span class="mc-circles"><span class="mc-red"></span><span class="mc-yellow"></span></span></div>
+            <div class="vcard__brand vcard__brand--mc"><span class="mc-circles"><span class="mc-red"></span><span class="mc-mid"></span><span class="mc-yellow"></span></span></div>
           </div>
           <!-- Balance -->
           <div class="phone__label" data-i18n="phone.balance">Баланс карты</div>
