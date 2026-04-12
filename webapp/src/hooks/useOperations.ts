@@ -46,7 +46,7 @@ export function useOperations(pageSize = 15) {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetchOperations(0, 200, activeFilters);
+      const res = await fetchOperations(0, 50, activeFilters);
       setAllItems(res.items);
       setTotalFromApi(res.total);
       setPage(0);
