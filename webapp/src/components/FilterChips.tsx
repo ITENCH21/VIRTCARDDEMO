@@ -20,7 +20,7 @@ export default function FilterChips({ options, value, onChange }: Props) {
         display: 'flex',
         gap: 8,
         overflowX: 'auto',
-        paddingBottom: 4,
+        padding: '4px 2px 8px',
         marginBottom: 0,
         WebkitOverflowScrolling: 'touch',
         scrollbarWidth: 'none',
