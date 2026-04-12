@@ -271,7 +271,7 @@ export default function VirtualCard({ name, last4, balance, currencySymbol, curr
 
   // Back side content
   const backSide = (
-    <div onClick={handleFlip} style={{
+    <div style={{
       ...cardFaceStyle,
       transform: 'rotateY(180deg)',
       padding: 24,
@@ -281,6 +281,11 @@ export default function VirtualCard({ name, last4, balance, currencySymbol, curr
       overflow: 'hidden',
       background: theme.gradient,
     }}>
+      {/* Flip overlay — covers entire back, sits below copy buttons */}
+      <div onClick={handleFlip} style={{
+        position: 'absolute', inset: 0, zIndex: 1, cursor: 'pointer',
+      }} />
+
       {/* Decorative orbs */}
       <div style={{
         position: 'absolute', top: '-20%', left: '-15%', width: 180, height: 180,
@@ -300,79 +305,104 @@ export default function VirtualCard({ name, last4, balance, currencySymbol, curr
         pointerEvents: 'none',
       }} />
 
-      {/* Card details */}
-      <div style={{ marginTop: 56, position: 'relative', zIndex: 1 }}>
-        {/* Card number */}
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 10, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: 1, marginBottom: 4 }}>
-            {t('card_number_label')}
+      {/* Card details + inline copy icons */}
+      <div style={{ marginTop: 56, position: 'relative', zIndex: 2, pointerEvents: 'none' }}>
+        {/* Card number + copy */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div>
+            <div style={{ fontSize: 10, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: 1, marginBottom: 4 }}>
+              {t('card_number_label')}
+            </div>
+            <div style={{
+              fontSize: 17, fontWeight: 600, color: '#fff',
+              letterSpacing: 2.5, fontFamily: "'SF Mono','Menlo',monospace",
+            }}>
+              {sensitive ? formatCardNumber(sensitive.card_number) : ''}
+            </div>
           </div>
-          <div style={{
-            fontSize: 17, fontWeight: 600, color: '#fff',
-            letterSpacing: 2.5, fontFamily: "'SF Mono','Menlo',monospace",
-          }}>
-            {sensitive ? formatCardNumber(sensitive.card_number) : ''}
-          </div>
+          {sensitive && (
+            <button
+              onClick={() => handleCopy(sensitive.card_number, 'number')}
+              className="card-copy-btn"
+              style={{
+                pointerEvents: 'auto',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 36, height: 36, borderRadius: 10,
+                background: copied === 'number' ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.15)',
+                border: copied === 'number' ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(255,255,255,0.2)',
+                cursor: 'pointer', transition: 'all 0.15s ease', flexShrink: 0,
+              }}
+            >
+              {copied === 'number'
+                ? <CheckIcon size={16} style={{ color: '#10b981' }} />
+                : <CopyIcon size={16} style={{ color: 'rgba(255,255,255,0.7)' }} />
+              }
+            </button>
+          )}
         </div>
 
-        {/* Expiry + CVV row */}
-        <div style={{ display: 'flex', gap: 32 }}>
-          <div>
-            <div style={{ fontSize: 10, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: 1, marginBottom: 4 }}>
-              {t('expiry_label')}
+        {/* Expiry + CVV row with copy icons */}
+        <div style={{ display: 'flex', gap: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div>
+              <div style={{ fontSize: 10, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: 1, marginBottom: 4 }}>
+                {t('expiry_label')}
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', fontFamily: "'SF Mono','Menlo',monospace" }}>
+                {sensitive ? `${sensitive.expiry_month}/${sensitive.expiry_year.slice(-2)}` : ''}
+              </div>
             </div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', fontFamily: "'SF Mono','Menlo',monospace" }}>
-              {sensitive ? `${sensitive.expiry_month}/${sensitive.expiry_year.slice(-2)}` : ''}
-            </div>
+            {sensitive && (
+              <button
+                onClick={() => handleCopy(`${sensitive.expiry_month}/${sensitive.expiry_year}`, 'expiry')}
+                className="card-copy-btn"
+                style={{
+                  pointerEvents: 'auto',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 32, height: 32, borderRadius: 8,
+                  background: copied === 'expiry' ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.15)',
+                  border: copied === 'expiry' ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(255,255,255,0.2)',
+                  cursor: 'pointer', transition: 'all 0.15s ease', flexShrink: 0,
+                }}
+              >
+                {copied === 'expiry'
+                  ? <CheckIcon size={14} style={{ color: '#10b981' }} />
+                  : <CopyIcon size={14} style={{ color: 'rgba(255,255,255,0.7)' }} />
+                }
+              </button>
+            )}
           </div>
-          <div>
-            <div style={{ fontSize: 10, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: 1, marginBottom: 4 }}>
-              CVV
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div>
+              <div style={{ fontSize: 10, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: 1, marginBottom: 4 }}>
+                CVV
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', fontFamily: "'SF Mono','Menlo',monospace" }}>
+                {sensitive?.cvv || ''}
+              </div>
             </div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', fontFamily: "'SF Mono','Menlo',monospace" }}>
-              {sensitive?.cvv || ''}
-            </div>
+            {sensitive && (
+              <button
+                onClick={() => handleCopy(sensitive.cvv, 'cvv')}
+                className="card-copy-btn"
+                style={{
+                  pointerEvents: 'auto',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 32, height: 32, borderRadius: 8,
+                  background: copied === 'cvv' ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.15)',
+                  border: copied === 'cvv' ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(255,255,255,0.2)',
+                  cursor: 'pointer', transition: 'all 0.15s ease', flexShrink: 0,
+                }}
+              >
+                {copied === 'cvv'
+                  ? <CheckIcon size={14} style={{ color: '#10b981' }} />
+                  : <CopyIcon size={14} style={{ color: 'rgba(255,255,255,0.7)' }} />
+                }
+              </button>
+            )}
           </div>
         </div>
       </div>
-
-      {/* Copy buttons — 3 buttons, stops propagation, doesn't flip */}
-      {sensitive && (
-        <div
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-          style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 8, justifyContent: 'center' }}
-        >
-          {[
-            { key: 'number', label: t('copy_number'), value: sensitive.card_number },
-            { key: 'expiry', label: t('copy_expiry'), value: `${sensitive.expiry_month}/${sensitive.expiry_year}` },
-            { key: 'cvv', label: t('copy_cvv'), value: sensitive.cvv },
-          ].map((btn) => (
-            <button
-              key={btn.key}
-              onClick={() => handleCopy(btn.value, btn.key)}
-              className="card-copy-btn"
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                padding: '7px 14px', borderRadius: 10, flex: 1,
-                background: copied === btn.key ? 'rgba(16,185,129,0.25)' : 'rgba(255,255,255,0.15)',
-                backdropFilter: 'blur(8px)',
-                border: copied === btn.key ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(255,255,255,0.2)',
-                color: '#fff', fontSize: 11, fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              {copied === btn.key
-                ? <CheckIcon size={13} style={{ color: '#10b981' }} />
-                : <CopyIcon size={13} />
-              }
-              {btn.label}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 
