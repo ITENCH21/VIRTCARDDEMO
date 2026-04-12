@@ -660,7 +660,7 @@
     ========================================================= */
     .partners {
       border-bottom: 1px solid var(--border); padding: 28px 24px;
-      background: linear-gradient(90deg, #FFFFFF 0%, #F8FAFF 50%, #FFFFFF 100%);
+      background: linear-gradient(90deg, #FFFFFF 0%, #EDF2FF 50%, #FFFFFF 100%);
     }
     [data-theme="dark"] .partners { background: var(--bg-primary); }
     .partners__inner {
@@ -683,7 +683,7 @@
        STATS BAR
     ========================================================= */
     .stats-bar {
-      background: linear-gradient(90deg, #EEF2FF, #F4F7FF, #EEF2FF);
+      background: linear-gradient(90deg, #E8EEFF, #F0F4FF, #E8EEFF);
       border-bottom: 1px solid var(--border);
       padding: 20px 24px;
     }
@@ -710,38 +710,38 @@
     }
     .section > * { position: relative; z-index: 1; }
 
-    /* White sections — soft radial glow (light only) */
+    /* White sections — radial glows (light only) */
     [data-theme="light"] .section:not(.section--grey)::before {
       background:
-        radial-gradient(ellipse 50% 50% at 20% 20%, rgba(59,130,246,.04) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 40% at 80% 80%, rgba(139,92,246,.03) 0%, transparent 70%);
+        radial-gradient(ellipse 70% 60% at 15% 20%, rgba(59,130,246,.12) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 50% at 85% 75%, rgba(139,92,246,.08) 0%, transparent 70%);
     }
 
     /* Grey sections — gradient + glow (light only) */
     .section--grey {
-      background: linear-gradient(180deg, #EFF4FF 0%, #F4F7FF 40%, #F0F4FF 100%);
+      background: linear-gradient(180deg, #E8EEFF 0%, #F0F4FF 50%, #E8EEFF 100%);
     }
     [data-theme="light"] .section--grey::before {
       background:
-        radial-gradient(ellipse 60% 40% at 70% 0%, rgba(59,130,246,.06) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 50% at 30% 100%, rgba(16,185,129,.03) 0%, transparent 60%);
+        radial-gradient(ellipse 70% 50% at 75% 0%, rgba(59,130,246,.14) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 25% 100%, rgba(16,185,129,.08) 0%, transparent 60%);
     }
 
     /* Specific section accents (light only) */
     [data-theme="light"] #features::before {
       background:
-        radial-gradient(ellipse 50% 60% at 10% 50%, rgba(245,158,11,.04) 0%, transparent 60%),
-        radial-gradient(ellipse 40% 40% at 90% 30%, rgba(59,130,246,.05) 0%, transparent 60%);
+        radial-gradient(ellipse 60% 60% at 5% 50%, rgba(245,158,11,.10) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 95% 30%, rgba(59,130,246,.12) 0%, transparent 60%);
     }
     [data-theme="light"] #pricing::before {
       background:
-        radial-gradient(ellipse 60% 50% at 50% 0%, rgba(59,130,246,.06) 0%, transparent 60%),
-        radial-gradient(ellipse 40% 40% at 80% 90%, rgba(139,92,246,.04) 0%, transparent 60%);
+        radial-gradient(ellipse 70% 60% at 50% 0%, rgba(59,130,246,.14) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 80% 90%, rgba(139,92,246,.10) 0%, transparent 60%);
     }
     [data-theme="light"] #contacts::before {
       background:
-        radial-gradient(ellipse 50% 50% at 50% 50%, rgba(16,185,129,.04) 0%, transparent 60%),
-        radial-gradient(ellipse 40% 40% at 20% 20%, rgba(59,130,246,.04) 0%, transparent 60%);
+        radial-gradient(ellipse 60% 60% at 50% 50%, rgba(16,185,129,.10) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 15% 20%, rgba(59,130,246,.10) 0%, transparent 60%);
     }
     [data-theme="dark"] .section--grey {
       background: linear-gradient(180deg, #0d1525 0%, #111827 50%, #0d1525 100%);
