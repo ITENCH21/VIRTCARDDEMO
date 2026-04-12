@@ -660,8 +660,9 @@
     ========================================================= */
     .partners {
       border-bottom: 1px solid var(--border); padding: 28px 24px;
-      background: var(--bg-primary);
+      background: linear-gradient(90deg, #FFFFFF 0%, #F8FAFF 50%, #FFFFFF 100%);
     }
+    [data-theme="dark"] .partners { background: var(--bg-primary); }
     .partners__inner {
       max-width: 1100px; margin: 0 auto;
       display: flex; align-items: center; justify-content: center;
@@ -682,9 +683,11 @@
        STATS BAR
     ========================================================= */
     .stats-bar {
-      background: var(--bg-secondary); border-bottom: 1px solid var(--border);
+      background: linear-gradient(90deg, #EEF2FF, #F4F7FF, #EEF2FF);
+      border-bottom: 1px solid var(--border);
       padding: 20px 24px;
     }
+    [data-theme="dark"] .stats-bar { background: var(--bg-secondary); }
     .stats-bar__inner {
       max-width: 900px; margin: 0 auto;
       display: flex; align-items: center; justify-content: center;
@@ -697,8 +700,49 @@
     /* =========================================================
        SECTION WRAPPER & HEADINGS
     ========================================================= */
-    .section { padding: 80px 24px; }
-    .section--grey { background: var(--bg-secondary); }
+    .section {
+      padding: 80px 24px;
+      position: relative;
+    }
+    /* Light theme: alternating subtle gradients */
+    .section::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    }
+    .section > * { position: relative; z-index: 1; }
+
+    /* White sections — soft radial glow (light only) */
+    [data-theme="light"] .section:not(.section--grey)::before {
+      background:
+        radial-gradient(ellipse 50% 50% at 20% 20%, rgba(59,130,246,.04) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 80% 80%, rgba(139,92,246,.03) 0%, transparent 70%);
+    }
+
+    /* Grey sections — gradient + glow (light only) */
+    .section--grey {
+      background: linear-gradient(180deg, #EFF4FF 0%, #F4F7FF 40%, #F0F4FF 100%);
+    }
+    [data-theme="light"] .section--grey::before {
+      background:
+        radial-gradient(ellipse 60% 40% at 70% 0%, rgba(59,130,246,.06) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 30% 100%, rgba(16,185,129,.03) 0%, transparent 60%);
+    }
+
+    /* Specific section accents (light only) */
+    [data-theme="light"] #features::before {
+      background:
+        radial-gradient(ellipse 50% 60% at 10% 50%, rgba(245,158,11,.04) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 90% 30%, rgba(59,130,246,.05) 0%, transparent 60%);
+    }
+    [data-theme="light"] #pricing::before {
+      background:
+        radial-gradient(ellipse 60% 50% at 50% 0%, rgba(59,130,246,.06) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 80% 90%, rgba(139,92,246,.04) 0%, transparent 60%);
+    }
+    [data-theme="light"] #contacts::before {
+      background:
+        radial-gradient(ellipse 50% 50% at 50% 50%, rgba(16,185,129,.04) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 20% 20%, rgba(59,130,246,.04) 0%, transparent 60%);
+    }
     [data-theme="dark"] .section--grey {
       background: linear-gradient(180deg, #0d1525 0%, #111827 50%, #0d1525 100%);
     }
@@ -2605,7 +2649,7 @@
       <a href="#" data-i18n="foot.terms">Условия использования</a>
       <a href="#" data-i18n="foot.aml">AML политика</a>
     </div>
-    <div class="footer-copy">© 2024–2025 VirtCardPay. <span data-i18n="foot.rights">Все права защищены.</span></div>
+    <div class="footer-copy">© 2024–2026 VirtCardPay. <span data-i18n="foot.rights">Все права защищены.</span></div>
   </div>
 </footer>
 
