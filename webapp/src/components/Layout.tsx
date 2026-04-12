@@ -105,7 +105,7 @@ export default function Layout({ children }: Props) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {title === '' ? (
             <>
-              <img src="/public/logo.png" alt="VirtCardPay" style={{ width: 28, height: 28, borderRadius: 8, objectFit: 'cover' }} />
+              <img src="/logo.png" alt="VirtCardPay" style={{ width: 28, height: 28, borderRadius: 8, objectFit: 'cover' }} />
               <span style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.3, color: 'var(--text-primary)' }}>
                 VirtCardPay
               </span>
